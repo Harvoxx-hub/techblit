@@ -1,0 +1,11 @@
+# *
+User-agent: *
+Allow: /
+Disallow: /admin/
+Disallow: /api/
+
+# Host
+Host: https://techblit.com
+
+# Sitemaps
+Sitemap: https://techblit.com/sitemap.xml
