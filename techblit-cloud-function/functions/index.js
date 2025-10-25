@@ -532,7 +532,11 @@ exports.onUserCreated = onDocumentCreated({
  * Health check endpoint
  */
 exports.healthCheck = onRequest({
-  region: 'us-central1'
+  region: 'us-central1',
+  memory: '128MB',
+  cpu: 0.5,
+  maxInstances: 2,
+  minInstances: 0
 }, async (req, res) => {
   res.status(200).json({
     status: 'healthy',
@@ -722,3 +726,7 @@ exports.markNotificationRead = onRequest({
     });
   });
 });
+
+// =============================================================================
+// END OF CLOUD FUNCTIONS
+// =============================================================================

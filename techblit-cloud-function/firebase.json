@@ -8,27 +8,26 @@
         ".git",
         "firebase-debug.log",
         "firebase-debug.*.log",
-        "*.local"
+        "*.local",
+        ".next",
+        "src/app",
+        "src/components",
+        "src/contexts",
+        "public",
+        "next.config.ts",
+        "next-sitemap.config.js",
+        "tailwind.config.ts",
+        "tsconfig.json"
       ],
-      "runtime": "nodejs18",
+      "runtime": "nodejs20",
       "memory": "256MB",
-      "cpu": 1,
+      "cpu": 0.5,
       "maxInstances": 10,
-      "minInstances": 0
+      "minInstances": 0,
+      "timeoutSeconds": 60
     }
   ],
-  "hosting": {
-    "public": "../techblit/out",
-    "ignore": [
-      "firebase.json",
-      "**/.*",
-      "**/node_modules/**"
-    ],
-    "rewrites": [
-      {
-        "source": "**",
-        "destination": "/index.html"
-      }
-    ]
+  "firestore": {
+    "indexes": "firestore.indexes.json"
   }
 }
