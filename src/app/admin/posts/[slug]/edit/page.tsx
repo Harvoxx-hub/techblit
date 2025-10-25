@@ -7,8 +7,6 @@ import { db } from '@/lib/firebase';
 import AdminLayout from '@/components/admin/AdminLayout';
 import { withAuth, useAuth } from '@/contexts/AuthContext';
 
-
-
 import { Post, PostStatus, PERMISSIONS, hasPermission } from '@/types/admin';
 import { 
   DocumentTextIcon,

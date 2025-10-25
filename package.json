@@ -5,11 +5,11 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "build:static": "next build && next export",
     "start": "next start",
-    "lint": "eslint",
+    "lint": "next lint",
     "postbuild": "next-sitemap",
-    "deploy": "npm run build && firebase deploy"
+    "deploy": "vercel --prod",
+    "deploy:preview": "vercel"
   },
   "dependencies": {
     "@heroicons/react": "^2.2.0",
