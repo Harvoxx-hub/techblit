@@ -1,14 +1,11 @@
-'use client';
-
-import { useState, useEffect } from 'react';
 import { collection, query, where, getDocs, orderBy, limit } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import Link from 'next/link';
-import { useParams } from 'next/navigation';
 import Navigation from '@/components/ui/Navigation';
 import Footer from '@/components/ui/Footer';
 import { CATEGORIES, getCategoryBySlug } from '@/lib/categories';
-import { gradients } from '@/lib/colors';
+import { generateCategorySEO } from '@/lib/seo';
+import { Metadata } from 'next';
 
 interface Post {
   id: string;
@@ -22,73 +19,104 @@ interface Post {
   readTime?: string;
 }
 
-export default function CategoryPage() {
-  const params = useParams();
-  const categorySlug = params.slug as string;
-  const [posts, setPosts] = useState<Post[]>([]);
-  const [recommendedPosts, setRecommendedPosts] = useState<Post[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  const category = getCategoryBySlug(categorySlug);
-
-  useEffect(() => {
-    const fetchPosts = async () => {
-      try {
-        if (!db) {
-          setError('Firebase not initialized');
-          setLoading(false);
-          return;
-        }
-
-        // Fetch posts for this category
-        const postsRef = collection(db, 'posts');
-        const categoryQuery = query(
-          postsRef,
-          where('status', '==', 'published'),
-          where('category', '==', category?.label || ''),
-          orderBy('publishedAt', 'desc'),
-          limit(20)
-        );
-
-        const categorySnapshot = await getDocs(categoryQuery);
-        const categoryPosts = categorySnapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        })) as Post[];
-
-        setPosts(categoryPosts);
-
-        // If no posts found, fetch recommended posts (latest posts)
-        if (categoryPosts.length === 0) {
-          const recommendedQuery = query(
-            postsRef,
-            where('status', '==', 'published'),
-            orderBy('publishedAt', 'desc'),
-            limit(6)
-          );
-
-          const recommendedSnapshot = await getDocs(recommendedQuery);
-          const recommended = recommendedSnapshot.docs.map(doc => ({
-            id: doc.id,
-            ...doc.data()
-          })) as Post[];
-
-          setRecommendedPosts(recommended);
-        }
-
-      } catch (error) {
-        console.error('Error fetching posts:', error);
-        setError('Failed to load posts');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    if (categorySlug) {
-      fetchPosts();
+// Server-side function to fetch posts for a category
+async function getCategoryPosts(categorySlug: string): Promise<{ posts: Post[]; recommendedPosts: Post[] }> {
+  try {
+    if (!db) {
+      console.error('Firebase not initialized');
+      return { posts: [], recommendedPosts: [] };
     }
-  }, [categorySlug, category?.label]);
+
+    const category = getCategoryBySlug(categorySlug);
+    if (!category) {
+      return { posts: [], recommendedPosts: [] };
+    }
+
+    // Fetch posts for this category
+    const postsRef = collection(db, 'posts');
+    const categoryQuery = query(
+      postsRef,
+      where('status', '==', 'published'),
+      where('category', '==', category.label),
+      orderBy('publishedAt', 'desc'),
+      limit(20)
+    );
+
+    const categorySnapshot = await getDocs(categoryQuery);
+    const categoryPosts = categorySnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    })) as Post[];
+
+    // If no posts found, fetch recommended posts (latest posts)
+    let recommendedPosts: Post[] = [];
+    if (categoryPosts.length === 0) {
+      const recommendedQuery = query(
+        postsRef,
+        where('status', '==', 'published'),
+        orderBy('publishedAt', 'desc'),
+        limit(6)
+      );
+
+      const recommendedSnapshot = await getDocs(recommendedQuery);
+      recommendedPosts = recommendedSnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      })) as Post[];
+    }
+
+    return { posts: categoryPosts, recommendedPosts };
+
+  } catch (error) {
+    console.error('Error fetching posts:', error);
+    return { posts: [], recommendedPosts: [] };
+  }
+}
+
+// Generate metadata for the category page
+export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
+  const category = getCategoryBySlug(params.slug);
+  
+  if (!category) {
+    return {
+      title: 'Category Not Found - TechBlit',
+      description: 'The category you\'re looking for doesn\'t exist.',
+    };
+  }
+
+  return generateCategorySEO(category.label, category.description);
+}
+
+// Main category page component
+export default async function CategoryPage({ params }: { params: { slug: string } }) {
+  const category = getCategoryBySlug(params.slug);
+  const { posts, recommendedPosts } = await getCategoryPosts(params.slug);
+
+  if (!category) {
+    return (
+      <div className="min-h-screen bg-white dark:bg-gray-900">
+        <Navigation />
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+          <div className="text-center">
+            <div className="text-6xl mb-6">🔍</div>
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
+              Category Not Found
+            </h2>
+            <p className="text-gray-600 dark:text-gray-300 mb-6">
+              The category "{params.slug}" doesn't exist.
+            </p>
+            <Link
+              href="/"
+              className="inline-flex items-center px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors"
+            >
+              ← Back to Home
+            </Link>
+          </div>
+        </div>
+        <Footer />
+      </div>
+    );
+  }
 
   const getImageUrl = (imageData: any): string | null => {
     if (!imageData) return null;
@@ -146,81 +174,6 @@ export default function CategoryPage() {
     }).format(dateObj);
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-white dark:bg-gray-900">
-        <Navigation />
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-          <div className="animate-pulse">
-            <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-1/3 mb-8"></div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {[1, 2, 3, 4, 5, 6].map((i) => (
-                <div key={i} className="space-y-3">
-                  <div className="h-48 bg-gray-200 dark:bg-gray-700 rounded-lg"></div>
-                  <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded"></div>
-                  <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-3/4"></div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-        <Footer />
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="min-h-screen bg-white dark:bg-gray-900">
-        <Navigation />
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-          <div className="text-center">
-            <div className="text-6xl mb-6">⚠️</div>
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
-              Unable to Load Posts
-            </h2>
-            <p className="text-gray-600 dark:text-gray-300 mb-6">
-              {error}
-            </p>
-            <Link
-              href="/"
-              className="inline-flex items-center px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors"
-            >
-              ← Back to Home
-            </Link>
-          </div>
-        </div>
-        <Footer />
-      </div>
-    );
-  }
-
-  if (!category) {
-    return (
-      <div className="min-h-screen bg-white dark:bg-gray-900">
-        <Navigation />
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-          <div className="text-center">
-            <div className="text-6xl mb-6">🔍</div>
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
-              Category Not Found
-            </h2>
-            <p className="text-gray-600 dark:text-gray-300 mb-6">
-              The category "{categorySlug}" doesn't exist.
-            </p>
-            <Link
-              href="/"
-              className="inline-flex items-center px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors"
-            >
-              ← Back to Home
-            </Link>
-          </div>
-        </div>
-        <Footer />
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen bg-white dark:bg-gray-900">
       <Navigation />
@@ -233,7 +186,7 @@ export default function CategoryPage() {
               {category.label}
             </h1>
             <p className="text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
-              Explore the latest {category.label.toLowerCase()} content and insights
+              {category.description || `Explore the latest ${category.label.toLowerCase()} content and insights`}
             </p>
           </div>
         </div>
@@ -382,7 +335,7 @@ export default function CategoryPage() {
                 Browse Other Categories
               </h3>
               <div className="flex flex-wrap justify-center gap-3">
-                {CATEGORIES.filter(cat => cat.slug !== categorySlug).map((cat) => (
+                {CATEGORIES.filter(cat => cat.slug !== params.slug).map((cat) => (
                   <Link
                     key={cat.id}
                     href={`/category/${cat.slug}`}

@@ -1,15 +1,14 @@
-'use client';
-
-import { useState, useEffect } from 'react';
 import { collection, query, where, getDocs, limit } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import Link from 'next/link';
-import { useParams } from 'next/navigation';
+import { notFound } from 'next/navigation';
 import Navigation from '@/components/ui/Navigation';
 import Footer from '@/components/ui/Footer';
 import SuggestedArticles from '@/components/ui/SuggestedArticles';
 import SocialShare from '@/components/ui/SocialShare';
 import NewsletterSection from '@/components/ui/NewsletterSection';
+import { generatePostSEO, generateStructuredData } from '@/lib/seo';
+import { Metadata } from 'next';
 
 interface BlogPost {
   id: string;
@@ -25,114 +24,129 @@ interface BlogPost {
   featuredImage?: {
     url: string;
     alt: string;
+    width?: number;
+    height?: number;
   };
   categories?: string[];
   tags?: string[];
+  metaTitle?: string;
+  metaDescription?: string;
+  canonical?: string;
+  social?: {
+    ogTitle?: string;
+    ogDescription?: string;
+    twitterCard?: 'summary' | 'summary_large_image';
+  };
+  seo?: {
+    noindex?: boolean;
+    nofollow?: boolean;
+  };
 }
 
-export default function BlogPostPage() {
-  const params = useParams();
-  const slug = params.slug as string;
-  const [post, setPost] = useState<BlogPost | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+// Server-side function to fetch post data
+async function getPost(slug: string): Promise<BlogPost | null> {
+  try {
+    if (!db) {
+      console.error('Firebase not initialized');
+      return null;
+    }
 
-  useEffect(() => {
-    const fetchPost = async () => {
-      try {
-        if (!db) {
-          setError('Firebase not initialized');
-          setLoading(false);
-          return;
-        }
-
-        // Try to fetch from publicPosts collection first (optimized)
-        const publicPostsRef = collection(db, 'publicPosts');
-        const publicPostsQuery = query(
-          publicPostsRef,
-          where('slug', '==', slug),
-          limit(1)
-        );
-        
-        try {
-          const publicPostsSnapshot = await getDocs(publicPostsQuery);
-          if (!publicPostsSnapshot.empty) {
-            const postDoc = publicPostsSnapshot.docs[0];
-            setPost({
-              id: postDoc.id,
-              ...postDoc.data()
-            } as BlogPost);
-            return; // Successfully fetched from publicPosts
-          }
-        } catch (publicPostsError) {
-          console.warn('Failed to fetch from publicPosts, falling back to posts collection:', publicPostsError);
-        }
-
-        // Fallback to posts collection if publicPosts fails or is empty
-        const postsRef = collection(db, 'posts');
-        const q = query(
-          postsRef, 
-          where('slug', '==', slug),
-          where('status', '==', 'published'),
-          limit(1)
-        );
-        const querySnapshot = await getDocs(q);
-        
-        if (querySnapshot.empty) {
-          setError('Post not found or not published');
-          return;
-        }
-
-        const postDoc = querySnapshot.docs[0];
-        setPost({
+    // Try to fetch from publicPosts collection first (optimized)
+    const publicPostsRef = collection(db, 'publicPosts');
+    const publicPostsQuery = query(
+      publicPostsRef,
+      where('slug', '==', slug),
+      limit(1)
+    );
+    
+    try {
+      const publicPostsSnapshot = await getDocs(publicPostsQuery);
+      if (!publicPostsSnapshot.empty) {
+        const postDoc = publicPostsSnapshot.docs[0];
+        return {
           id: postDoc.id,
           ...postDoc.data()
-        } as BlogPost);
-      } catch (error) {
-        console.error('Error fetching post:', error);
-        setError('Failed to load post');
-      } finally {
-        setLoading(false);
+        } as BlogPost;
       }
-    };
-
-    if (slug) {
-      fetchPost();
+    } catch (publicPostsError) {
+      console.warn('Failed to fetch from publicPosts, falling back to posts collection:', publicPostsError);
     }
-  }, [slug]);
 
-  if (loading) {
+    // Fallback to posts collection if publicPosts fails or is empty
+    const postsRef = collection(db, 'posts');
+    const q = query(
+      postsRef, 
+      where('slug', '==', slug),
+      where('status', '==', 'published'),
+      limit(1)
+    );
+    const querySnapshot = await getDocs(q);
+    
+    if (querySnapshot.empty) {
+      return null;
+    }
+
+    const postDoc = querySnapshot.docs[0];
+    return {
+      id: postDoc.id,
+      ...postDoc.data()
+    } as BlogPost;
+  } catch (error) {
+    console.error('Error fetching post:', error);
+    return null;
+  }
+}
+
+// Generate metadata for the blog post
+export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
+  const post = await getPost(params.slug);
+  
+  if (!post) {
+    return {
+      title: 'Post Not Found - TechBlit',
+      description: 'The post you\'re looking for doesn\'t exist or has been removed.',
+    };
+  }
+
+  return generatePostSEO(post);
+}
+
+// Main blog post page component
+export default async function BlogPostPage({ params }: { params: { slug: string } }) {
+  const post = await getPost(params.slug);
+
+  if (!post) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-lg text-gray-600">Loading post...</p>
+      <div className="min-h-screen bg-gray-50">
+        <Navigation showBackButton={true} />
+        <div className="max-w-4xl mx-auto px-6 py-8">
+          <div className="text-center">
+            <h1 className="text-2xl font-bold text-gray-900 mb-4">Post Not Found</h1>
+            <p className="text-gray-600 mb-6">The post you're looking for doesn't exist or has been removed.</p>
+            <Link 
+              href="/" 
+              className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              ← Back to Home
+            </Link>
+          </div>
         </div>
+        <Footer />
       </div>
     );
   }
 
-  if (error || !post) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center max-w-md mx-auto p-6">
-          <h1 className="text-2xl font-bold text-gray-900 mb-4">Post Not Found</h1>
-          <p className="text-gray-600 mb-6">
-            {error || 'The blog post you\'re looking for doesn\'t exist.'}
-          </p>
-          <Link 
-            href="/" 
-            className="inline-block bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors"
-          >
-            ← Back to Home
-          </Link>
-        </div>
-      </div>
-    );
-  }
+  // Generate structured data for SEO
+  const structuredData = generateStructuredData(post);
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* Structured Data */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
+      />
+
       <style jsx global>{`
         .preview-content {
           color: #000000 !important;
@@ -227,6 +241,8 @@ export default function BlogPostPage() {
                 src={post.featuredImage.url}
                 alt={post.featuredImage.alt || post.title}
                 className="w-full h-64 object-cover rounded-lg"
+                width={post.featuredImage.width || 800}
+                height={post.featuredImage.height || 400}
               />
             </div>
           )}
@@ -258,7 +274,7 @@ export default function BlogPostPage() {
         {/* Social Share */}
         <div className="mt-12 mb-8">
           <SocialShare 
-            url={`${typeof window !== 'undefined' ? window.location.origin : ''}/${post.slug}`}
+            url={`https://techblit.com/${post.slug}`}
             title={post.title}
             description={post.excerpt || ''}
           />
