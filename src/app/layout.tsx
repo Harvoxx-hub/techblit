@@ -6,6 +6,10 @@ import { ThemeProvider } from "@/contexts/ThemeContext";
 export const metadata: Metadata = {
   title: "TechBlit - Your Tech Blog",
   description: "A modern tech blog built with Next.js and Firebase",
+  icons: {
+    icon: '/favicon.png',
+    apple: '/favicon.png',
+  },
 };
 
 export default function RootLayout({

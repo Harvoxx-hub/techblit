@@ -74,8 +74,9 @@ async function getCategoryPosts(categorySlug: string): Promise<{ posts: Post[]; 
 }
 
 // Generate metadata for the category page
-export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
-  const category = getCategoryBySlug(params.slug);
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+  const { slug } = await params;
+  const category = getCategoryBySlug(slug);
   
   if (!category) {
     return {
@@ -88,9 +89,10 @@ export async function generateMetadata({ params }: { params: { slug: string } })
 }
 
 // Main category page component
-export default async function CategoryPage({ params }: { params: { slug: string } }) {
-  const category = getCategoryBySlug(params.slug);
-  const { posts, recommendedPosts } = await getCategoryPosts(params.slug);
+export default async function CategoryPage({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params;
+  const category = getCategoryBySlug(slug);
+  const { posts, recommendedPosts } = await getCategoryPosts(slug);
 
   if (!category) {
     return (
@@ -103,7 +105,7 @@ export default async function CategoryPage({ params }: { params: { slug: string 
               Category Not Found
             </h2>
             <p className="text-gray-600 dark:text-gray-300 mb-6">
-              The category "{params.slug}" doesn't exist.
+              The category "{slug}" doesn't exist.
             </p>
             <Link
               href="/"
@@ -335,7 +337,7 @@ export default async function CategoryPage({ params }: { params: { slug: string 
                 Browse Other Categories
               </h3>
               <div className="flex flex-wrap justify-center gap-3">
-                {CATEGORIES.filter(cat => cat.slug !== params.slug).map((cat) => (
+                {CATEGORIES.filter(cat => cat.slug !== slug).map((cat) => (
                   <Link
                     key={cat.id}
                     href={`/category/${cat.slug}`}

@@ -52,6 +52,10 @@ export interface Post {
     width: number;
     height: number;
     alt: string;
+  } | {
+    original: { url: string; path: string; width: number; height: number; size: number; };
+    thumbnail: { url: string; path: string; width: number; height: number; size: number; };
+    ogImage: { url: string; path: string; width: number; height: number; size: number; };
   };
   
   // Migration & Redirects

@@ -1,6 +1,17 @@
 import { Metadata } from 'next';
+import { ProcessedImage } from './imageProcessing';
 
-// Default SEO configuration for the site
+// Helper function to convert Firestore timestamps to ISO strings
+function getISODateString(date: Date | { toDate: () => Date } | undefined): string | undefined {
+  if (!date) return undefined;
+  if (typeof date === 'object' && 'toDate' in date) {
+    return date.toDate().toISOString();
+  }
+  if (date instanceof Date) {
+    return date.toISOString();
+  }
+  return undefined;
+}
 export const defaultSEO = {
   title: 'TechBlit - Your Tech Blog',
   description: 'A modern tech blog built with Next.js and Firebase',
@@ -40,8 +51,9 @@ interface BlogPostSEO {
   tags?: string[];
   category?: string;
   author?: string | { uid: string; name: string };
-  publishedAt?: Date;
-  featuredImage?: {
+  publishedAt?: Date | { toDate: () => Date };
+  updatedAt?: Date | { toDate: () => Date };
+  featuredImage?: ProcessedImage | {
     url: string;
     alt: string;
     width?: number;
@@ -58,6 +70,15 @@ interface BlogPostSEO {
   };
 }
 
+// Helper functions to check image format
+const isProcessedImage = (image: any): image is ProcessedImage => {
+  return image && typeof image === 'object' && 'original' in image && 'thumbnail' in image && 'ogImage' in image;
+};
+
+const isLegacyImage = (image: any): image is { url: string; alt: string; width?: number; height?: number } => {
+  return image && typeof image === 'object' && 'url' in image && 'alt' in image;
+};
+
 // Generate dynamic SEO metadata for blog posts
 export function generatePostSEO(post: BlogPostSEO): Metadata {
   const siteUrl = 'https://techblit.com';
@@ -71,9 +92,21 @@ export function generatePostSEO(post: BlogPostSEO): Metadata {
   const ogTitle = post.social?.ogTitle || title;
   const ogDescription = post.social?.ogDescription || description;
   
-  // Determine Open Graph image
-  const ogImage = post.featuredImage?.url || `${siteUrl}/og-image.svg`;
-  const ogImageAlt = post.featuredImage?.alt || post.title;
+  // Determine Open Graph image - prefer OG optimized version if available
+  let ogImage = `${siteUrl}/og-image.svg`;
+  let ogImageAlt = post.title;
+  
+  if (post.featuredImage) {
+    // Check if it's a ProcessedImage format with OG image
+    if (isProcessedImage(post.featuredImage) && post.featuredImage.ogImage?.url) {
+      ogImage = post.featuredImage.ogImage.url;
+      ogImageAlt = post.title; // ProcessedImage doesn't have alt, use title
+    } else if (isLegacyImage(post.featuredImage) && post.featuredImage.url) {
+      // Fallback to legacy format
+      ogImage = post.featuredImage.url;
+      ogImageAlt = post.featuredImage.alt || post.title;
+    }
+  }
   
   // Build keywords from tags and category
   const keywords = [
@@ -122,12 +155,14 @@ export function generatePostSEO(post: BlogPostSEO): Metadata {
       images: [
         {
           url: ogImage,
-          width: post.featuredImage?.width || 1200,
-          height: post.featuredImage?.height || 630,
+          width: (isProcessedImage(post.featuredImage) && post.featuredImage.ogImage?.width) || 
+                 (isLegacyImage(post.featuredImage) && post.featuredImage.width) || 1200,
+          height: (isProcessedImage(post.featuredImage) && post.featuredImage.ogImage?.height) || 
+                  (isLegacyImage(post.featuredImage) && post.featuredImage.height) || 630,
           alt: ogImageAlt,
         },
       ],
-      publishedTime: post.publishedAt?.toISOString(),
+      publishedTime: getISODateString(post.publishedAt),
       authors: [authorName],
       section: post.category,
       tags: post.tags,
@@ -253,7 +288,9 @@ export function generateStructuredData(post: BlogPostSEO) {
     '@type': 'BlogPosting',
     headline: post.title,
     description: post.metaDescription || post.excerpt,
-    image: post.featuredImage?.url || `${siteUrl}/og-image.svg`,
+    image: (isProcessedImage(post.featuredImage) && post.featuredImage.ogImage?.url) || 
+           (isLegacyImage(post.featuredImage) && post.featuredImage.url) || 
+           `${siteUrl}/og-image.svg`,
     author: {
       '@type': 'Person',
       name: authorName,
@@ -266,8 +303,8 @@ export function generateStructuredData(post: BlogPostSEO) {
         url: `${siteUrl}/logo.png`,
       },
     },
-    datePublished: post.publishedAt?.toISOString(),
-    dateModified: post.publishedAt?.toISOString(),
+    datePublished: getISODateString(post.publishedAt),
+    dateModified: getISODateString(post.updatedAt) || getISODateString(post.publishedAt),
     mainEntityOfPage: {
       '@type': 'WebPage',
       '@id': postUrl,

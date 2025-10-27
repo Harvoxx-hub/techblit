@@ -37,7 +37,7 @@ import CanonicalUrlManager from '@/components/editor/CanonicalUrlManager';
 import Scheduling from '@/components/editor/Scheduling';
 import Preview from '@/components/editor/Preview';
 import FeaturedImageUpload from '@/components/editor/FeaturedImageUpload';
-import { uploadImageToMediaLibrary } from '@/lib/imageUpload';
+import { uploadFeaturedImage } from '@/lib/imageUpload';
 
 function EditPostEditor() {
   const router = useRouter();
@@ -46,12 +46,21 @@ function EditPostEditor() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   
-  // Wrapper function to upload images to media library
-  const handleImageUpload = async (file: File): Promise<string> => {
+  // Wrapper function to upload featured images with multiple versions
+  const handleImageUpload = async (file: File) => {
     if (!user?.uid) {
       throw new Error('User not authenticated');
     }
-    return await uploadImageToMediaLibrary(file, user.uid, '', '');
+    return await uploadFeaturedImage(file);
+  };
+  
+  // Wrapper function for RichTextEditor (returns string URL)
+  const handleRichTextImageUpload = async (file: File): Promise<string> => {
+    if (!user?.uid) {
+      throw new Error('User not authenticated');
+    }
+    const processedImage = await uploadFeaturedImage(file);
+    return processedImage.original.url;
   };
   
   const [post, setPost] = useState<Partial<Post>>({
@@ -341,7 +350,7 @@ function EditPostEditor() {
                   showToolbar={true}
                   showCharacterCount={true}
                   maxLength={10000}
-                  onImageUpload={handleImageUpload}
+                  onImageUpload={handleRichTextImageUpload}
                 />
               </CardContent>
             </Card>
@@ -433,7 +442,7 @@ function EditPostEditor() {
               metaDescription={post.metaDescription || ''}
               slug={post.slug || ''}
               author={post.author}
-              featuredImage={post.featuredImage?.url}
+              featuredImage={(post.featuredImage as any)?.url}
               postId={post.id}
               status={status}
             />

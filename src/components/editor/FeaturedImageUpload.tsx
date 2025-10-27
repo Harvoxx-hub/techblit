@@ -3,23 +3,24 @@
 import { useState, useRef, useCallback } from 'react';
 import { PhotoIcon, XMarkIcon, CloudArrowUpIcon } from '@heroicons/react/24/outline';
 import { Button } from '@/components/ui';
+import { ProcessedImage } from '@/lib/imageProcessing';
 
 interface FeaturedImageUploadProps {
-  value?: {
+  value?: ProcessedImage | {
     url: string;
     alt?: string;
     width?: number;
     height?: number;
     storagePath?: string;
   };
-  onChange: (image: {
+  onChange: (image: ProcessedImage | {
     url: string;
     alt: string;
     width: number;
     height: number;
     storagePath: string;
   } | null) => void;
-  onUpload: (file: File) => Promise<string>;
+  onUpload: (file: File) => Promise<ProcessedImage | string>;
   required?: boolean;
   error?: string;
 }
@@ -40,6 +41,11 @@ export default function FeaturedImageUpload({
     if (!imageData) return null;
     if (typeof imageData === 'string') return imageData;
     if (typeof imageData === 'object') {
+      // Handle ProcessedImage format
+      if (imageData.original?.url) return imageData.original.url;
+      if (imageData.thumbnail?.url) return imageData.thumbnail.url;
+      if (imageData.ogImage?.url) return imageData.ogImage.url;
+      // Handle legacy format
       if (imageData.url) return imageData.url;
       if (imageData.downloadURL) return imageData.downloadURL;
       if (imageData.src) return imageData.src;
@@ -51,6 +57,12 @@ export default function FeaturedImageUpload({
     return null;
   };
 
+  // Helper function to check if image data is ProcessedImage format
+  const isProcessedImage = (imageData: any): imageData is ProcessedImage => {
+    return imageData && typeof imageData === 'object' && 
+           imageData.original && imageData.thumbnail && imageData.ogImage;
+  };
+
   const handleFileUpload = useCallback(async (file: File) => {
     if (!file.type.startsWith('image/')) {
       alert('Please select an image file');
@@ -59,7 +71,17 @@ export default function FeaturedImageUpload({
 
     setIsUploading(true);
     try {
-      const url = await onUpload(file);
+      const result = await onUpload(file);
+      
+      // Handle ProcessedImage response
+      if (isProcessedImage(result)) {
+        onChange(result);
+        setIsUploading(false);
+        return;
+      }
+      
+      // Handle legacy string response
+      const url = typeof result === 'string' ? result : (result as any)?.url || '';
       
       // Create a temporary image to get dimensions
       const img = new Image();
@@ -69,7 +91,7 @@ export default function FeaturedImageUpload({
           alt: file.name.split('.')[0] || 'Featured image',
           width: img.width,
           height: img.height,
-          storagePath: url // You might want to extract this from the upload response
+          storagePath: url
         });
         setIsUploading(false);
       };
@@ -163,14 +185,28 @@ export default function FeaturedImageUpload({
           <div className="aspect-video bg-gray-100 rounded-lg overflow-hidden border-2 border-gray-200">
             <img
               src={getImageUrl(value)!}
-              alt={value.alt || 'Featured image'}
+              alt={'alt' in value ? value.alt || 'Featured image' : 'Featured image'}
               className="w-full h-full object-cover"
               onError={(e) => {
                 console.error('Image failed to load:', getImageUrl(value));
+                console.error('Image data:', value);
+                // Show error message instead of hiding
                 e.currentTarget.style.display = 'none';
+                const errorDiv = document.createElement('div');
+                errorDiv.className = 'w-full h-full flex items-center justify-center bg-red-50 text-red-600 text-sm';
+                errorDiv.innerHTML = `
+                  <div class="text-center">
+                    <div class="font-semibold mb-2">Image failed to load</div>
+                    <div class="text-xs break-all">${getImageUrl(value)}</div>
+                  </div>
+                `;
+                e.currentTarget.parentNode?.appendChild(errorDiv);
+              }}
+              onLoad={() => {
+                console.log('Image loaded successfully:', getImageUrl(value));
               }}
             />
-            <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all duration-200 flex items-center justify-center">
+            <div className="absolute inset-0 group-hover:bg-black group-hover:bg-opacity-20 transition-all duration-200 flex items-center justify-center">
               <Button
                 type="button"
                 variant="outline"
@@ -184,8 +220,21 @@ export default function FeaturedImageUpload({
             </div>
           </div>
           <div className="mt-2 text-xs text-gray-500">
-            {value.width && value.height && `${value.width} × ${value.height}`}
-            {value.alt && ` • ${value.alt}`}
+            {isProcessedImage(value) ? (
+              <div className="space-y-1">
+                <div>Original: {value.original.width} × {value.original.height}</div>
+                <div>Thumbnail: {value.thumbnail.width} × {value.thumbnail.height}</div>
+                <div>OG Image: {value.ogImage.width} × {value.ogImage.height}</div>
+                <div className="break-all text-xs">URL: {getImageUrl(value)}</div>
+                {value.original.url && <div>Alt: {value.original.url.split('/').pop()?.split('.')[0] || 'Featured image'}</div>}
+              </div>
+            ) : (
+              <>
+                {value.width && value.height && `${value.width} × ${value.height}`}
+                {value.alt && ` • ${value.alt}`}
+                <div className="break-all text-xs">URL: {getImageUrl(value)}</div>
+              </>
+            )}
           </div>
         </div>
       ) : (

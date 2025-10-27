@@ -113,7 +113,7 @@ export default function HeroSection({ mainPost, secondaryPosts }: HeroSectionPro
     }
   };
 
-  const getImageUrl = (imageData: any): string | null => {
+  const getImageUrl = (imageData: any, preferThumbnail: boolean = false): string | null => {
     if (!imageData) return null;
     
     // If it's already a string URL, return it
@@ -121,7 +121,15 @@ export default function HeroSection({ mainPost, secondaryPosts }: HeroSectionPro
     
     // If it's an object, try to extract URL
     if (typeof imageData === 'object') {
-      // Firebase storage reference
+      // Handle ProcessedImage format - prefer thumbnail for smaller displays
+      if (imageData.thumbnail?.url && preferThumbnail) {
+        return imageData.thumbnail.url;
+      }
+      if (imageData.original?.url) {
+        return imageData.original.url;
+      }
+      
+      // Legacy Firebase storage reference
       if (imageData.url) return imageData.url;
       if (imageData.downloadURL) return imageData.downloadURL;
       if (imageData.src) return imageData.src;
@@ -282,9 +290,9 @@ export default function HeroSection({ mainPost, secondaryPosts }: HeroSectionPro
                 <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden">
                   {/* Image */}
                   <div className={`aspect-video bg-gradient-to-br ${getCategoryGradient(post.category)} relative overflow-hidden`}>
-                    {getImageUrl(post.featuredImage) ? (
+                    {getImageUrl(post.featuredImage, true) ? (
                       <img
-                        src={getImageUrl(post.featuredImage)!}
+                        src={getImageUrl(post.featuredImage, true)!}
                         alt={post.title}
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                       />

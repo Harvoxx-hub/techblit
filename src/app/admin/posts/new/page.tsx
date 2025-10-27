@@ -27,7 +27,7 @@ import CanonicalUrlManager from '@/components/editor/CanonicalUrlManager';
 import Scheduling from '@/components/editor/Scheduling';
 import Preview from '@/components/editor/Preview';
 import FeaturedImageUpload from '@/components/editor/FeaturedImageUpload';
-import { uploadImageToMediaLibrary } from '@/lib/imageUpload';
+import { uploadFeaturedImage } from '@/lib/imageUpload';
 import { useAutoSave, useAutoSaveIndicator } from '@/hooks/useAutoSave';
 import { CATEGORY_OPTIONS } from '@/lib/categories';
 
@@ -38,12 +38,12 @@ function NewPostEditor() {
   const [postId, setPostId] = useState<string | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  // Wrapper function to upload images to media library
-  const handleImageUpload = async (file: File): Promise<string> => {
+  // Wrapper function to upload featured images with multiple versions
+  const handleImageUpload = async (file: File) => {
     if (!user?.uid) {
       throw new Error('User not authenticated');
     }
-    return await uploadImageToMediaLibrary(file, user.uid, '', '');
+    return await uploadFeaturedImage(file);
   };
   // Prefilled tags and categories
   const prefilledTags = [
@@ -136,7 +136,7 @@ function NewPostEditor() {
     if (!post.slug) newErrors.slug = 'Slug is required';
     if (!post.excerpt) newErrors.excerpt = 'Excerpt is required';
     if (!post.contentHtml) newErrors.content = 'Content is required';
-    if (!post.featuredImage?.url) newErrors.featuredImage = 'Featured image is required';
+    if (!post.featuredImage?.original?.url && !post.featuredImage?.url) newErrors.featuredImage = 'Featured image is required';
     
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
@@ -221,7 +221,7 @@ function NewPostEditor() {
               metaDescription={post.metaDescription || ''}
               slug={post.slug || ''}
               author={post.author}
-              featuredImage={post.featuredImage?.url}
+              featuredImage={post.featuredImage?.original?.url || post.featuredImage?.url}
               postId={postId || undefined}
               status={post.status}
             />

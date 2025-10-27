@@ -5,6 +5,7 @@ import { notFound, useParams, useSearchParams } from 'next/navigation';
 import Navigation from '@/components/ui/Navigation';
 import Footer from '@/components/ui/Footer';
 import Link from 'next/link';
+import { ProcessedImage } from '@/lib/imageProcessing';
 
 interface BlogPost {
   id: string;
@@ -17,7 +18,7 @@ interface BlogPost {
   excerpt?: string;
   status?: string;
   publishedAt?: any;
-  featuredImage?: {
+  featuredImage?: ProcessedImage | {
     url: string;
     alt: string;
   };
@@ -254,11 +255,11 @@ export default function PreviewPage() {
           </div>
           
           {/* Featured Image */}
-          {post.featuredImage?.url && (
+          {post.featuredImage && (
             <div className="mb-6">
               <img
-                src={post.featuredImage.url}
-                alt={post.featuredImage.alt || post.title}
+                src={'original' in post.featuredImage ? post.featuredImage.original.url : post.featuredImage.url}
+                alt={'alt' in post.featuredImage ? post.featuredImage.alt : post.title}
                 className="w-full h-64 object-cover rounded-lg"
               />
             </div>

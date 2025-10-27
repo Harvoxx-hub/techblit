@@ -1,5 +1,3 @@
-import { collection, query, where, getDocs, limit } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import Navigation from '@/components/ui/Navigation';
@@ -9,6 +7,9 @@ import SocialShare from '@/components/ui/SocialShare';
 import NewsletterSection from '@/components/ui/NewsletterSection';
 import { generatePostSEO, generateStructuredData } from '@/lib/seo';
 import { Metadata } from 'next';
+import { collection, query, where, getDocs, limit } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
+import { ProcessedImage } from '@/lib/imageProcessing';
 
 interface BlogPost {
   id: string;
@@ -21,7 +22,7 @@ interface BlogPost {
   excerpt?: string;
   status?: string;
   publishedAt?: any;
-  featuredImage?: {
+  featuredImage?: ProcessedImage | {
     url: string;
     alt: string;
     width?: number;
@@ -43,7 +44,14 @@ interface BlogPost {
   };
 }
 
-// Server-side function to fetch post data
+// Helper function to get image URL from either format
+function getImageUrl(image: ProcessedImage | { url: string; alt: string; width?: number; height?: number } | undefined): string {
+  if (!image) return '';
+  if ('original' in image) return image.original.url;
+  return image.url;
+}
+
+// Server-side function to fetch post data from Firebase
 async function getPost(slug: string): Promise<BlogPost | null> {
   try {
     if (!db) {
@@ -72,25 +80,25 @@ async function getPost(slug: string): Promise<BlogPost | null> {
       console.warn('Failed to fetch from publicPosts, falling back to posts collection:', publicPostsError);
     }
 
-    // Fallback to posts collection if publicPosts fails or is empty
+    // Fallback to posts collection
     const postsRef = collection(db, 'posts');
-    const q = query(
-      postsRef, 
+    const postsQuery = query(
+      postsRef,
       where('slug', '==', slug),
       where('status', '==', 'published'),
       limit(1)
     );
-    const querySnapshot = await getDocs(q);
     
-    if (querySnapshot.empty) {
-      return null;
+    const postsSnapshot = await getDocs(postsQuery);
+    if (!postsSnapshot.empty) {
+      const postDoc = postsSnapshot.docs[0];
+      return {
+        id: postDoc.id,
+        ...postDoc.data()
+      } as BlogPost;
     }
 
-    const postDoc = querySnapshot.docs[0];
-    return {
-      id: postDoc.id,
-      ...postDoc.data()
-    } as BlogPost;
+    return null;
   } catch (error) {
     console.error('Error fetching post:', error);
     return null;
@@ -98,8 +106,9 @@ async function getPost(slug: string): Promise<BlogPost | null> {
 }
 
 // Generate metadata for the blog post
-export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
-  const post = await getPost(params.slug);
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+  const { slug } = await params;
+  const post = await getPost(slug);
   
   if (!post) {
     return {
@@ -112,8 +121,9 @@ export async function generateMetadata({ params }: { params: { slug: string } })
 }
 
 // Main blog post page component
-export default async function BlogPostPage({ params }: { params: { slug: string } }) {
-  const post = await getPost(params.slug);
+export default async function BlogPostPage({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params;
+  const post = await getPost(slug);
 
   if (!post) {
     return (
@@ -147,75 +157,6 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
         dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
       />
 
-      <style jsx global>{`
-        .preview-content {
-          color: #000000 !important;
-        }
-        .preview-content h1 {
-          color: #000000 !important;
-          font-size: 2rem !important;
-          font-weight: 700 !important;
-          margin: 1.5rem 0 1rem 0 !important;
-          line-height: 1.2 !important;
-        }
-        .preview-content h2 {
-          color: #000000 !important;
-          font-size: 1.5rem !important;
-          font-weight: 600 !important;
-          margin: 1.25rem 0 0.75rem 0 !important;
-          line-height: 1.3 !important;
-        }
-        .preview-content h3 {
-          color: #000000 !important;
-          font-size: 1.25rem !important;
-          font-weight: 600 !important;
-          margin: 1rem 0 0.5rem 0 !important;
-          line-height: 1.4 !important;
-        }
-        .preview-content h4 {
-          color: #000000 !important;
-          font-size: 1.125rem !important;
-          font-weight: 600 !important;
-          margin: 0.875rem 0 0.5rem 0 !important;
-          line-height: 1.4 !important;
-        }
-        .preview-content h5 {
-          color: #000000 !important;
-          font-size: 1rem !important;
-          font-weight: 600 !important;
-          margin: 0.75rem 0 0.5rem 0 !important;
-          line-height: 1.5 !important;
-        }
-        .preview-content h6 {
-          color: #000000 !important;
-          font-size: 0.875rem !important;
-          font-weight: 600 !important;
-          margin: 0.75rem 0 0.5rem 0 !important;
-          line-height: 1.5 !important;
-        }
-        .preview-content p {
-          color: #000000 !important;
-        }
-        .preview-content li {
-          color: #000000 !important;
-        }
-        .preview-content strong {
-          color: #000000 !important;
-        }
-        .preview-content em {
-          color: #000000 !important;
-        }
-        .preview-content blockquote {
-          color: #000000 !important;
-        }
-        .preview-content code {
-          color: #000000 !important;
-        }
-        .preview-content td,
-        .preview-content th {
-          color: #000000 !important;
-        }
-      `}</style>
       <Navigation showBackButton={true} />
 
       {/* Blog Post Content */}
@@ -235,14 +176,14 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
           </div>
           
           {/* Featured Image */}
-          {post.featuredImage?.url && (
+          {post.featuredImage && (
             <div className="mb-6">
               <img
-                src={post.featuredImage.url}
-                alt={post.featuredImage.alt || post.title}
+                src={getImageUrl(post.featuredImage)}
+                alt={'alt' in post.featuredImage ? post.featuredImage.alt : post.title}
                 className="w-full h-64 object-cover rounded-lg"
-                width={post.featuredImage.width || 800}
-                height={post.featuredImage.height || 400}
+                width={'original' in post.featuredImage ? post.featuredImage.original.width : post.featuredImage.width || 800}
+                height={'original' in post.featuredImage ? post.featuredImage.original.height : post.featuredImage.height || 400}
               />
             </div>
           )}
@@ -259,8 +200,7 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
           <div className="bg-white rounded-lg shadow-sm p-8">
             {post.contentHtml ? (
               <div 
-                className="prose prose-lg max-w-none preview-content"
-                style={{ color: '#000000 !important' }}
+                className="prose prose-lg max-w-none text-gray-900"
                 dangerouslySetInnerHTML={{ __html: post.contentHtml }}
               />
             ) : (
