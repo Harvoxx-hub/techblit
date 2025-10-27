@@ -39,11 +39,13 @@ function NewPostEditor() {
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   // Wrapper function to upload featured images with multiple versions
+  // For RichTextEditor, we need to return just the URL string
   const handleImageUpload = async (file: File) => {
     if (!user?.uid) {
       throw new Error('User not authenticated');
     }
-    return await uploadFeaturedImage(file);
+    const processed = await uploadFeaturedImage(file);
+    return processed.original.url;
   };
   // Prefilled tags and categories
   const prefilledTags = [
@@ -136,7 +138,13 @@ function NewPostEditor() {
     if (!post.slug) newErrors.slug = 'Slug is required';
     if (!post.excerpt) newErrors.excerpt = 'Excerpt is required';
     if (!post.contentHtml) newErrors.content = 'Content is required';
-    if (!post.featuredImage?.original?.url && !post.featuredImage?.url) newErrors.featuredImage = 'Featured image is required';
+    
+    // Check for featured image in both possible structures
+    const hasFeaturedImage = post.featuredImage && (
+      ('original' in post.featuredImage && post.featuredImage.original?.url) ||
+      ('url' in post.featuredImage && post.featuredImage.url)
+    );
+    if (!hasFeaturedImage) newErrors.featuredImage = 'Featured image is required';
     
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
@@ -221,7 +229,11 @@ function NewPostEditor() {
               metaDescription={post.metaDescription || ''}
               slug={post.slug || ''}
               author={post.author}
-              featuredImage={post.featuredImage?.original?.url || post.featuredImage?.url}
+              featuredImage={
+                post.featuredImage && 'original' in post.featuredImage 
+                  ? post.featuredImage.original?.url 
+                  : (post.featuredImage && 'url' in post.featuredImage ? post.featuredImage.url : undefined)
+              }
               postId={postId || undefined}
               status={post.status}
             />

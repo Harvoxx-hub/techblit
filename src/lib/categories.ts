@@ -7,20 +7,21 @@ export interface Category {
   id: string;
   label: string;
   slug: string;
+  description?: string;
 }
 
 // Main categories used throughout the application
 export const CATEGORIES: Category[] = [
-  { id: 'startups', label: 'Startups', slug: 'startups' },
-  { id: 'tech-news', label: 'Tech News', slug: 'tech-news' },
-  { id: 'funding', label: 'Funding', slug: 'funding' },
-  { id: 'insights', label: 'Insights', slug: 'insights' },
-  { id: 'events', label: 'Events', slug: 'events' },
-  { id: 'fintech', label: 'Fintech', slug: 'fintech' },
-  { id: 'ai-innovation', label: 'AI & Innovation', slug: 'ai-innovation' },
-  { id: 'developer-tools', label: 'Developer Tools', slug: 'developer-tools' },
-  { id: 'opinions', label: 'Opinions', slug: 'opinions' },
-  { id: 'brand-press', label: 'Brand Press', slug: 'brand-press' }
+  { id: 'startups', label: 'Startups', slug: 'startups', description: 'Tech startup news, companies, and stories' },
+  { id: 'tech-news', label: 'Tech News', slug: 'tech-news', description: 'Latest technology news and updates' },
+  { id: 'funding', label: 'Funding', slug: 'funding', description: 'Startup funding, investments, and deals' },
+  { id: 'insights', label: 'Insights', slug: 'insights', description: 'Deep insights and analysis' },
+  { id: 'events', label: 'Events', slug: 'events', description: 'Tech events, conferences, and meetups' },
+  { id: 'fintech', label: 'Fintech', slug: 'fintech', description: 'Financial technology and payments' },
+  { id: 'ai-innovation', label: 'AI & Innovation', slug: 'ai-innovation', description: 'Artificial intelligence and innovation' },
+  { id: 'developer-tools', label: 'Developer Tools', slug: 'developer-tools', description: 'Developer tools and resources' },
+  { id: 'opinions', label: 'Opinions', slug: 'opinions', description: 'Opinions and editorials' },
+  { id: 'brand-press', label: 'Brand Press', slug: 'brand-press', description: 'Brand announcements and press releases' }
 ];
 
 // For admin dropdowns (legacy format)
