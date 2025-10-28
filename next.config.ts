@@ -3,7 +3,28 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   // Vercel handles image optimization automatically
   images: {
-    domains: ['firebasestorage.googleapis.com', 'techblit.firebaseapp.com'],
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'firebasestorage.googleapis.com',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'techblit.firebaseapp.com',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'techblit.com',
+        pathname: '/**',
+      },
+      {
+        protocol: 'http',
+        hostname: 'techblit.com',
+        pathname: '/**',
+      },
+    ],
     formats: ['image/avif', 'image/webp'],
   },
   
