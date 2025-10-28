@@ -410,46 +410,55 @@ export default function RichTextEditor({
           color: #000000 !important;
           font-size: 2rem !important;
           font-weight: 700 !important;
-          margin: 1.5rem 0 1rem 0 !important;
+          margin-top: 1.5rem !important;
+          margin-bottom: 1rem !important;
           line-height: 1.2 !important;
         }
         .preview-content h2 {
           color: #000000 !important;
           font-size: 1.5rem !important;
           font-weight: 600 !important;
-          margin: 1.25rem 0 0.75rem 0 !important;
+          margin-top: 1.25rem !important;
+          margin-bottom: 0.75rem !important;
           line-height: 1.3 !important;
         }
         .preview-content h3 {
           color: #000000 !important;
           font-size: 1.25rem !important;
           font-weight: 600 !important;
-          margin: 1rem 0 0.5rem 0 !important;
+          margin-top: 1rem !important;
+          margin-bottom: 0.5rem !important;
           line-height: 1.4 !important;
         }
         .preview-content h4 {
           color: #000000 !important;
           font-size: 1.125rem !important;
           font-weight: 600 !important;
-          margin: 0.875rem 0 0.5rem 0 !important;
+          margin-top: 0.875rem !important;
+          margin-bottom: 0.5rem !important;
           line-height: 1.4 !important;
         }
         .preview-content h5 {
           color: #000000 !important;
           font-size: 1rem !important;
           font-weight: 600 !important;
-          margin: 0.75rem 0 0.5rem 0 !important;
+          margin-top: 0.75rem !important;
+          margin-bottom: 0.5rem !important;
           line-height: 1.5 !important;
         }
         .preview-content h6 {
           color: #000000 !important;
           font-size: 0.875rem !important;
           font-weight: 600 !important;
-          margin: 0.75rem 0 0.5rem 0 !important;
+          margin-top: 0.75rem !important;
+          margin-bottom: 0.5rem !important;
           line-height: 1.5 !important;
         }
         .preview-content p {
           color: #000000 !important;
+          margin-top: 1.25rem !important;
+          margin-bottom: 1.25rem !important;
+          line-height: 1.75 !important;
         }
         .preview-content li {
           color: #000000 !important;
@@ -472,15 +481,17 @@ export default function RichTextEditor({
         }
         
         .ProseMirror p {
-          margin: 0.75rem 0;
-          line-height: 1.6;
+          margin-top: 1.25rem !important;
+          margin-bottom: 1.25rem !important;
+          line-height: 1.75 !important;
           color: #000000;
         }
         
         .ProseMirror h1 {
           font-size: 2rem;
           font-weight: 700;
-          margin: 1.5rem 0 1rem 0;
+          margin-top: 1.5rem !important;
+          margin-bottom: 1rem !important;
           line-height: 1.2;
           color: #000000;
         }
@@ -488,7 +499,8 @@ export default function RichTextEditor({
         .ProseMirror h2 {
           font-size: 1.5rem;
           font-weight: 600;
-          margin: 1.25rem 0 0.75rem 0;
+          margin-top: 1.25rem !important;
+          margin-bottom: 0.75rem !important;
           line-height: 1.3;
           color: #000000;
         }
@@ -496,19 +508,21 @@ export default function RichTextEditor({
         .ProseMirror h3 {
           font-size: 1.25rem;
           font-weight: 600;
-          margin: 1rem 0 0.5rem 0;
+          margin-top: 1rem !important;
+          margin-bottom: 0.5rem !important;
           line-height: 1.4;
           color: #000000;
         }
         
         .ProseMirror ul, .ProseMirror ol {
-          margin: 0.75rem 0;
+          margin-top: 0.75rem !important;
+          margin-bottom: 0.75rem !important;
           padding-left: 1.5rem;
           color: #000000;
         }
         
         .ProseMirror li {
-          margin: 0.25rem 0;
+          margin: 0.25rem 0 !important;
           color: #000000;
         }
         

@@ -137,7 +137,7 @@ export default async function CategoryPage({ params }: { params: Promise<{ slug:
 
   const getCategoryGradient = (categoryName?: string) => {
     switch (categoryName?.toLowerCase()) {
-      case 'startups': return 'from-yellow-400 to-yellow-500';
+      case 'Startup': return 'from-yellow-400 to-yellow-500';
       case 'tech news': return 'from-slate-900 to-slate-800';
       case 'funding': return 'from-slate-900 to-yellow-400';
       case 'insights': return 'from-slate-900 to-green-500';

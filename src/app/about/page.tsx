@@ -1,6 +1,22 @@
 import Link from 'next/link';
 import Navigation from '@/components/ui/Navigation';
 import Footer from '@/components/ui/Footer';
+import { Metadata } from 'next';
+
+export const metadata: Metadata = {
+  title: 'About Us - TechBlit | African Tech News Platform',
+  description: 'TechBlit is Africa\'s leading tech news platform, covering startups, innovation, funding, and technology developments across the continent. Discover our mission to ignite Africa\'s tech conversation.',
+  keywords: ['African tech', 'tech news platform', 'Nigeria tech', 'startup news', 'African innovation', 'tech journalism'],
+  openGraph: {
+    title: 'About Us - TechBlit',
+    description: 'TechBlit is Africa\'s leading tech news platform, covering startups, innovation, funding, and technology developments.',
+    type: 'website',
+    url: 'https://techblit.com/about',
+  },
+  alternates: {
+    canonical: 'https://techblit.com/about',
+  },
+};
 
 export default function AboutPage() {
   return (

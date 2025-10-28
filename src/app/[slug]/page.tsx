@@ -196,19 +196,17 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
           )}
         </header>
 
-        <div className="prose prose-lg max-w-none">
-          <div className="bg-white rounded-lg shadow-sm p-8">
-            {post.contentHtml ? (
-              <div 
-                className="prose prose-lg max-w-none text-gray-900"
-                dangerouslySetInnerHTML={{ __html: post.contentHtml }}
-              />
-            ) : (
-              <div className="whitespace-pre-wrap text-gray-700 leading-relaxed">
-                {post.content}
-              </div>
-            )}
-          </div>
+        <div className="bg-white rounded-lg shadow-sm p-8">
+          {post.contentHtml ? (
+            <div 
+              className="prose prose-lg max-w-none text-gray-900"
+              dangerouslySetInnerHTML={{ __html: post.contentHtml }}
+            />
+          ) : (
+            <div className="whitespace-pre-wrap text-gray-700 leading-relaxed">
+              {post.content}
+            </div>
+          )}
         </div>
 
         {/* Social Share */}

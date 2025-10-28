@@ -1,14 +1,52 @@
 import type { Metadata } from "next";
+import Script from "next/script";
 import "./globals.css";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 
 export const metadata: Metadata = {
-  title: "TechBlit - Your Tech Blog",
-  description: "A modern tech blog built with Next.js and Firebase",
+  title: "TechBlit - Igniting Africa's Tech Conversation",
+  description: "Discover the latest tech news, startup insights, funding rounds, and innovation stories from across Africa. Your destination for African tech ecosystem coverage.",
+  keywords: ['African tech', 'startups', 'technology news', 'innovation', 'funding', 'FinTech', 'AI', 'Nigeria tech', 'African technology', 'tech ecosystem'],
+  authors: [{ name: 'TechBlit Team' }],
+  creator: 'TechBlit',
+  publisher: 'TechBlit',
   icons: {
     icon: '/favicon.png',
     apple: '/favicon.png',
+  },
+  openGraph: {
+    type: 'website',
+    locale: 'en_US',
+    url: 'https://techblit.com',
+    siteName: 'TechBlit',
+    title: "TechBlit - Igniting Africa's Tech Conversation",
+    description: "Discover the latest tech news, startup insights, funding rounds, and innovation stories from across Africa.",
+    images: [{
+      url: 'https://techblit.com/og-image.svg',
+      width: 1200,
+      height: 630,
+      alt: "TechBlit - Igniting Africa's Tech Conversation",
+    }],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: "TechBlit - Igniting Africa's Tech Conversation",
+    description: "Discover the latest tech news, startup insights, funding rounds, and innovation stories from across Africa.",
+    images: ['https://techblit.com/og-image.svg'],
+    creator: '@techblit',
+    site: '@techblit',
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-video-preview': -1,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
   },
 };
 
@@ -17,12 +55,47 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const organizationSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'Organization',
+    name: 'TechBlit',
+    url: 'https://techblit.com',
+    logo: 'https://techblit.com/logo.png',
+    description: "Igniting Africa's Tech Conversation",
+    sameAs: [
+      'https://twitter.com/techblit',
+      'https://facebook.com/techblit',
+      'https://linkedin.com/company/techblit',
+    ],
+    contactPoint: {
+      '@type': 'ContactPoint',
+      contactType: 'Editorial',
+      email: 'hello@techblit.com',
+    },
+  };
+
   return (
     <html lang="en">
       <body
         className="font-sans antialiased"
         suppressHydrationWarning={true}
       >
+        <Script
+          strategy="afterInteractive"
+          src="https://www.googletagmanager.com/gtag/js?id=G-8MTJTQ7N85"
+        />
+        <Script id="google-analytics" strategy="afterInteractive">
+          {`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', 'G-8MTJTQ7N85');
+          `}
+        </Script>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationSchema) }}
+        />
         <ThemeProvider>
           <AuthProvider>
             {children}

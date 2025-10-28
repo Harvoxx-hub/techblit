@@ -26,7 +26,8 @@ export default function Navigation({ showBackButton = false }: NavigationProps) 
 
   const navigationLinks = [
     { href: '/', label: 'Home' },
-    { href: '/category/startups', label: 'Startups' },
+    { href: '/blog', label: 'Blog' },
+    { href: '/category/Startup', label: 'Startup' },
     { href: '/category/tech-news', label: 'Tech News' },
     { href: '/category/funding', label: 'Funding' },
     { href: '/category/insights', label: 'Insights' },

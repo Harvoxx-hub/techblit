@@ -93,7 +93,7 @@ export default function HeroSection({ mainPost, secondaryPosts }: HeroSectionPro
 
   const getCategoryIcon = (category?: string) => {
     switch (category) {
-      case 'startups': return '🚀';
+      case 'Startup': return '🚀';
       case 'tech-news': return '📰';
       case 'funding': return '💰';
       case 'insights': return '🧠';
@@ -104,7 +104,7 @@ export default function HeroSection({ mainPost, secondaryPosts }: HeroSectionPro
 
   const getCategoryGradient = (category?: string) => {
     switch (category) {
-      case 'startups': return gradients.secondary; // Yellow for startups
+      case 'Startup': return gradients.secondary; // Yellow for Startup
       case 'tech-news': return gradients.primary; // Dark navy for tech news
       case 'funding': return gradients.primarySecondary; // Navy to yellow for funding
       case 'insights': return gradients.primaryAccent; // Navy to green for insights

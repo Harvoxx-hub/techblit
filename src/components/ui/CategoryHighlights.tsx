@@ -74,7 +74,7 @@ export default function CategoryHighlights() {
 
   const getCategoryGradient = (category?: string) => {
     switch (category?.toLowerCase()) {
-      case 'startups': return gradients.secondary; // Yellow
+      case 'Startup': return gradients.secondary; // Yellow
       case 'fintech': return gradients.primary; // Navy
       case 'funding': return gradients.primarySecondary; // Navy to yellow
       case 'ai & innovation': return gradients.primaryAccent; // Navy to green

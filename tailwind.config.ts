@@ -68,6 +68,9 @@ const config: Config = {
             },
             p: {
               color: '#000000',
+              marginTop: '1.25rem',
+              marginBottom: '1.25rem',
+              lineHeight: '1.75',
             },
             strong: {
               color: '#000000',
@@ -93,6 +96,10 @@ const config: Config = {
             pre: {
               backgroundColor: '#111827',
               color: '#f9fafb',
+              marginTop: '1rem',
+              marginBottom: '1rem',
+              padding: '1rem',
+              borderRadius: '0.5rem',
             },
             'pre code': {
               backgroundColor: 'transparent',
@@ -101,18 +108,28 @@ const config: Config = {
             blockquote: {
               borderLeftColor: '#d1d5db',
               color: '#000000', // Keep blockquotes black too
+              marginTop: '1rem',
+              marginBottom: '1rem',
+              paddingLeft: '1rem',
             },
             ul: {
               color: '#000000',
+              marginTop: '0.75rem',
+              marginBottom: '0.75rem',
             },
             ol: {
               color: '#000000',
+              marginTop: '0.75rem',
+              marginBottom: '0.75rem',
             },
             li: {
               color: '#000000',
+              margin: '0.25rem 0',
             },
             img: {
               borderRadius: '0.5rem',
+              marginTop: '1rem',
+              marginBottom: '1rem',
             },
             table: {
               borderCollapse: 'collapse',
@@ -128,6 +145,8 @@ const config: Config = {
             },
             hr: {
               borderColor: '#d1d5db',
+              marginTop: '2rem',
+              marginBottom: '2rem',
             },
           },
         },

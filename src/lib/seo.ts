@@ -13,22 +13,23 @@ function getISODateString(date: Date | { toDate: () => Date } | undefined): stri
   return undefined;
 }
 export const defaultSEO = {
-  title: 'TechBlit - Your Tech Blog',
-  description: 'A modern tech blog built with Next.js and Firebase',
+  title: "TechBlit - Igniting Africa's Tech Conversation",
+  description: 'Discover the latest tech news, startup insights, funding rounds, and innovation stories from across Africa. Your destination for African tech ecosystem coverage.',
   canonical: 'https://techblit.com',
+  keywords: ['African tech', 'startups', 'technology news', 'innovation', 'funding', 'FinTech', 'AI', 'Nigeria tech', 'African technology', 'tech ecosystem'],
   openGraph: {
     type: 'website',
     locale: 'en_US',
     url: 'https://techblit.com',
     siteName: 'TechBlit',
-    title: 'TechBlit - Your Tech Blog',
-    description: 'A modern tech blog built with Next.js and Firebase',
+    title: "TechBlit - Igniting Africa's Tech Conversation",
+    description: 'Discover the latest tech news, startup insights, funding rounds, and innovation stories from across Africa.',
     images: [
       {
         url: 'https://techblit.com/og-image.svg',
         width: 1200,
         height: 630,
-        alt: 'TechBlit',
+        alt: "TechBlit - Igniting Africa's Tech Conversation",
       },
     ],
   },
@@ -110,12 +111,14 @@ export function generatePostSEO(post: BlogPostSEO): Metadata {
   
   // Build keywords from tags and category
   const keywords = [
-    'tech blog',
-    'technology',
-    'programming',
-    'web development',
-    'Next.js',
-    'React',
+    'African tech',
+    'Nigeria tech',
+    'startups',
+    'technology news',
+    'innovation',
+    'funding',
+    'startup ecosystem',
+    'African technology',
     ...(post.tags || []),
     ...(post.category ? [post.category] : [])
   ].filter(Boolean);
@@ -200,13 +203,13 @@ export function generatePostSEO(post: BlogPostSEO): Metadata {
 export function generateCategorySEO(category: string, description?: string): Metadata {
   const siteUrl = 'https://techblit.com';
   const categoryUrl = `${siteUrl}/category/${category}`;
-  const title = `${category} Articles - TechBlit`;
-  const desc = description || `Latest ${category} articles and insights on TechBlit`;
+  const title = `${category} - TechBlit | African Tech News`;
+  const desc = description || `Latest ${category} news, insights, and analysis from Africa's tech ecosystem`;
 
   return {
     title: title,
     description: desc,
-    keywords: ['tech blog', 'technology', category.toLowerCase(), 'articles', 'insights'],
+    keywords: ['African tech', 'Nigeria tech', category.toLowerCase(), 'tech news', 'startups', 'innovation', 'African technology'],
     authors: [{ name: 'TechBlit Team' }],
     creator: 'TechBlit',
     publisher: 'TechBlit',

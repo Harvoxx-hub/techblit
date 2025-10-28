@@ -189,26 +189,24 @@ function PostsManager() {
             {filteredPosts.map((post) => (
               <li key={post.id}>
                 <div className="px-4 py-4 sm:px-6">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex items-center flex-1 min-w-0">
                       <div className="flex-shrink-0">
                         <div className="h-10 w-10 flex items-center justify-center rounded-lg bg-gray-100">
                           <DocumentTextIcon className="h-6 w-6 text-gray-600" />
                         </div>
                       </div>
-                      <div className="ml-4">
+                      <div className="ml-4 flex-1 min-w-0">
                         <div className="flex items-center">
                           <p className="text-sm font-medium text-blue-600 truncate">
                             {post.title}
                           </p>
-                          <span className={`ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-${getStatusColor(post.status)}-100 text-${getStatusColor(post.status)}-800`}>
+                          <span className="ml-2 flex-shrink-0 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-${getStatusColor(post.status)}-100 text-${getStatusColor(post.status)}-800">
                             {getStatusLabel(post.status)}
                           </span>
                         </div>
-                        <div className="mt-1 flex items-center text-sm text-gray-500">
-                          <p className="truncate">
-                            {post.excerpt || 'No excerpt available'}
-                          </p>
+                        <div className="mt-1 text-sm text-gray-500 line-clamp-2">
+                          {post.excerpt || 'No excerpt available'}
                         </div>
                         <div className="mt-1 flex items-center text-xs text-gray-400">
                           <p>
@@ -227,7 +225,7 @@ function PostsManager() {
                         </div>
                       </div>
                     </div>
-                    <div className="flex items-center space-x-2">
+                    <div className="flex-shrink-0 flex items-center space-x-2">
                       <Link
                         href={`/${post.slug}`}
                         target="_blank"

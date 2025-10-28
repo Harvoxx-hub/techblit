@@ -378,7 +378,7 @@ function EditPostEditor() {
                     helperText="Choose the category for this post"
                     options={[
                       { value: '', label: 'Select a category...' },
-                      { value: 'Startups', label: 'Startups' },
+                      { value: 'Startup', label: 'Startup' },
                       { value: 'Tech News', label: 'Tech News' },
                       { value: 'Funding', label: 'Funding' },
                       { value: 'Insights', label: 'Insights' },

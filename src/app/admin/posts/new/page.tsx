@@ -49,7 +49,7 @@ function NewPostEditor() {
   };
   // Prefilled tags and categories
   const prefilledTags = [
-    'startups', 'fintech', 'funding', 'AI', 'innovation', 'technology', 
+    'Startup', 'fintech', 'funding', 'AI', 'innovation', 'technology', 
     'africa', 'nigeria', 'kenya', 'south africa', 'mobile', 'web', 
     'developer tools', 'blockchain', 'cryptocurrency', 'payments', 
     'banking', 'e-commerce', 'SaaS', 'B2B', 'B2C', 'venture capital',
@@ -68,8 +68,8 @@ function NewPostEditor() {
     metaTitle: '',
     metaDescription: '',
     canonical: '',
-    tags: ['startups', 'technology', 'africa'], // Prefilled tags
-    category: 'Startups', // Single category string
+    tags: ['Startup', 'technology', 'africa'], // Prefilled tags
+    category: 'Startup', // Single category string
     status: 'draft',
     visibility: 'public',
     scheduledAt: undefined,

@@ -12,7 +12,7 @@ export interface Category {
 
 // Main categories used throughout the application
 export const CATEGORIES: Category[] = [
-  { id: 'startups', label: 'Startups', slug: 'startups', description: 'Tech startup news, companies, and stories' },
+  { id: 'Startup', label: 'Startup', slug: 'Startup', description: 'Tech startup news, companies, and stories' },
   { id: 'tech-news', label: 'Tech News', slug: 'tech-news', description: 'Latest technology news and updates' },
   { id: 'funding', label: 'Funding', slug: 'funding', description: 'Startup funding, investments, and deals' },
   { id: 'insights', label: 'Insights', slug: 'insights', description: 'Deep insights and analysis' },
@@ -49,7 +49,7 @@ export const getCategoryById = (id: string): Category | undefined => {
 // Category gradient mapping
 export const getCategoryGradient = (categorySlug?: string): string => {
   switch (categorySlug?.toLowerCase()) {
-    case 'startups': return 'from-blue-500 to-purple-600';
+    case 'Startup': return 'from-blue-500 to-purple-600';
     case 'tech-news': return 'from-green-500 to-blue-600';
     case 'funding': return 'from-yellow-500 to-orange-600';
     case 'insights': return 'from-purple-500 to-pink-600';
