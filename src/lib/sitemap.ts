@@ -40,6 +40,13 @@ export async function generateSitemap(): Promise<SitemapUrl[]> {
       priority: 0.8,
     });
 
+    urls.push({
+      loc: `${siteUrl}/blog`,
+      lastmod: new Date().toISOString(),
+      changefreq: 'daily',
+      priority: 0.9,
+    });
+
     // Fetch published blog posts
     let posts: BlogPost[] = [];
 
@@ -124,6 +131,12 @@ export async function generateSitemap(): Promise<SitemapUrl[]> {
         lastmod: new Date().toISOString(),
         changefreq: 'monthly',
         priority: 0.8,
+      },
+      {
+        loc: `${siteUrl}/blog`,
+        lastmod: new Date().toISOString(),
+        changefreq: 'daily',
+        priority: 0.9,
       },
     ];
   }
