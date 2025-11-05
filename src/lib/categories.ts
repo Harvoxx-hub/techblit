@@ -48,9 +48,11 @@ export const getCategoryById = (id: string): Category | undefined => {
 
 // Category gradient mapping
 export const getCategoryGradient = (categorySlug?: string): string => {
-  switch (categorySlug?.toLowerCase()) {
-    case 'Startup': return 'from-blue-500 to-purple-600';
+  const slug = categorySlug?.toLowerCase();
+  switch (slug) {
+    case 'startup': return 'from-blue-500 to-purple-600';
     case 'tech-news': return 'from-green-500 to-blue-600';
+    case 'tech news': return 'from-green-500 to-blue-600';
     case 'funding': return 'from-yellow-500 to-orange-600';
     case 'insights': return 'from-purple-500 to-pink-600';
     case 'events': return 'from-red-500 to-pink-600';
@@ -59,6 +61,7 @@ export const getCategoryGradient = (categorySlug?: string): string => {
     case 'developer-tools': return 'from-emerald-500 to-teal-600';
     case 'opinions': return 'from-orange-500 to-red-600';
     case 'brand-press': return 'from-blue-600 to-indigo-700';
+    case 'brand press': return 'from-blue-600 to-indigo-700';
     default: return 'from-gray-500 to-gray-600';
   }
 };

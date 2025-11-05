@@ -14,8 +14,13 @@ export const metadata: Metadata = {
   creator: 'TechBlit',
   publisher: 'TechBlit',
   icons: {
-    icon: '/favicon.png',
-    apple: '/favicon.png',
+    icon: [
+      { url: '/favicon.png', type: 'image/png' },
+    ],
+    apple: [
+      { url: '/favicon.png', type: 'image/png' },
+    ],
+    shortcut: '/favicon.png',
   },
   openGraph: {
     type: 'website',

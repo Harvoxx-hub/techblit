@@ -124,6 +124,12 @@ export default async function CategoryPage({ params }: { params: Promise<{ slug:
     if (!imageData) return null;
     if (typeof imageData === 'string') return imageData;
     if (typeof imageData === 'object') {
+      // Handle ProcessedImage format with original, thumbnail, ogImage
+      if (imageData.original && imageData.original.url) return imageData.original.url;
+      if (imageData.thumbnail && imageData.thumbnail.url) return imageData.thumbnail.url;
+      if (imageData.ogImage && imageData.ogImage.url) return imageData.ogImage.url;
+      
+      // Handle simple format
       if (imageData.url) return imageData.url;
       if (imageData.downloadURL) return imageData.downloadURL;
       if (imageData.src) return imageData.src;

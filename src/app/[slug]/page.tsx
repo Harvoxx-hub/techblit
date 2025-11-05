@@ -5,6 +5,7 @@ import Footer from '@/components/ui/Footer';
 import SuggestedArticles from '@/components/ui/SuggestedArticles';
 import SocialShare from '@/components/ui/SocialShare';
 import NewsletterSection from '@/components/ui/NewsletterSection';
+import SideBanner from '@/components/ui/SideBanner';
 import { generatePostSEO, generateStructuredData } from '@/lib/seo';
 import { Metadata } from 'next';
 import { collection, query, where, getDocs, limit } from 'firebase/firestore';
@@ -159,8 +160,26 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
 
       <Navigation showBackButton={true} />
 
-      {/* Blog Post Content */}
-      <article className="max-w-4xl mx-auto px-6 py-8">
+      {/* Blog Post Content with Side Banners */}
+      <div className="relative max-w-7xl mx-auto px-6 py-8">
+        <div className="relative flex gap-8">
+          {/* Left Banner - Only visible on large screens */}
+          <div className="hidden xl:block xl:flex-shrink-0">
+            <div className="sticky top-24">
+              <SideBanner
+                title="iBUILD 2025"
+                description="The Builder's Evolution - Join Africa's premier tech builders conference"
+                imageUrl="/The Builders' Evolution.jpg"
+                linkUrl="https://ibuild.techblit.com"
+                linkText="Learn More"
+                position="left"
+                size="medium"
+              />
+            </div>
+          </div>
+
+          {/* Article Content */}
+          <article className="flex-1 max-w-4xl mx-auto">
         <header className="mb-8">
           <h1 className="text-4xl font-bold text-gray-900 mb-4">{post.title}</h1>
           
@@ -217,7 +236,24 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
             description={post.excerpt || ''}
           />
         </div>
-      </article>
+          </article>
+
+          {/* Right Banner - Only visible on large screens */}
+          <div className="hidden xl:block xl:flex-shrink-0">
+            <div className="sticky top-24">
+              <SideBanner
+                title="iBUILD 2025"
+                description="Register now for The Builder's Evolution conference"
+                imageUrl="/The Builders' Evolution.jpg"
+                linkUrl="https://ibuild.techblit.com"
+                linkText="Register"
+                position="right"
+                size="medium"
+              />
+            </div>
+          </div>
+        </div>
+      </div>
 
       {/* Suggested Articles */}
       <SuggestedArticles 

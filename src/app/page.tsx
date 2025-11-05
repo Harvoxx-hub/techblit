@@ -2,6 +2,8 @@ import Navigation from '@/components/ui/Navigation';
 import HeroSection from '@/components/ui/HeroSection';
 import CategoryHighlights from '@/components/ui/CategoryHighlights';
 import BrandPressSection from '@/components/ui/BrandPressSection';
+import CategorySection from '@/components/ui/CategorySection';
+import EventBanner from '@/components/ui/EventBanner';
 import NewsletterSection from '@/components/ui/NewsletterSection';
 import Footer from '@/components/ui/Footer';
 import { Metadata } from 'next';
@@ -56,6 +58,9 @@ export default function Home() {
       <HeroSection />
       <CategoryHighlights />
       <BrandPressSection />
+      <CategorySection categoryLabel="Startup" categorySlug="Startup" title="Startup" />
+      <CategorySection categoryLabel="Tech News" categorySlug="tech-news" title="Tech News" />
+      <CategorySection categoryLabel="Events" categorySlug="events" title="Events" />
       <NewsletterSection />
       <Footer />
     </div>

@@ -6,6 +6,7 @@ import { useState, useEffect } from 'react';
 import { brandColors } from '@/lib/colors';
 import ThemeToggle from './ThemeToggle';
 import SearchModal from './SearchModal';
+import EventBanner from './EventBanner';
 
 interface NavigationProps {
   showBackButton?: boolean;
@@ -35,6 +36,7 @@ export default function Navigation({ showBackButton = false }: NavigationProps) 
   ];
 
   return (
+    <>
     <nav className={`sticky top-0 z-50 transition-all duration-300 ${
       isScrolled 
         ? 'bg-white/90 dark:bg-gray-900/90 backdrop-blur-md shadow-lg border-b border-gray-200/50 dark:border-gray-700/50' 
@@ -151,5 +153,21 @@ export default function Navigation({ showBackButton = false }: NavigationProps) 
         )}
       </div>
     </nav>
+    {/* Event Banner - Shows on all pages */}
+    <div className="w-full bg-white dark:bg-gray-900">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+        <EventBanner
+          title="iBUILD 2025 - The Builder's Evolution"
+          description="TechBlit's flagship event — a one-day gathering designed to reignite the founders' culture in our ecosystem. Join visionary founders, builders, and investors across the region. A movement to empower doers who are actively building companies, products, and systems that drive impact."
+          imageUrl="/The Builders' Evolution.jpg"
+          linkUrl="https://ibuild.techblit.com"
+          linkText="Learn More & Register"
+          startDate="December 13, 2025"
+          endDate=""
+          location="Port Harcourt, Nigeria"
+        />
+      </div>
+    </div>
+  </>
   );
 }
