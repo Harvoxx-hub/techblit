@@ -6,7 +6,7 @@ import { collection, getDocs, query, orderBy, where, limit, doc, deleteDoc } fro
 import { db } from '@/lib/firebase';
 import AdminLayout from '@/components/admin/AdminLayout';
 import { withAuth } from '@/contexts/AuthContext';
-import { Post, PostStatus, getStatusColor, getStatusLabel } from '@/types/admin';
+import { Post, PostStatus, getStatusColor, getStatusLabel, getStatusBadgeClasses, getStatusIconClasses } from '@/types/admin';
 import { 
   DocumentTextIcon, 
   PlusIcon,
@@ -201,7 +201,7 @@ function PostsManager() {
                           <p className="text-sm font-medium text-blue-600 truncate">
                             {post.title}
                           </p>
-                          <span className="ml-2 flex-shrink-0 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-${getStatusColor(post.status)}-100 text-${getStatusColor(post.status)}-800">
+                          <span className={`ml-2 flex-shrink-0 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusBadgeClasses(post.status)}`}>
                             {getStatusLabel(post.status)}
                           </span>
                         </div>
@@ -292,7 +292,7 @@ function PostsManager() {
                 <div className="p-5">
                   <div className="flex items-center">
                     <div className="flex-shrink-0">
-                      <div className={`p-3 rounded-md bg-${getStatusColor(status.value as PostStatus)}-500`}>
+                      <div className={`p-3 rounded-md ${getStatusIconClasses(status.value as PostStatus)}`}>
                         <DocumentTextIcon className="h-6 w-6 text-white" />
                       </div>
                     </div>

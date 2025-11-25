@@ -170,3 +170,84 @@ body {
   display: inline !important;
   font-weight: 400 !important;
 }
+
+/* Mobile responsive styles for prose content */
+@media (max-width: 640px) {
+  .prose,
+  .prose-lg {
+    font-size: 0.875rem !important;
+  }
+  
+  .prose h1,
+  .prose-lg h1 {
+    font-size: 1.5rem !important;
+    margin-top: 1.25rem !important;
+    margin-bottom: 0.75rem !important;
+  }
+  
+  .prose h2,
+  .prose-lg h2 {
+    font-size: 1.25rem !important;
+    margin-top: 1rem !important;
+    margin-bottom: 0.5rem !important;
+  }
+  
+  .prose h3,
+  .prose-lg h3 {
+    font-size: 1.125rem !important;
+    margin-top: 0.875rem !important;
+    margin-bottom: 0.5rem !important;
+  }
+  
+  .prose p,
+  .prose-lg p {
+    margin-top: 1rem !important;
+    margin-bottom: 1rem !important;
+    line-height: 1.625 !important;
+  }
+  
+  .prose img,
+  .prose-lg img {
+    max-width: 100% !important;
+    height: auto !important;
+    margin: 0.75rem 0 !important;
+  }
+  
+  .prose table,
+  .prose-lg table {
+    display: block !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+  
+  .prose pre,
+  .prose-lg pre {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    font-size: 0.75rem !important;
+    padding: 0.75rem !important;
+  }
+  
+  .prose blockquote,
+  .prose-lg blockquote {
+    padding-left: 0.75rem !important;
+    margin: 0.75rem 0 !important;
+  }
+  
+  .prose ul,
+  .prose ol,
+  .prose-lg ul,
+  .prose-lg ol {
+    padding-left: 1.25rem !important;
+  }
+}
+
+/* Gradient animation for hero text */
+@keyframes gradient-shift {
+  0%, 100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}

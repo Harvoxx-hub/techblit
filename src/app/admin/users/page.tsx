@@ -1,11 +1,12 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { collection, getDocs, doc, updateDoc, deleteDoc, addDoc } from 'firebase/firestore';
+import { collection, getDocs, doc, updateDoc, deleteDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import AdminLayout from '@/components/admin/AdminLayout';
-import { withAuth } from '@/contexts/AuthContext';
+import { withAuth, useAuth } from '@/contexts/AuthContext';
 import { User, UserRole } from '@/types/admin';
+import { useInvitation } from '@/hooks/useInvitation';
 import { 
   UsersIcon,
   PlusIcon,
@@ -17,13 +18,14 @@ import {
 import { Input, Dropdown, Button, Card, CardContent, DataTable, DataTableRow, Badge, Alert, Spinner, Modal, Textarea } from '@/components/ui';
 
 function UserManager() {
+  const { firebaseUser } = useAuth();
+  const { inviteUser: inviteUserApi, loading: inviteLoading, error: inviteError } = useInvitation();
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [roleFilter, setRoleFilter] = useState<UserRole | 'all'>('all');
   const [filteredUsers, setFilteredUsers] = useState<User[]>([]);
   const [showInviteModal, setShowInviteModal] = useState(false);
-  const [inviteLoading, setInviteLoading] = useState(false);
   const [inviteFormData, setInviteFormData] = useState({
     email: '',
     name: '',
@@ -138,31 +140,31 @@ function UserManager() {
       return;
     }
 
-    setInviteLoading(true);
-    
+    if (!firebaseUser) {
+      alert('You must be logged in to invite users');
+      return;
+    }
+
     try {
       // Check if user already exists
       const existingUser = users.find(user => user.email === inviteFormData.email);
       if (existingUser) {
         alert('A user with this email already exists');
-        setInviteLoading(false);
         return;
       }
 
-      // Create invitation record
-      const invitationData = {
-        email: inviteFormData.email,
-        name: inviteFormData.name,
-        role: inviteFormData.role,
-        message: inviteFormData.message,
-        invitedBy: 'current-user-id', // You'll need to get this from auth context
-        invitedAt: new Date(),
-        status: 'pending',
-        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
-      };
+      // Get auth token
+      const token = await firebaseUser.getIdToken();
 
-      // Add to invitations collection
-      await addDoc(collection(db, 'invitations'), invitationData);
+      // Call the invite API endpoint
+      await inviteUserApi(
+        {
+          email: inviteFormData.email,
+          name: inviteFormData.name,
+          role: inviteFormData.role,
+        },
+        token
+      );
 
       // Reset form and close modal
       setInviteFormData({
@@ -174,11 +176,18 @@ function UserManager() {
       setShowInviteModal(false);
       
       alert('Invitation sent successfully!');
+      
+      // Refresh users list
+      const usersSnapshot = await getDocs(collection(db, 'users'));
+      const usersData = usersSnapshot.docs.map(doc => ({ 
+        uid: doc.id, 
+        ...doc.data() 
+      } as User));
+      setUsers(usersData);
     } catch (error) {
       console.error('Error sending invitation:', error);
-      alert('Failed to send invitation');
-    } finally {
-      setInviteLoading(false);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to send invitation';
+      alert(errorMessage || 'Failed to send invitation');
     }
   };
 
@@ -391,6 +400,12 @@ function UserManager() {
               rows={3}
               helperText="Add a personal message to include in the invitation email"
             />
+            
+            {inviteError && (
+              <Alert variant="danger" className="mt-2">
+                {inviteError}
+              </Alert>
+            )}
             
             <div className="flex justify-end space-x-3 pt-4">
               <Button

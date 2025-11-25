@@ -125,17 +125,7 @@ function LoginForm() {
           </CardContent>
         </Card>
 
-        {/* Demo credentials */}
-        <Card>
-          <CardContent className="p-4">
-            <h3 className="text-sm font-medium text-gray-900 mb-2">Demo Credentials</h3>
-            <div className="text-xs text-gray-600 space-y-1">
-              <p><strong>Super Admin:</strong> admin@techblit.com / admin123</p>
-              <p><strong>Editor:</strong> editor@techblit.com / editor123</p>
-              <p><strong>Author:</strong> author@techblit.com / author123</p>
-            </div>
-          </CardContent>
-        </Card>
+      
       </div>
     </div>
   );

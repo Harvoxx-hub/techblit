@@ -161,8 +161,8 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
       <Navigation showBackButton={true} />
 
       {/* Blog Post Content with Side Banners */}
-      <div className="relative max-w-7xl mx-auto px-6 py-8">
-        <div className="relative flex gap-8">
+      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
+        <div className="relative flex flex-col xl:flex-row gap-4 xl:gap-8">
           {/* Left Banner - Only visible on large screens */}
           <div className="hidden xl:block xl:flex-shrink-0">
             <div className="sticky top-24">
@@ -179,11 +179,11 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
           </div>
 
           {/* Article Content */}
-          <article className="flex-1 max-w-4xl mx-auto">
-        <header className="mb-8">
-          <h1 className="text-4xl font-bold text-gray-900 mb-4">{post.title}</h1>
+          <article className="flex-1 max-w-4xl mx-auto w-full">
+        <header className="mb-6 sm:mb-8">
+          <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 mb-3 sm:mb-4 leading-tight">{post.title}</h1>
           
-          <div className="flex items-center text-sm text-gray-500 space-x-4 mb-6">
+          <div className="flex flex-col sm:flex-row sm:items-center text-xs sm:text-sm text-gray-500 gap-2 sm:gap-4 mb-4 sm:mb-6">
             {post.author && (
               <span>By {typeof post.author === 'string' ? post.author : post.author.name}</span>
             )}
@@ -196,11 +196,11 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
           
           {/* Featured Image */}
           {post.featuredImage && (
-            <div className="mb-6">
+            <div className="mb-4 sm:mb-6 -mx-4 sm:mx-0">
               <img
                 src={getImageUrl(post.featuredImage)}
                 alt={'alt' in post.featuredImage ? post.featuredImage.alt : post.title}
-                className="w-full h-64 object-cover rounded-lg"
+                className="w-full h-48 sm:h-64 md:h-80 object-cover rounded-lg sm:rounded-lg"
                 width={'original' in post.featuredImage ? post.featuredImage.original.width : post.featuredImage.width || 800}
                 height={'original' in post.featuredImage ? post.featuredImage.original.height : post.featuredImage.height || 400}
               />
@@ -209,27 +209,27 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
           
           {/* Excerpt */}
           {post.excerpt && (
-            <div className="text-lg text-gray-600 mb-6">
+            <div className="text-base sm:text-lg text-gray-600 mb-4 sm:mb-6">
               {post.excerpt}
             </div>
           )}
         </header>
 
-        <div className="bg-white rounded-lg shadow-sm p-8">
+        <div className="bg-white rounded-lg shadow-sm p-4 sm:p-6 md:p-8">
           {post.contentHtml ? (
             <div 
-              className="prose prose-lg max-w-none text-gray-900"
+              className="prose prose-sm sm:prose-base md:prose-lg max-w-none text-gray-900 prose-img:max-w-full prose-img:rounded-lg prose-img:my-4 prose-a:text-blue-600 prose-a:no-underline hover:prose-a:underline prose-strong:text-gray-900 prose-headings:text-gray-900 prose-p:text-gray-700 prose-li:text-gray-700"
               dangerouslySetInnerHTML={{ __html: post.contentHtml }}
             />
           ) : (
-            <div className="whitespace-pre-wrap text-gray-700 leading-relaxed">
+            <div className="whitespace-pre-wrap text-sm sm:text-base text-gray-700 leading-relaxed">
               {post.content}
             </div>
           )}
         </div>
 
         {/* Social Share */}
-        <div className="mt-12 mb-8">
+        <div className="mt-8 sm:mt-12 mb-6 sm:mb-8">
           <SocialShare 
             url={`https://techblit.com/${post.slug}`}
             title={post.title}
