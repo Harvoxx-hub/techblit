@@ -8,8 +8,7 @@ import NewsletterSection from '@/components/ui/NewsletterSection';
 import SideBanner from '@/components/ui/SideBanner';
 import { generatePostSEO, generateStructuredData } from '@/lib/seo';
 import { Metadata } from 'next';
-import { collection, query, where, getDocs, limit } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { adminDb } from '@/lib/firebase-admin';
 import { ProcessedImage } from '@/lib/imageProcessing';
 
 interface BlogPost {
@@ -19,6 +18,7 @@ interface BlogPost {
   content: string;
   contentHtml?: string;
   createdAt: any;
+  updatedAt?: any;
   author?: string | { uid: string; name: string };
   excerpt?: string;
   status?: string;
@@ -45,52 +45,40 @@ interface BlogPost {
   };
 }
 
+import { getCrawlableImageUrl } from '@/lib/imageUrlUtils';
+
 // Helper function to get image URL from either format
+// Uses getCrawlableImageUrl to ensure SEO-friendly, crawlable URLs
 function getImageUrl(image: ProcessedImage | { url: string; alt: string; width?: number; height?: number } | undefined): string {
   if (!image) return '';
-  if ('original' in image) return image.original.url;
-  return image.url;
+  
+  let url = '';
+  if ('original' in image) {
+    url = image.original.url;
+  } else {
+    url = image.url;
+  }
+  
+  // Convert to crawlable URL (removes tokens, converts to public URLs)
+  return getCrawlableImageUrl(url);
 }
 
-// Server-side function to fetch post data from Firebase
+// Server-side function to fetch post data from Firebase using Admin SDK
 async function getPost(slug: string): Promise<BlogPost | null> {
   try {
-    if (!db) {
-      console.error('Firebase not initialized');
+    if (!adminDb) {
+      console.error('Firebase Admin not initialized');
       return null;
     }
 
-    // Try to fetch from publicPosts collection first (optimized)
-    const publicPostsRef = collection(db, 'publicPosts');
-    const publicPostsQuery = query(
-      publicPostsRef,
-      where('slug', '==', slug),
-      limit(1)
-    );
+    // Fetch from posts collection
+    const postsSnapshot = await adminDb
+      .collection('posts')
+      .where('slug', '==', slug)
+      .where('status', '==', 'published')
+      .limit(1)
+      .get();
     
-    try {
-      const publicPostsSnapshot = await getDocs(publicPostsQuery);
-      if (!publicPostsSnapshot.empty) {
-        const postDoc = publicPostsSnapshot.docs[0];
-        return {
-          id: postDoc.id,
-          ...postDoc.data()
-        } as BlogPost;
-      }
-    } catch (publicPostsError) {
-      console.warn('Failed to fetch from publicPosts, falling back to posts collection:', publicPostsError);
-    }
-
-    // Fallback to posts collection
-    const postsRef = collection(db, 'posts');
-    const postsQuery = query(
-      postsRef,
-      where('slug', '==', slug),
-      where('status', '==', 'published'),
-      limit(1)
-    );
-    
-    const postsSnapshot = await getDocs(postsQuery);
     if (!postsSnapshot.empty) {
       const postDoc = postsSnapshot.docs[0];
       return {
@@ -105,6 +93,39 @@ async function getPost(slug: string): Promise<BlogPost | null> {
     return null;
   }
 }
+
+// Generate static params for SSG - fetch all published post slugs at build time
+export async function generateStaticParams() {
+  try {
+    if (!adminDb) {
+      console.warn('Firebase Admin not initialized, skipping static generation');
+      return [];
+    }
+
+    const slugs: { slug: string }[] = [];
+
+    // Fetch from posts collection
+    const postsSnapshot = await adminDb
+      .collection('posts')
+      .where('status', '==', 'published')
+      .get();
+    
+    postsSnapshot.forEach((doc) => {
+      const data = doc.data();
+      if (data.slug) {
+        slugs.push({ slug: data.slug });
+      }
+    });
+
+    return slugs;
+  } catch (error) {
+    console.error('Error generating static params:', error);
+    return [];
+  }
+}
+
+// Enable ISR (Incremental Static Regeneration) - revalidate every hour
+export const revalidate = 3600;
 
 // Generate metadata for the blog post
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
@@ -147,16 +168,19 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
     );
   }
 
-  // Generate structured data for SEO
-  const structuredData = generateStructuredData(post);
+  // Generate structured data for SEO (returns array of schemas)
+  const structuredDataSchemas = generateStructuredData(post);
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Structured Data */}
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
-      />
+      {/* Structured Data - Multiple schemas */}
+      {structuredDataSchemas.map((schema, index) => (
+        <script
+          key={index}
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
+        />
+      ))}
 
       <Navigation showBackButton={true} />
 
@@ -199,7 +223,11 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
             <div className="mb-4 sm:mb-6 -mx-4 sm:mx-0">
               <img
                 src={getImageUrl(post.featuredImage)}
-                alt={'alt' in post.featuredImage ? post.featuredImage.alt : post.title}
+                alt={
+                  'alt' in post.featuredImage && post.featuredImage.alt 
+                    ? post.featuredImage.alt 
+                    : `${post.title} - TechBlit${post.categories?.[0] ? ` coverage of ${post.categories[0]}` : ''}`
+                }
                 className="w-full h-48 sm:h-64 md:h-80 object-cover rounded-lg sm:rounded-lg"
                 width={'original' in post.featuredImage ? post.featuredImage.original.width : post.featuredImage.width || 800}
                 height={'original' in post.featuredImage ? post.featuredImage.original.height : post.featuredImage.height || 400}

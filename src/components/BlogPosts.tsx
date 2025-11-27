@@ -30,29 +30,7 @@ export default function BlogPosts() {
   useEffect(() => {
     const fetchPosts = async () => {
       try {
-        // Try to fetch from publicPosts collection first (optimized)
-        const publicPostsRef = collection(db, 'publicPosts');
-        const publicPostsQuery = query(
-          publicPostsRef,
-          orderBy('publishedAt', 'desc')
-        );
-        
-        try {
-          const publicPostsSnapshot = await getDocs(publicPostsQuery);
-          if (!publicPostsSnapshot.empty) {
-            const postsData = publicPostsSnapshot.docs.map(doc => ({
-              id: doc.id,
-              ...doc.data()
-            })) as BlogPost[];
-            
-            setPosts(postsData);
-            return; // Successfully fetched from publicPosts
-          }
-        } catch (publicPostsError) {
-          console.warn('Failed to fetch from publicPosts, falling back to posts collection:', publicPostsError);
-        }
-        
-        // Fallback to posts collection if publicPosts fails or is empty
+        // Fetch from posts collection
         const postsRef = collection(db, 'posts');
         const q = query(
           postsRef,

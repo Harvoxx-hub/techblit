@@ -45,8 +45,8 @@ export default function SuggestedArticles({
           return;
         }
 
-        // Try to fetch from publicPosts collection first
-        const publicPostsRef = collection(db, 'publicPosts');
+        // Fetch from posts collection
+        const postsRef = collection(db, 'posts');
         let suggestedQuery;
 
         // If we have categories or tags, try to find related posts
@@ -54,7 +54,7 @@ export default function SuggestedArticles({
           // First try to find posts with matching categories
           if (currentPostCategories.length > 0) {
             suggestedQuery = query(
-              publicPostsRef,
+              postsRef,
               where('categories', 'array-contains-any', currentPostCategories),
               where('status', '==', 'published'),
               orderBy('publishedAt', 'desc'),
@@ -64,7 +64,7 @@ export default function SuggestedArticles({
           // If no category matches, try tags
           else if (currentPostTags.length > 0) {
             suggestedQuery = query(
-              publicPostsRef,
+              postsRef,
               where('tags', 'array-contains-any', currentPostTags),
               where('status', '==', 'published'),
               orderBy('publishedAt', 'desc'),
@@ -73,10 +73,10 @@ export default function SuggestedArticles({
           }
         }
 
-        // If no specific query or it fails, get recent posts
+        // If no specific query, get recent posts
         if (!suggestedQuery) {
           suggestedQuery = query(
-            publicPostsRef,
+            postsRef,
             where('status', '==', 'published'),
             orderBy('publishedAt', 'desc'),
             limit(4)
@@ -96,7 +96,7 @@ export default function SuggestedArticles({
           // If we don't have enough posts, fetch more recent ones
           if (posts.length < 3) {
             const recentQuery = query(
-              publicPostsRef,
+              postsRef,
               where('status', '==', 'published'),
               orderBy('publishedAt', 'desc'),
               limit(6)
@@ -120,26 +120,8 @@ export default function SuggestedArticles({
 
           setSuggestedPosts(posts);
         } catch (error) {
-          console.warn('Failed to fetch from publicPosts, falling back to posts collection:', error);
-          
-          // Fallback to posts collection
-          const postsRef = collection(db, 'posts');
-          const fallbackQuery = query(
-            postsRef,
-            where('status', '==', 'published'),
-            orderBy('publishedAt', 'desc'),
-            limit(4)
-          );
-          
-          const fallbackSnapshot = await getDocs(fallbackQuery);
-          let fallbackPosts = fallbackSnapshot.docs.map(doc => ({
-            id: doc.id,
-            ...doc.data()
-          })) as BlogPost[];
-
-          // Filter out the current post
-          fallbackPosts = fallbackPosts.filter(post => post.id !== currentPostId);
-          setSuggestedPosts(fallbackPosts.slice(0, 3));
+          console.error('Error fetching suggested posts:', error);
+          setSuggestedPosts([]);
         }
       } catch (error) {
         console.error('Error fetching suggested posts:', error);

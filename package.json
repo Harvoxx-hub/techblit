@@ -2,6 +2,10 @@
   "name": "techblit",
   "version": "0.1.0",
   "private": true,
+  "engines": {
+    "node": ">=20.9.0",
+    "npm": ">=10.0.0"
+  },
   "scripts": {
     "dev": "next dev",
     "build": "next build",
@@ -59,6 +63,7 @@
     "algoliasearch": "^5.41.0",
     "clsx": "^2.1.1",
     "firebase": "^12.4.0",
+    "firebase-admin": "^13.6.0",
     "framer-motion": "^12.23.24",
     "lowlight": "^3.3.0",
     "next": "16.0.0",

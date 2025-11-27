@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { generateSitemapXML } from '@/lib/sitemap';
+import { generateSitemapXML, generateSitemap } from '@/lib/sitemap';
 
 const SITEMAP_GENERATOR_URL = 'https://generatesitemap-4alcog3g7q-uc.a.run.app/';
 
@@ -31,36 +31,52 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error('Error fetching sitemap from generator:', error);
     
-    // Return a basic sitemap if there's an error
-    const siteUrl = process.env.SITE_URL || 'https://techblit.com';
-    const fallbackSitemap = generateSitemapXML([
-      {
-        loc: siteUrl,
-        lastmod: new Date().toISOString(),
-        changefreq: 'daily',
-        priority: 1.0,
-      },
-      {
-        loc: `${siteUrl}/about`,
-        lastmod: new Date().toISOString(),
-        changefreq: 'monthly',
-        priority: 0.8,
-      },
-      {
-        loc: `${siteUrl}/blog`,
-        lastmod: new Date().toISOString(),
-        changefreq: 'daily',
-        priority: 0.9,
-      },
-    ]);
-    
-    return new NextResponse(fallbackSitemap, {
-      status: 200,
-      headers: {
-        'Content-Type': 'application/xml',
-        'Cache-Control': 'public, max-age=300, s-maxage=300', // Cache for 5 minutes on error
-      },
-    });
+    // Generate sitemap locally using Admin SDK (includes all articles)
+    try {
+      const sitemapUrls = await generateSitemap();
+      const fallbackSitemap = generateSitemapXML(sitemapUrls);
+      
+      return new NextResponse(fallbackSitemap, {
+        status: 200,
+        headers: {
+          'Content-Type': 'application/xml',
+          'Cache-Control': 'public, max-age=300, s-maxage=300', // Cache for 5 minutes on error
+        },
+      });
+    } catch (localError) {
+      console.error('Error generating local sitemap:', localError);
+      
+      // Ultimate fallback - basic static pages only
+      const siteUrl = process.env.SITE_URL || 'https://techblit.com';
+      const basicSitemap = generateSitemapXML([
+        {
+          loc: siteUrl,
+          lastmod: new Date().toISOString(),
+          changefreq: 'daily',
+          priority: 1.0,
+        },
+        {
+          loc: `${siteUrl}/about`,
+          lastmod: new Date().toISOString(),
+          changefreq: 'monthly',
+          priority: 0.8,
+        },
+        {
+          loc: `${siteUrl}/blog`,
+          lastmod: new Date().toISOString(),
+          changefreq: 'daily',
+          priority: 0.9,
+        },
+      ]);
+      
+      return new NextResponse(basicSitemap, {
+        status: 200,
+        headers: {
+          'Content-Type': 'application/xml',
+          'Cache-Control': 'public, max-age=300, s-maxage=300',
+        },
+      });
+    }
   }
 }
 

@@ -40,7 +40,6 @@ export const API_ENDPOINTS = {
   
   // Admin API - Post Migration
   migrateAllPublishedPosts: `${FUNCTIONS_URL}/migrateAllPublishedPosts`,
-  getPublicPostsStats: `${FUNCTIONS_URL}/getPublicPostsStats`,
   
   // Admin API - Audit Logs
   getAuditLogs: `${FUNCTIONS_URL}/getAuditLogs`,

@@ -1,5 +1,4 @@
-import { collection, getDocs, query, where, orderBy } from 'firebase/firestore';
-import { db } from './firebase';
+import { adminDb } from './firebase-admin';
 
 export interface SitemapUrl {
   loc: string;
@@ -47,51 +46,45 @@ export async function generateSitemap(): Promise<SitemapUrl[]> {
       priority: 0.9,
     });
 
-    // Fetch published blog posts
+    // Fetch published blog posts using Admin SDK
     let posts: BlogPost[] = [];
 
-    try {
-      // Try to fetch from publicPosts collection first (optimized)
-      const publicPostsRef = collection(db, 'publicPosts');
-      const publicPostsQuery = query(
-        publicPostsRef,
-        where('status', '==', 'published'),
-        orderBy('publishedAt', 'desc')
-      );
-      
-      const publicPostsSnapshot = await getDocs(publicPostsQuery);
-      if (!publicPostsSnapshot.empty) {
-        posts = publicPostsSnapshot.docs.map(doc => ({
+    if (adminDb) {
+      try {
+        const postsSnapshot = await adminDb
+          .collection('posts')
+          .where('status', '==', 'published')
+          .orderBy('publishedAt', 'desc')
+          .get();
+        
+        posts = postsSnapshot.docs.map(doc => ({
           id: doc.id,
           ...doc.data()
         })) as BlogPost[];
+      } catch (error) {
+        console.error('Error fetching posts for sitemap:', error);
       }
-    } catch (publicPostsError) {
-      console.warn('Failed to fetch from publicPosts, falling back to posts collection:', publicPostsError);
-      
-      // Fallback to posts collection
-      const postsRef = collection(db, 'posts');
-      const fallbackQuery = query(
-        postsRef,
-        where('status', '==', 'published'),
-        orderBy('publishedAt', 'desc')
-      );
-      
-      const postsSnapshot = await getDocs(fallbackQuery);
-      posts = postsSnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      })) as BlogPost[];
     }
 
     // Add blog post URLs with appropriate priority and lastmod
     posts.forEach((post) => {
-      const lastmod = post.updatedAt 
-        ? new Date(post.updatedAt.seconds * 1000).toISOString()
-        : new Date(post.publishedAt.seconds * 1000).toISOString();
+      // Helper to convert Firestore timestamp to Date
+      const toDate = (timestamp: any): Date => {
+        if (!timestamp) return new Date();
+        if (timestamp.toDate) return timestamp.toDate();
+        if (timestamp.seconds) return new Date(timestamp.seconds * 1000);
+        if (timestamp instanceof Date) return timestamp;
+        return new Date();
+      };
+
+      const publishedDate = toDate(post.publishedAt);
+      const updatedDate = toDate(post.updatedAt);
+      
+      // Use updatedAt if available, otherwise use publishedAt
+      const lastmod = (post.updatedAt ? updatedDate : publishedDate).toISOString();
       
       // Calculate priority based on post age and recency
-      const postAge = Date.now() - (post.publishedAt.seconds * 1000);
+      const postAge = Date.now() - publishedDate.getTime();
       const daysSincePublished = postAge / (1000 * 60 * 60 * 24);
       
       let priority = 0.7; // Default priority for blog posts
