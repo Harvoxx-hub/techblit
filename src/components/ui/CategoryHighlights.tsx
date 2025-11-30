@@ -56,26 +56,34 @@ export default function CategoryHighlights() {
   const getImageUrl = (imageData: any): string | null => {
     if (!imageData) return null;
     
-    if (typeof imageData === 'string') return imageData;
+    let url: string | null = null;
     
-    if (typeof imageData === 'object') {
+    if (typeof imageData === 'string') {
+      url = imageData;
+    } else if (typeof imageData === 'object') {
       // Handle ProcessedImage format with original, thumbnail, ogImage
-      if (imageData.original && imageData.original.url) return imageData.original.url;
-      if (imageData.thumbnail && imageData.thumbnail.url) return imageData.thumbnail.url;
-      if (imageData.ogImage && imageData.ogImage.url) return imageData.ogImage.url;
-      
+      if (imageData.original && imageData.original.url) url = imageData.original.url;
+      else if (imageData.thumbnail && imageData.thumbnail.url) url = imageData.thumbnail.url;
+      else if (imageData.ogImage && imageData.ogImage.url) url = imageData.ogImage.url;
       // Handle simple format
-      if (imageData.url) return imageData.url;
-      if (imageData.downloadURL) return imageData.downloadURL;
-      if (imageData.src) return imageData.src;
-      
-      if (typeof imageData.toString === 'function') {
-        const url = imageData.toString();
-        if (url.startsWith('http')) return url;
+      else if (imageData.url) url = imageData.url;
+      else if (imageData.downloadURL) url = imageData.downloadURL;
+      else if (imageData.src) url = imageData.src;
+      else if (typeof imageData.toString === 'function') {
+        const urlStr = imageData.toString();
+        if (urlStr.startsWith('http')) url = urlStr;
       }
     }
     
-    return null;
+    // Filter out WordPress URLs to prevent 403 errors
+    if (url && (url.includes('wp-content/uploads') || url.includes('www.techblit.com/wp-content'))) {
+      if (process.env.NODE_ENV === 'development') {
+        console.warn(`⚠️ Filtered out WordPress featured image URL: ${url}`);
+      }
+      return null;
+    }
+    
+    return url;
   };
 
   const getCategoryGradient = (category?: string) => {

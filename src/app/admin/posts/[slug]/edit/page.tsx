@@ -38,6 +38,7 @@ import Scheduling from '@/components/editor/Scheduling';
 import Preview from '@/components/editor/Preview';
 import FeaturedImageUpload from '@/components/editor/FeaturedImageUpload';
 import { uploadFeaturedImage } from '@/lib/imageUpload';
+import { sanitizeWordPressUrls } from '@/lib/imageUrlUtils';
 
 function EditPostEditor() {
   const router = useRouter();
@@ -144,8 +145,12 @@ function EditPostEditor() {
         finalStatus = 'scheduled';
       }
 
+      // Sanitize WordPress URLs from content before saving
+      const sanitizedContentHtml = post.contentHtml ? sanitizeWordPressUrls(post.contentHtml) : '';
+      
       const postData = {
         ...post,
+        contentHtml: sanitizedContentHtml,
         status: finalStatus,
         author: {
           name: user?.name || 'Unknown User',

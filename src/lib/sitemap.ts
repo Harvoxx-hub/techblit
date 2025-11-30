@@ -1,4 +1,6 @@
-import { adminDb } from './firebase-admin';
+import { adminDb, isAdminInitialized } from './firebase-admin';
+import { db } from './firebase';
+import { collection, query, where, orderBy, getDocs } from 'firebase/firestore';
 
 export interface SitemapUrl {
   loc: string;
@@ -46,11 +48,12 @@ export async function generateSitemap(): Promise<SitemapUrl[]> {
       priority: 0.9,
     });
 
-    // Fetch published blog posts using Admin SDK
+    // Fetch published blog posts - use Admin SDK in production, client SDK in local dev
     let posts: BlogPost[] = [];
 
-    if (adminDb) {
-      try {
+    try {
+      if (isAdminInitialized && adminDb) {
+        // Use Admin SDK (production)
         const postsSnapshot = await adminDb
           .collection('posts')
           .where('status', '==', 'published')
@@ -61,9 +64,23 @@ export async function generateSitemap(): Promise<SitemapUrl[]> {
           id: doc.id,
           ...doc.data()
         })) as BlogPost[];
-      } catch (error) {
-        console.error('Error fetching posts for sitemap:', error);
+      } else if (db) {
+        // Fallback to client SDK (local development)
+        const postsRef = collection(db, 'posts');
+        const postsQuery = query(
+          postsRef,
+          where('status', '==', 'published'),
+          orderBy('publishedAt', 'desc')
+        );
+        
+        const postsSnapshot = await getDocs(postsQuery);
+        posts = postsSnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        })) as BlogPost[];
       }
+    } catch (error) {
+      console.error('Error fetching posts for sitemap:', error);
     }
 
     // Add blog post URLs with appropriate priority and lastmod

@@ -10,7 +10,7 @@ import { Table } from '@tiptap/extension-table';
 import { TableRow } from '@tiptap/extension-table-row';
 import { TableCell } from '@tiptap/extension-table-cell';
 import { TableHeader } from '@tiptap/extension-table-header';
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { 
   BoldIcon, 
   ItalicIcon, 
@@ -28,6 +28,7 @@ import {
   ArrowUturnRightIcon
 } from '@heroicons/react/24/outline';
 import { Button } from '@/components/ui';
+import { sanitizeWordPressUrls } from '@/lib/imageUrlUtils';
 
 interface RichTextEditorProps {
   content: string;
@@ -49,6 +50,7 @@ export default function RichTextEditor({
   onImageUpload,
 }: RichTextEditorProps) {
   const [isPreviewMode, setIsPreviewMode] = useState(false);
+  const editorRef = useRef<HTMLDivElement>(null);
 
   const editor = useEditor({
     extensions: [
@@ -100,6 +102,7 @@ export default function RichTextEditor({
     editable: !isPreviewMode,
     immediatelyRender: false,
     onUpdate: ({ editor }) => {
+      // Pass content to parent - WordPress URLs will be sanitized on save
       onChange(editor.getHTML());
     },
     editorProps: {
@@ -158,6 +161,28 @@ export default function RichTextEditor({
       const embedHtml = `<div class="twitter-embed my-4"><blockquote class="twitter-tweet"><a href="${url}"></a></blockquote></div>`;
       editor?.chain().focus().insertContent(embedHtml).run();
     }
+  }, [editor]);
+
+  // Listen for paste events to detect WordPress URLs
+  useEffect(() => {
+    if (!editor) return;
+
+    const handlePaste = (event: ClipboardEvent) => {
+      const html = event.clipboardData?.getData('text/html');
+      if (html && sanitizeWordPressUrls(html) !== html) {
+        // WordPress URLs detected - they'll be sanitized in onUpdate
+        setTimeout(() => {
+          console.warn('⚠️ WordPress image URLs detected in pasted content. They will be automatically removed. Please use the image upload button to add images.');
+        }, 100);
+      }
+    };
+
+    const editorElement = editor.view.dom;
+    editorElement.addEventListener('paste', handlePaste);
+
+    return () => {
+      editorElement.removeEventListener('paste', handlePaste);
+    };
   }, [editor]);
 
   if (!editor) {

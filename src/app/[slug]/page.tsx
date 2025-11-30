@@ -8,7 +8,9 @@ import NewsletterSection from '@/components/ui/NewsletterSection';
 import SideBanner from '@/components/ui/SideBanner';
 import { generatePostSEO, generateStructuredData } from '@/lib/seo';
 import { Metadata } from 'next';
-import { adminDb } from '@/lib/firebase-admin';
+import { adminDb, isAdminInitialized } from '@/lib/firebase-admin';
+import { db } from '@/lib/firebase';
+import { collection, query, where, getDocs, limit } from 'firebase/firestore';
 import { ProcessedImage } from '@/lib/imageProcessing';
 
 interface BlogPost {
@@ -45,7 +47,7 @@ interface BlogPost {
   };
 }
 
-import { getCrawlableImageUrl } from '@/lib/imageUrlUtils';
+import { getCrawlableImageUrl, sanitizeWordPressUrls } from '@/lib/imageUrlUtils';
 
 // Helper function to get image URL from either format
 // Uses getCrawlableImageUrl to ensure SEO-friendly, crawlable URLs
@@ -63,28 +65,49 @@ function getImageUrl(image: ProcessedImage | { url: string; alt: string; width?:
   return getCrawlableImageUrl(url);
 }
 
-// Server-side function to fetch post data from Firebase using Admin SDK
+// Server-side function to fetch post data from Firebase
+// Uses Admin SDK in production, falls back to client SDK in local development
 async function getPost(slug: string): Promise<BlogPost | null> {
   try {
-    if (!adminDb) {
-      console.error('Firebase Admin not initialized');
-      return null;
-    }
+    // Try Admin SDK first (for production)
+    if (isAdminInitialized && adminDb) {
+      const postsSnapshot = await adminDb
+        .collection('posts')
+        .where('slug', '==', slug)
+        .where('status', '==', 'published')
+        .limit(1)
+        .get();
+      
+      if (!postsSnapshot.empty) {
+        const postDoc = postsSnapshot.docs[0];
+        return {
+          id: postDoc.id,
+          ...postDoc.data()
+        } as BlogPost;
+      }
+    } else {
+      // Fallback to client SDK for local development
+      if (!db) {
+        console.error('Firebase not initialized');
+        return null;
+      }
 
-    // Fetch from posts collection
-    const postsSnapshot = await adminDb
-      .collection('posts')
-      .where('slug', '==', slug)
-      .where('status', '==', 'published')
-      .limit(1)
-      .get();
-    
-    if (!postsSnapshot.empty) {
-      const postDoc = postsSnapshot.docs[0];
-      return {
-        id: postDoc.id,
-        ...postDoc.data()
-      } as BlogPost;
+      const postsRef = collection(db, 'posts');
+      const postsQuery = query(
+        postsRef,
+        where('slug', '==', slug),
+        where('status', '==', 'published'),
+        limit(1)
+      );
+      
+      const postsSnapshot = await getDocs(postsQuery);
+      if (!postsSnapshot.empty) {
+        const postDoc = postsSnapshot.docs[0];
+        return {
+          id: postDoc.id,
+          ...postDoc.data()
+        } as BlogPost;
+      }
     }
 
     return null;
@@ -97,25 +120,40 @@ async function getPost(slug: string): Promise<BlogPost | null> {
 // Generate static params for SSG - fetch all published post slugs at build time
 export async function generateStaticParams() {
   try {
-    if (!adminDb) {
-      console.warn('Firebase Admin not initialized, skipping static generation');
-      return [];
-    }
-
     const slugs: { slug: string }[] = [];
 
-    // Fetch from posts collection
-    const postsSnapshot = await adminDb
-      .collection('posts')
-      .where('status', '==', 'published')
-      .get();
-    
-    postsSnapshot.forEach((doc) => {
-      const data = doc.data();
-      if (data.slug) {
-        slugs.push({ slug: data.slug });
-      }
-    });
+    // Try Admin SDK first (for production)
+    if (isAdminInitialized && adminDb) {
+      const postsSnapshot = await adminDb
+        .collection('posts')
+        .where('status', '==', 'published')
+        .get();
+      
+      postsSnapshot.forEach((doc) => {
+        const data = doc.data();
+        if (data.slug) {
+          slugs.push({ slug: data.slug });
+        }
+      });
+    } else if (db) {
+      // Fallback to client SDK for local development
+      const postsRef = collection(db, 'posts');
+      const postsQuery = query(
+        postsRef,
+        where('status', '==', 'published')
+      );
+      
+      const postsSnapshot = await getDocs(postsQuery);
+      postsSnapshot.forEach((doc) => {
+        const data = doc.data();
+        if (data.slug) {
+          slugs.push({ slug: data.slug });
+        }
+      });
+    } else {
+      console.warn('Firebase not initialized, skipping static generation');
+      return [];
+    }
 
     return slugs;
   } catch (error) {
@@ -247,11 +285,11 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
           {post.contentHtml ? (
             <div 
               className="prose prose-sm sm:prose-base md:prose-lg max-w-none text-gray-900 prose-img:max-w-full prose-img:rounded-lg prose-img:my-4 prose-a:text-blue-600 prose-a:no-underline hover:prose-a:underline prose-strong:text-gray-900 prose-headings:text-gray-900 prose-p:text-gray-700 prose-li:text-gray-700"
-              dangerouslySetInnerHTML={{ __html: post.contentHtml }}
+              dangerouslySetInnerHTML={{ __html: sanitizeWordPressUrls(post.contentHtml) }}
             />
           ) : (
             <div className="whitespace-pre-wrap text-sm sm:text-base text-gray-700 leading-relaxed">
-              {post.content}
+              {sanitizeWordPressUrls(post.content)}
             </div>
           )}
         </div>

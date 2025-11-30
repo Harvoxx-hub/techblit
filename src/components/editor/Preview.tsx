@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { EyeIcon, DocumentTextIcon, DevicePhoneMobileIcon, ComputerDesktopIcon, DeviceTabletIcon, LinkIcon, ClipboardDocumentIcon } from '@heroicons/react/24/outline';
 import { Button } from '@/components/ui';
 import { usePreviewToken } from '@/hooks/usePreviewToken';
+import { sanitizeWordPressUrls } from '@/lib/imageUrlUtils';
 
 interface PreviewProps {
   title: string;
@@ -311,7 +312,7 @@ export default function Preview({
               {/* Content */}
               <div 
                 className="prose prose-lg max-w-none preview-content"
-                dangerouslySetInnerHTML={{ __html: content || '<p>No content yet...</p>' }}
+                dangerouslySetInnerHTML={{ __html: sanitizeWordPressUrls(content || '<p>No content yet...</p>') }}
               />
 
               {/* Meta Description Preview */}

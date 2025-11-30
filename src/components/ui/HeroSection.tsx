@@ -116,32 +116,38 @@ export default function HeroSection({ mainPost, secondaryPosts }: HeroSectionPro
   const getImageUrl = (imageData: any, preferThumbnail: boolean = false): string | null => {
     if (!imageData) return null;
     
-    // If it's already a string URL, return it
-    if (typeof imageData === 'string') return imageData;
+    let url: string | null = null;
     
-    // If it's an object, try to extract URL
-    if (typeof imageData === 'object') {
+    // If it's already a string URL, return it
+    if (typeof imageData === 'string') {
+      url = imageData;
+    } else if (typeof imageData === 'object') {
       // Handle ProcessedImage format - prefer thumbnail for smaller displays
       if (imageData.thumbnail?.url && preferThumbnail) {
-        return imageData.thumbnail.url;
+        url = imageData.thumbnail.url;
+      } else if (imageData.original?.url) {
+        url = imageData.original.url;
       }
-      if (imageData.original?.url) {
-        return imageData.original.url;
-      }
-      
       // Legacy Firebase storage reference
-      if (imageData.url) return imageData.url;
-      if (imageData.downloadURL) return imageData.downloadURL;
-      if (imageData.src) return imageData.src;
-      
+      else if (imageData.url) url = imageData.url;
+      else if (imageData.downloadURL) url = imageData.downloadURL;
+      else if (imageData.src) url = imageData.src;
       // If it has a toString method, try that
-      if (typeof imageData.toString === 'function') {
-        const url = imageData.toString();
-        if (url.startsWith('http')) return url;
+      else if (typeof imageData.toString === 'function') {
+        const urlStr = imageData.toString();
+        if (urlStr.startsWith('http')) url = urlStr;
       }
     }
     
-    return null;
+    // Filter out WordPress URLs to prevent 403 errors
+    if (url && (url.includes('wp-content/uploads') || url.includes('www.techblit.com/wp-content'))) {
+      if (process.env.NODE_ENV === 'development') {
+        console.warn(`⚠️ Filtered out WordPress featured image URL: ${url}`);
+      }
+      return null;
+    }
+    
+    return url;
   };
 
 

@@ -30,6 +30,7 @@ import FeaturedImageUpload from '@/components/editor/FeaturedImageUpload';
 import { uploadFeaturedImage } from '@/lib/imageUpload';
 import { useAutoSave, useAutoSaveIndicator } from '@/hooks/useAutoSave';
 import { CATEGORY_OPTIONS } from '@/lib/categories';
+import { sanitizeWordPressUrls } from '@/lib/imageUrlUtils';
 
 function NewPostEditor() {
   const router = useRouter();
@@ -162,8 +163,12 @@ function NewPostEditor() {
         finalStatus = 'scheduled';
       }
 
+      // Sanitize WordPress URLs from content before saving
+      const sanitizedContentHtml = post.contentHtml ? sanitizeWordPressUrls(post.contentHtml) : '';
+      
       const postData = {
         ...post,
+        contentHtml: sanitizedContentHtml,
         status: finalStatus,
         author: {
           name: user?.name || 'Unknown User',

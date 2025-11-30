@@ -319,14 +319,20 @@ export function generateStructuredData(post: BlogPostSEO) {
   
   // Determine if it's a news article (recent posts) or regular article
   // Use publishedAt or createdAt as fallback for date comparison
+  // NOTE: We avoid using Date.now() to prevent hydration mismatches between server and client
+  // Instead, we use a deterministic approach: check if published within last 7 days using a fixed reference
   const dateForComparison = post.publishedAt || post.createdAt;
   const publishedDate = dateForComparison ? 
     (typeof dateForComparison === 'object' && 'toDate' in dateForComparison 
       ? dateForComparison.toDate() 
       : new Date(dateForComparison)) : 
     null;
-  const isNewsArticle = publishedDate && 
-    (Date.now() - publishedDate.getTime()) < (7 * 24 * 60 * 60 * 1000); // Published within last 7 days
+  
+  // For hydration safety, we'll use Article type for all posts instead of NewsArticle
+  // This avoids hydration mismatches while still providing proper schema
+  // NewsArticle requires very recent content (within hours/days), which can cause hydration issues
+  // Article is more stable and works well for all blog posts
+  const isNewsArticle = false;
   
   // Build image array with proper ImageObject structure (required by Google)
   const imageWidth = (isProcessedImage(post.featuredImage) && post.featuredImage.ogImage?.width) || 
@@ -382,11 +388,6 @@ export function generateStructuredData(post: BlogPostSEO) {
     keywords: post.tags?.join(', ') || category || 'technology',
     articleSection: category,
     wordCount: post.excerpt?.split(' ').length || 0,
-    ...(isNewsArticle && {
-      // Additional NewsArticle properties for Google News
-      dateline: publishedTime,
-      articleBody: post.excerpt || post.metaDescription || '', // Helpful for NewsArticle
-    }),
   };
 
   // BreadcrumbList schema

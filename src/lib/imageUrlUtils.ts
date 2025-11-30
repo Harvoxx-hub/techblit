@@ -101,11 +101,16 @@ export function convertToPublicUrl(tokenUrl: string): string | null {
  * 
  * Priority:
  * 1. Already public CDN URL (best)
- * 2. Converted public Firebase Storage URL (if file is public)
- * 3. Original URL (fallback - may not be crawlable)
+ * 2. Original token URL (works but not optimal for SEO)
+ * 3. Original URL (fallback)
+ * 
+ * Note: We don't convert to public URLs automatically because:
+ * - Files may not be public in Firebase Storage
+ * - Public URL conversion can fail with access denied errors
+ * - Token URLs work fine for display, just not optimal for SEO
  * 
  * @param url - The image URL to process
- * @returns The best crawlable URL, or original if conversion not possible
+ * @returns The original URL (token URLs are kept as-is to avoid access errors)
  */
 export function getCrawlableImageUrl(url: string): string {
   if (!url) return url;
@@ -115,31 +120,18 @@ export function getCrawlableImageUrl(url: string): string {
     return url;
   }
   
-  // Try to convert token-based URL to public URL
+  // For token-based URLs, keep the original URL
+  // Token URLs work for display, they're just not crawlable by Google
+  // Converting to public URLs can fail if files aren't public
   if (isTokenBasedUrl(url)) {
-    const publicUrl = convertToPublicUrl(url);
-    if (publicUrl) {
-      // Log warning in development
-      if (process.env.NODE_ENV === 'development') {
-        console.warn(
-          '⚠️ SEO Warning: Image URL converted from token-based to public URL.\n' +
-          `Original: ${url}\n` +
-          `Public: ${publicUrl}\n` +
-          'Note: Ensure the file is actually public in Firebase Storage for this to work.'
-        );
-      }
-      return publicUrl;
-    }
-    
-    // If conversion failed, log warning
+    // In development, log a note (not a warning since this is expected)
     if (process.env.NODE_ENV === 'development') {
-      console.warn(
-        '⚠️ SEO Warning: Image uses token-based Firebase Storage URL.\n' +
-        `URL: ${url}\n` +
-        'This may slow down Google image indexing.\n' +
-        'Recommendation: Use a CDN (Cloudflare R2, Vercel Blob, Uploadthing) or make files public in Firebase Storage.'
+      console.log(
+        'ℹ️ Image uses token-based Firebase Storage URL (works for display, not optimal for SEO).\n' +
+        'To improve SEO: Make files public in Firebase Storage or use a CDN.'
       );
     }
+    return url; // Return original token URL to avoid access errors
   }
   
   // Blob URLs are not crawlable
@@ -185,5 +177,68 @@ export function isCrawlableUrl(url: string): boolean {
   }
   
   return true;
+}
+
+/**
+ * Check if a URL is a WordPress URL (old site)
+ */
+export function isWordPressUrl(url: string): boolean {
+  if (!url) return false;
+  
+  // Check for WordPress URL patterns
+  if (url.includes('wp-content/uploads')) return true;
+  if (url.includes('www.techblit.com/wp-content')) return true;
+  if (url.includes('techblit.com/wp-content')) return true;
+  
+  return false;
+}
+
+/**
+ * Sanitize HTML content by removing or replacing WordPress image URLs
+ * This prevents 403 errors from trying to load images from the old WordPress site
+ * 
+ * @param html - The HTML content to sanitize
+ * @param replacement - What to replace WordPress URLs with (default: empty string to remove images)
+ * @returns Sanitized HTML with WordPress image URLs removed or replaced
+ */
+export function sanitizeWordPressUrls(html: string, replacement: string = ''): string {
+  if (!html) return html;
+  
+  // Use regex to find and replace WordPress image URLs in img src attributes
+  // Pattern matches: <img ... src="https://www.techblit.com/wp-content/..." ...>
+  const wordPressImagePattern = /<img([^>]*)\s+src=["'](https?:\/\/(www\.)?techblit\.com\/wp-content\/[^"']+)["']([^>]*)>/gi;
+  
+  const sanitized = html.replace(wordPressImagePattern, (match, before, src, www, after) => {
+    // Log the removal in development
+    if (process.env.NODE_ENV === 'development') {
+      console.warn(
+        `⚠️ Removed WordPress image URL from content:\n` +
+        `URL: ${src}\n` +
+        `This image was removed to prevent 403 errors. Please re-upload images to Firebase Storage.`
+      );
+    }
+    
+    // If replacement is provided, use it; otherwise remove the entire img tag
+    if (replacement) {
+      return `<img${before} src="${replacement}"${after}>`;
+    }
+    
+    // Remove the entire img tag
+    return '';
+  });
+  
+  // Also handle background-image URLs in style attributes
+  const backgroundImagePattern = /style=["']([^"']*background-image:\s*url\(["']?https?:\/\/(www\.)?techblit\.com\/wp-content\/[^"')]+["']?\)[^"']*)["']/gi;
+  
+  return sanitized.replace(backgroundImagePattern, (match, styleContent) => {
+    if (process.env.NODE_ENV === 'development') {
+      console.warn(
+        `⚠️ Removed WordPress background-image URL from content:\n` +
+        `Style: ${styleContent}`
+      );
+    }
+    // Remove the background-image property
+    return `style="${styleContent.replace(/background-image:\s*url\([^)]+\);\s*/gi, '')}"`;
+  });
 }
 

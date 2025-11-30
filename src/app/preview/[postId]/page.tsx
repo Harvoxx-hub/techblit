@@ -6,6 +6,7 @@ import Navigation from '@/components/ui/Navigation';
 import Footer from '@/components/ui/Footer';
 import Link from 'next/link';
 import { ProcessedImage } from '@/lib/imageProcessing';
+import { sanitizeWordPressUrls } from '@/lib/imageUrlUtils';
 
 interface BlogPost {
   id: string;
@@ -289,11 +290,11 @@ export default function PreviewPage() {
               <div 
                 className="prose prose-lg max-w-none preview-content"
                 style={{ color: '#000000 !important' }}
-                dangerouslySetInnerHTML={{ __html: post.contentHtml }}
+                dangerouslySetInnerHTML={{ __html: sanitizeWordPressUrls(post.contentHtml) }}
               />
             ) : (
               <div className="whitespace-pre-wrap text-gray-700 leading-relaxed">
-                {post.content || 'No content available.'}
+                {sanitizeWordPressUrls(post.content || 'No content available.')}
               </div>
             )}
           </div>
