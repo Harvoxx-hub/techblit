@@ -32,7 +32,7 @@ export default function BlogPosts() {
         const postsData = await apiService.getPosts({ limit: 20 });
         // Map Post to BlogPost format
         const mappedPosts: BlogPost[] = postsData.map((post) => ({
-          id: post.id || post.slug,
+          id: post.id || post.slug, 
           title: post.title,
           slug: post.slug,
           content: post.contentHtml || '',
