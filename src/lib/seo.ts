@@ -101,14 +101,30 @@ export function generatePostSEO(post: BlogPostSEO): Metadata {
   let ogImageAlt = post.title;
   
   if (post.featuredImage) {
-    // Check if it's a ProcessedImage format with OG image
-    if (isProcessedImage(post.featuredImage) && post.featuredImage.ogImage?.url) {
-      ogImage = getCrawlableImageUrl(post.featuredImage.ogImage.url);
-      ogImageAlt = post.title; // ProcessedImage doesn't have alt, use title
-    } else if (isLegacyImage(post.featuredImage) && post.featuredImage.url) {
-      // Fallback to legacy format - convert to crawlable URL
-      ogImage = getCrawlableImageUrl(post.featuredImage.url);
-      ogImageAlt = post.featuredImage.alt || post.title;
+    // Import Cloudinary helper for social images
+    const { getSocialImageUrl } = require('./imageHelpers');
+    
+    // Try to get social image URL (uses Cloudinary social preset if public_id)
+    const socialImageUrl = getSocialImageUrl(post.featuredImage);
+    if (socialImageUrl) {
+      ogImage = socialImageUrl;
+      ogImageAlt = (typeof post.featuredImage === 'object' && 'alt' in post.featuredImage) 
+        ? post.featuredImage.alt || post.title
+        : post.title;
+    } else {
+      // Fallback to crawlable URL (handles legacy formats)
+      const crawlableUrl = getCrawlableImageUrl(
+        isProcessedImage(post.featuredImage) ? post.featuredImage.ogImage?.url : 
+        isLegacyImage(post.featuredImage) ? post.featuredImage.url : 
+        typeof post.featuredImage === 'string' ? post.featuredImage : null,
+        { width: 1200, height: 630, crop: 'fill' }
+      );
+      if (crawlableUrl) {
+        ogImage = crawlableUrl;
+        ogImageAlt = isLegacyImage(post.featuredImage) && post.featuredImage.alt 
+          ? post.featuredImage.alt 
+          : post.title;
+      }
     }
   }
   

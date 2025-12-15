@@ -37,7 +37,6 @@ import {
   FireIcon,
   NewspaperIcon,
   ChevronDownIcon,
-  PlusIcon,
   BoltIcon,
   ShieldCheckIcon,
   CurrencyDollarIcon,
@@ -46,110 +45,6 @@ import {
   ScaleIcon,
   RocketLaunchIcon
 } from '@heroicons/react/24/outline';
-
-// Dummy data for seeding
-const DUMMY_STORIES: Omit<GrokStory, 'id'>[] = [
-  {
-    title: "Flutterwave Launches New Payment Gateway for SMEs in Nigeria",
-    summary: "Flutterwave has unveiled a new payment solution targeting small and medium enterprises across Nigeria, promising lower transaction fees and faster settlement times. The move is expected to boost digital payments adoption among smaller businesses.",
-    category: "Company News",
-    x_post_ids: ["1876543210987654321"],
-    primary_link: "https://x.com/flaborone/status/1876543210987654321",
-    engagement_score: 4520,
-    author_handles: ["@Aborode", "@techcabal"],
-    first_seen_at: new Date(Date.now() - 2 * 60 * 60 * 1000),
-    fetched_at: new Date(),
-    status: "new"
-  },
-  {
-    title: "Moniepoint Raises $110M Series C to Expand Across Africa",
-    summary: "Nigerian fintech giant Moniepoint has secured $110 million in Series C funding led by Development Partners International. The funding will fuel expansion into new African markets and enhance their business banking platform.",
-    category: "Funding & Investments",
-    x_post_ids: ["1876543210987654322"],
-    primary_link: "https://x.com/moaborode/status/1876543210987654322",
-    engagement_score: 8930,
-    author_handles: ["@moniepoint", "@techcrunch"],
-    first_seen_at: new Date(Date.now() - 5 * 60 * 60 * 1000),
-    fetched_at: new Date(),
-    status: "new"
-  },
-  {
-    title: "Breaking: Major Outage Hits Nigerian Banking Apps",
-    summary: "Several major Nigerian banking applications are experiencing widespread outages affecting millions of customers. Banks including GTBank, Access Bank, and Zenith Bank have acknowledged the issues and are working on restoration.",
-    category: "Breaking News",
-    x_post_ids: ["1876543210987654323"],
-    primary_link: "https://x.com/bankservices/status/1876543210987654323",
-    engagement_score: 15420,
-    author_handles: ["@naborode", "@paborode"],
-    first_seen_at: new Date(Date.now() - 30 * 60 * 1000),
-    fetched_at: new Date(),
-    status: "new"
-  },
-  {
-    title: "CBN Announces New Crypto Regulations for Nigerian Fintechs",
-    summary: "The Central Bank of Nigeria has released new regulatory guidelines for cryptocurrency operations within licensed fintech companies. The framework provides clarity on licensing requirements and compliance standards.",
-    category: "Regulatory & Policy Changes",
-    x_post_ids: ["1876543210987654324"],
-    primary_link: "https://x.com/cbnregulations/status/1876543210987654324",
-    engagement_score: 6780,
-    author_handles: ["@caborode", "@naborode"],
-    first_seen_at: new Date(Date.now() - 12 * 60 * 60 * 1000),
-    fetched_at: new Date(),
-    status: "draft_created",
-    draft_body: "The Central Bank of Nigeria (CBN) has taken a significant step in regulating the cryptocurrency space with new guidelines for fintech companies...",
-    draft_title: "CBN's New Crypto Framework: What Nigerian Fintechs Need to Know",
-    published_post_id: "sample-draft-123"
-  },
-  {
-    title: "Andela Expands AI Training Programs to Lagos Tech Hub",
-    summary: "Andela announces expansion of its AI and machine learning training programs to its Lagos tech hub, aiming to train 5,000 developers in cutting-edge AI technologies over the next two years.",
-    category: "Emerging Technologies",
-    x_post_ids: ["1876543210987654325"],
-    primary_link: "https://x.com/andela/status/1876543210987654325",
-    engagement_score: 3240,
-    author_handles: ["@andela", "@lagostechhub"],
-    first_seen_at: new Date(Date.now() - 24 * 60 * 60 * 1000),
-    fetched_at: new Date(),
-    status: "new"
-  },
-  {
-    title: "Paystack Introduces Instant Settlements for Nigerian Merchants",
-    summary: "Paystack has launched instant settlement feature allowing Nigerian merchants to receive payments within minutes instead of the standard T+1 settlement. The feature is available to verified business accounts.",
-    category: "Product Launches & Reviews",
-    x_post_ids: ["1876543210987654326"],
-    primary_link: "https://x.com/paystack/status/1876543210987654326",
-    engagement_score: 5670,
-    author_handles: ["@paystack"],
-    first_seen_at: new Date(Date.now() - 8 * 60 * 60 * 1000),
-    fetched_at: new Date(),
-    status: "new"
-  },
-  {
-    title: "Data Breach Alert: Nigerian E-commerce Platform Compromised",
-    summary: "A major Nigerian e-commerce platform has suffered a data breach potentially affecting millions of customers. Users are advised to change passwords and monitor their accounts for suspicious activity.",
-    category: "Security & Hacking",
-    x_post_ids: ["1876543210987654327"],
-    primary_link: "https://x.com/securityalert/status/1876543210987654327",
-    engagement_score: 12100,
-    author_handles: ["@cybersecng", "@techsecurityng"],
-    first_seen_at: new Date(Date.now() - 4 * 60 * 60 * 1000),
-    fetched_at: new Date(),
-    status: "new"
-  },
-  {
-    title: "Opay Dominates Nigerian Mobile Money Market with 60% Share",
-    summary: "New report shows Opay now controls 60% of Nigeria's mobile money market, processing over ₦5 trillion monthly. The company attributes growth to agent network expansion and competitive pricing.",
-    category: "Trending Stories",
-    x_post_ids: ["1876543210987654328"],
-    primary_link: "https://x.com/opay/status/1876543210987654328",
-    engagement_score: 7890,
-    author_handles: ["@opay_ng", "@fintechng"],
-    first_seen_at: new Date(Date.now() - 18 * 60 * 60 * 1000),
-    fetched_at: new Date(),
-    status: "published",
-    published_post_id: "sample-post-123"
-  }
-];
 
 // Category icons mapping
 const CATEGORY_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
@@ -315,14 +210,192 @@ const generateSlug = (title: string): string => {
     .trim();
 };
 
+// Helper: Construct Twitter/X URL from tweet ID
+/**
+ * Extract tweet ID from Twitter/X URL
+ */
+const extractTweetIdFromUrl = (url: string): string | null => {
+  if (!url || typeof url !== 'string') return null;
+  
+  const cleanUrl = url.split('?')[0].split('#')[0].trim();
+  
+  const patterns = [
+    /(?:twitter\.com|x\.com)\/(?:\w+\/)?status\/(\d+)/i,
+    /(?:twitter\.com|x\.com)\/i\/web\/status\/(\d+)/i,
+    /\/status\/(\d+)/i
+  ];
+  
+  for (const pattern of patterns) {
+    const match = cleanUrl.match(pattern);
+    if (match && match[1]) {
+      return match[1];
+    }
+  }
+  
+  return null;
+};
+
+/**
+ * Detect placeholder/fake tweet IDs
+ */
+const isPlaceholderTweetId = (tweetId: string): boolean => {
+  if (!tweetId || typeof tweetId !== 'string') return true;
+  
+  const cleanId = tweetId.trim();
+  
+  // Check for common placeholder patterns
+  const placeholderPatterns = [
+    /^1234567890+/,           // Starts with 1234567890...
+    /^12345+$/,                // All 12345...
+    /^(\d)\1{14,19}$/,         // All same digit
+    /^123456789012345/,        // Common placeholder sequence
+    /^(\d)\1{10,}$/,           // Repeated single digit
+    /^123\d{12,17}$/,          // Starts with 123 followed by digits
+    /^(\d{2})\1{7,9}$/,        // Repeated 2-digit pattern
+    /^(\d{3})\1{4,6}$/,        // Repeated 3-digit pattern
+    /^(\d{4})\1{3,4}$/,        // Repeated 4-digit pattern
+    /^(\d{5})\1{2,3}$/         // Repeated 5-digit pattern
+  ];
+  
+  for (const pattern of placeholderPatterns) {
+    if (pattern.test(cleanId)) {
+      return true;
+    }
+  }
+  
+  // Check for sequential ascending pattern
+  if (cleanId.length >= 15) {
+    let sequentialCount = 0;
+    let maxSequential = 0;
+    for (let i = 1; i < cleanId.length; i++) {
+      const prev = parseInt(cleanId[i - 1]);
+      const curr = parseInt(cleanId[i]);
+      if (curr === (prev + 1) % 10 || (prev === 9 && curr === 0)) {
+        sequentialCount++;
+        maxSequential = Math.max(maxSequential, sequentialCount);
+      } else {
+        sequentialCount = 0;
+      }
+    }
+    // If more than 10 sequential digits, likely a placeholder
+    if (maxSequential >= 10) {
+      return true;
+    }
+  }
+  
+  return false;
+};
+
+/**
+ * Validate if a string is a valid Twitter tweet ID
+ */
+const isValidTweetId = (tweetId: string): boolean => {
+  if (!tweetId || typeof tweetId !== 'string') return false;
+  const cleanId = tweetId.trim();
+  
+  // Must be numeric and between 15-20 digits
+  if (!/^\d{15,20}$/.test(cleanId)) {
+    return false;
+  }
+  
+  // Check for placeholder patterns
+  if (isPlaceholderTweetId(cleanId)) {
+    console.warn('Detected placeholder tweet ID:', cleanId);
+    return false;
+  }
+  
+  return true;
+};
+
+/**
+ * Validate Twitter/X URL
+ */
+const isValidTwitterUrl = (url: string): boolean => {
+  if (!url || typeof url !== 'string') return false;
+  
+  const cleanUrl = url.trim().toLowerCase();
+  
+  if (!cleanUrl.startsWith('http://') && !cleanUrl.startsWith('https://')) {
+    return false;
+  }
+  
+  if (!cleanUrl.includes('twitter.com') && !cleanUrl.includes('x.com')) {
+    return false;
+  }
+  
+  // Reject placeholder/example URLs
+  if (cleanUrl.includes('example.com') || 
+      cleanUrl.includes('placeholder') ||
+      cleanUrl.includes('test.com') ||
+      cleanUrl.includes('dummy')) {
+    return false;
+  }
+  
+  const tweetId = extractTweetIdFromUrl(url);
+  return tweetId !== null && isValidTweetId(tweetId);
+};
+
+/**
+ * Construct Twitter/X URL from tweet ID
+ */
+const constructTwitterUrl = (tweetId: string): string => {
+  if (!tweetId) return '';
+  const cleanId = String(tweetId).trim();
+  if (!isValidTweetId(cleanId)) {
+    console.warn('Invalid tweet ID format:', cleanId);
+    return '';
+  }
+  return `https://x.com/i/web/status/${cleanId}`;
+};
+
+/**
+ * Get the primary link for a story with step-by-step validation
+ * 1. Validate primary_link if it exists
+ * 2. Extract tweet ID from primary_link if valid
+ * 3. Validate tweet IDs from x_post_ids
+ * 4. Construct URL from first valid x_post_id
+ * 5. Return the best available link
+ */
+const getPrimaryLink = (story: GrokStory): string => {
+  // Step 1: Validate primary_link if it exists
+  if (story.primary_link) {
+    const primaryLink = String(story.primary_link).trim();
+    
+    if (isValidTwitterUrl(primaryLink)) {
+      const tweetId = extractTweetIdFromUrl(primaryLink);
+      if (tweetId && isValidTweetId(tweetId)) {
+        return primaryLink;
+      }
+    }
+  }
+  
+  // Step 2: Try to construct from x_post_ids
+  if (story.x_post_ids && Array.isArray(story.x_post_ids) && story.x_post_ids.length > 0) {
+    for (const postId of story.x_post_ids) {
+      if (isValidTweetId(postId)) {
+        const constructedUrl = constructTwitterUrl(postId);
+        if (constructedUrl) {
+          return constructedUrl;
+        }
+      }
+    }
+  }
+  
+  // Step 3: No valid link found
+  return '';
+};
+
 function GrokTrendsPage() {
   const { user } = useAuth();
   const router = useRouter();
   const [stories, setStories] = useState<GrokStory[]>([]);
   const [loading, setLoading] = useState(true);
-  const [seeding, setSeeding] = useState(false);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [creatingDraft, setCreatingDraft] = useState<string | null>(null);
+  const [publishingStory, setPublishingStory] = useState<string | null>(null);
+  const [fetchingStories, setFetchingStories] = useState(false);
+  const [showFetchModal, setShowFetchModal] = useState(false);
+  const [fetchCategory, setFetchCategory] = useState<string>('');
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [selectedStory, setSelectedStory] = useState<GrokStory | null>(null);
@@ -336,6 +409,13 @@ function GrokTrendsPage() {
     published: 0,
     archived: 0
   });
+  const [autoDraftConfig, setAutoDraftConfig] = useState({
+    enabled: false,
+    engagementThreshold: 5000,
+    categories: [] as string[]
+  });
+  const [savingConfig, setSavingConfig] = useState(false);
+  const [showAutoDraftSettings, setShowAutoDraftSettings] = useState(false);
 
   // Status filter options - Simplified workflow
   const statusOptions = [
@@ -356,46 +436,150 @@ function GrokTrendsPage() {
     }))
   ];
 
-  // Seed dummy data function
-  const seedDummyData = async () => {
-    try {
-      setSeeding(true);
-      
-      // Seed stories via API
-      for (const story of DUMMY_STORIES) {
-        await apiService.createGrokStory(story);
-      }
-      
-      await fetchStories();
-      alert(`Successfully added ${DUMMY_STORIES.length} sample stories!`);
-    } catch (error) {
-      console.error('Error seeding data:', error);
-      alert('Failed to seed dummy data. Check console for details.');
-    } finally {
-      setSeeding(false);
-    }
-  };
-
   // Fetch stories on mount and filter change
   useEffect(() => {
     fetchStories();
+    fetchAutoDraftConfig();
   }, [selectedStatus, selectedCategory]);
+
+  const fetchAutoDraftConfig = async () => {
+    try {
+      const config = await apiService.getAutoDraftConfig() as any;
+      if (config) {
+        setAutoDraftConfig({
+          enabled: config.enabled || false,
+          engagementThreshold: config.engagementThreshold || 5000,
+          categories: config.categories || []
+        });
+      }
+    } catch (error: any) {
+      // Handle 404 gracefully - config might not exist yet, use defaults
+      const errorMessage = error?.message || String(error || '');
+      if (errorMessage.includes('404') || errorMessage.includes('not found')) {
+        // Config doesn't exist yet, use defaults (already set in state)
+        // Silently continue with default values
+      } else {
+        console.error('Error fetching auto-draft config:', error);
+      }
+    }
+  };
+
+  const handleSaveAutoDraftConfig = async () => {
+    try {
+      setSavingConfig(true);
+      await apiService.updateAutoDraftConfig(autoDraftConfig);
+      alert('Auto-draft configuration saved successfully!');
+      setShowAutoDraftSettings(false);
+    } catch (error: any) {
+      console.error('Error saving auto-draft config:', error);
+      alert(`Failed to save configuration: ${error.message || 'Please try again.'}`);
+    } finally {
+      setSavingConfig(false);
+    }
+  };
+
+  const handleManualFetch = async () => {
+    try {
+      setFetchingStories(true);
+      
+      const fetchData: any = {};
+      if (fetchCategory && fetchCategory !== 'all') {
+        fetchData.category = fetchCategory;
+      }
+      
+      const result = await apiService.fetchGrokStories(fetchData) as any;
+      
+      // Extract result data
+      let fetchResult = result;
+      if (result && typeof result === 'object' && 'data' in result) {
+        fetchResult = result.data;
+      }
+      
+      const fetched = fetchResult?.fetched || 0;
+      const stored = fetchResult?.stored || 0;
+      const skipped = fetchResult?.skipped || 0;
+      const draftsGenerated = fetchResult?.draftsGenerated || 0;
+      
+      // Show success message
+      alert(
+        `✅ Fetch completed!\n\n` +
+        `Fetched: ${fetched} stories\n` +
+        `Stored: ${stored} new stories\n` +
+        `Skipped: ${skipped} duplicates\n` +
+        `Drafts generated: ${draftsGenerated}`
+      );
+      
+      // Close modal and reset category
+      setShowFetchModal(false);
+      setFetchCategory('');
+      
+      // Refresh stories list
+      await fetchStories();
+    } catch (error: any) {
+      console.error('Error fetching stories from Grok:', error);
+      alert(`Failed to fetch stories: ${error.message || 'Please try again.'}`);
+    } finally {
+      setFetchingStories(false);
+    }
+  };
 
   const fetchStories = async () => {
     try {
       setLoading(true);
       
+      // Ensure user is authenticated
+      if (!user) {
+        console.error('User not authenticated');
+        alert('Please log in to view Grok Trends');
+        router.push('/admin/login');
+        return;
+      }
+      
       // Fetch stories from API
-      const storiesData = await apiService.getGrokStories({
+      const response = await apiService.getGrokStories({
         status: selectedStatus !== 'all' ? selectedStatus : undefined,
         category: selectedCategory !== 'all' ? selectedCategory : undefined,
         limit: 100
       });
 
-      setStories(storiesData as GrokStory[]);
+      // Ensure we have an array - handle both direct array and wrapped responses
+      let storiesData: GrokStory[] = [];
+      if (Array.isArray(response)) {
+        storiesData = response;
+      } else if (response && typeof response === 'object') {
+        // Try to extract array from various possible response structures
+        const responseObj = response as Record<string, any>;
+        if (Array.isArray(responseObj.data)) {
+          storiesData = responseObj.data;
+        } else if (Array.isArray(responseObj.stories)) {
+          storiesData = responseObj.stories;
+        } else if (responseObj.data && typeof responseObj.data === 'object' && Array.isArray(responseObj.data.stories)) {
+          storiesData = responseObj.data.stories;
+        } else {
+          console.warn('Unexpected API response format:', response);
+          storiesData = [];
+        }
+      } else {
+        console.warn('Unexpected API response type:', typeof response, response);
+        storiesData = [];
+      }
+      
+      // Log for debugging
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`Fetched ${storiesData.length} stories from API`);
+      }
+
+      setStories(storiesData);
 
       // Fetch stats from API
-      const statsResult = await apiService.getGrokStats() as any;
+      const statsResponse = await apiService.getGrokStats() as any;
+      
+      // Handle stats response - ensure we extract the data correctly
+      let statsResult = statsResponse;
+      if (statsResponse && typeof statsResponse === 'object' && 'data' in statsResponse) {
+        statsResult = statsResponse.data;
+      }
+      
       const statsData: StoryStats = {
         total: statsResult?.total || 0,
         new: statsResult?.new || 0,
@@ -405,8 +589,19 @@ function GrokTrendsPage() {
       };
 
       setStats(statsData);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error fetching stories:', error);
+      // Set empty state on error
+      setStories([]);
+      setStats({
+        total: 0,
+        new: 0,
+        draft_created: 0,
+        published: 0,
+        archived: 0
+      });
+      // Show user-friendly error message
+      alert(`Failed to load stories: ${error.message || 'Please check your connection and try again.'}`);
     } finally {
       setLoading(false);
     }
@@ -432,74 +627,25 @@ function GrokTrendsPage() {
     try {
       setCreatingDraft(story.id);
       
-      // Generate post data from Grok story
-      const title = story.draft_title || story.title;
-      const slug = generateSlug(title);
-      const excerpt = story.draft_excerpt || story.summary;
+      // Call backend to generate AI-powered draft
+      const draftData = await apiService.generateGrokDraft(story.id) as any;
       
-      // Generate content HTML - use draft_body if available, otherwise create structured content
-      let contentHtml = '';
-      if (story.draft_body) {
-        contentHtml = story.draft_body;
-      } else {
-        // Create structured content from summary
-        const paragraphs = story.summary.split(/\.\s+/).filter(p => p.trim().length > 0);
-        contentHtml = paragraphs.map(p => `<p>${p.trim()}.</p>`).join('\n');
-        
-        // Add source link section
-        if (story.primary_link) {
-          contentHtml += `\n\n<div class="mt-6 p-4 bg-gray-50 rounded-lg border-l-4 border-purple-500">`;
-          contentHtml += `<p class="text-sm text-gray-600 mb-2"><strong>Source:</strong></p>`;
-          contentHtml += `<p class="text-sm"><a href="${story.primary_link}" target="_blank" rel="noopener noreferrer" class="text-purple-600 hover:text-purple-800 underline">View original post on X (Twitter)</a></p>`;
-          if (story.author_handles && story.author_handles.length > 0) {
-            contentHtml += `<p class="text-xs text-gray-500 mt-2">From: ${story.author_handles.join(', ')}</p>`;
-          }
-          contentHtml += `</div>`;
-        }
+      if (!draftData || !draftData.title || !draftData.content) {
+        throw new Error('Failed to generate draft - missing required fields');
       }
       
-      const category = mapGrokCategoryToPostCategory(story.category);
-      const tags = generateTagsFromStory(story);
-      const metaTitle = title.length > 60 ? title.substring(0, 57) + '...' : title;
-      const metaDescription = excerpt.length > 160 ? excerpt.substring(0, 157) + '...' : excerpt;
-
-      // Create the post document
-      const postData = {
-        title,
-        slug,
-        excerpt,
-        contentHtml,
-        metaTitle,
-        metaDescription,
-        canonical: '',
-        tags,
-        category,
-        status: 'draft',
-        visibility: 'public',
-        author: {
-          name: user?.name || 'Unknown User',
-          uid: user?.uid || '',
-        },
-        updatedAt: new Date().toISOString(),
-        createdAt: new Date().toISOString(),
-        publishedAt: null,
-        scheduledAt: null,
-        seo: {
-          noindex: false,
-          nofollow: false,
-        },
-        social: {
-          ogTitle: title,
-          ogDescription: excerpt,
-          twitterCard: 'summary_large_image' as const,
-        },
-        history: [{
-          action: 'created_from_grok',
-          by: user?.uid || '',
-          at: new Date().toISOString(),
-          note: `Created from Grok story: ${story.title}`,
-        }],
-        // Link to Grok story
+      // Store draft data in sessionStorage for pre-filling the new post form
+      const prefilledData = {
+        title: draftData.title,
+        slug: draftData.slug || generateSlug(draftData.title),
+        excerpt: draftData.excerpt || story.summary.substring(0, 160),
+        content: draftData.content,
+        metaTitle: draftData.metaTitle || draftData.title.substring(0, 60),
+        metaDescription: draftData.metaDescription || draftData.excerpt || story.summary.substring(0, 160),
+        tags: draftData.tags || generateTagsFromStory(story),
+        category: draftData.category || mapGrokCategoryToPostCategory(story.category),
+        recommendedImages: draftData.recommendedImages || [], // Include recommended images
+        // Store story reference for linking
         source: {
           type: 'grok_story',
           storyId: story.id,
@@ -508,46 +654,97 @@ function GrokTrendsPage() {
           original_link: story.primary_link
         }
       };
-
-      const result = await apiService.createPost({
-        title,
-        content: contentHtml,
-        excerpt,
-        tags,
-        categories: category ? [category] : [],
-        status: 'draft',
-        featuredImage: (story as any).featured_image ? {
-          url: (story as any).featured_image,
-          alt: title
-        } : undefined
-      }) as any;
-      const postId = result.id;
-
+      
+      sessionStorage.setItem('grok_draft_data', JSON.stringify(prefilledData));
+      
       // Update Grok story status to draft_created
-      await apiService.updateGrokStoryStatus(story.id, 'draft_created');
-
+      try {
+        await apiService.updateGrokStoryStatus(story.id, 'draft_created');
+      } catch (statusError) {
+        console.warn('Failed to update story status:', statusError);
+        // Continue anyway - draft was generated successfully
+      }
+      
       // Close modals
       setShowPreviewModal(false);
       setPreviewStory(null);
       setShowPublishModal(false);
       setSelectedStory(null);
-
+      
       // Refresh stories
       await fetchStories();
-
-      // Redirect to edit page
-      router.push(`/admin/posts/${postId}/edit`);
-    } catch (error) {
-      console.error('Error creating draft post:', error);
-      alert('Failed to create draft post. Please try again.');
+      
+      // Navigate to new post page with pre-filled data
+      router.push('/admin/posts/new');
+    } catch (error: any) {
+      console.error('Error generating draft:', error);
+      alert(`Failed to generate draft: ${error.message || 'Please try again.'}`);
     } finally {
       setCreatingDraft(null);
     }
   };
 
-  const handlePublishStory = (story: GrokStory) => {
-    setSelectedStory(story);
-    setShowPublishModal(true);
+  const handlePublishStory = async (story: GrokStory) => {
+    // Confirm before publishing
+    const confirmed = window.confirm(
+      `Publish "${story.title}" as a blog post?\n\n` +
+      `This will create a published blog post immediately. You can edit it later if needed.`
+    );
+    
+    if (!confirmed) return;
+    
+    try {
+      setPublishingStory(story.id);
+      
+      // Prepare post data - use draft data if available, otherwise use story data
+      const postData: any = {};
+      
+      if (story.draft_title || story.draft_body) {
+        // Use draft data if available
+        postData.title = story.draft_title || story.title;
+        postData.contentHtml = story.draft_body;
+        postData.excerpt = story.draft_excerpt || story.summary;
+        postData.metaTitle = story.draft_meta_title;
+        postData.metaDescription = story.draft_meta_description;
+        postData.tags = story.suggested_tags || [];
+      } else {
+        // Use story data - but we need to generate draft first or use basic data
+        postData.title = story.title;
+        postData.contentHtml = `<p>${story.summary}</p>`;
+        postData.excerpt = story.summary.substring(0, 160);
+        postData.tags = generateTagsFromStory(story);
+      }
+      
+      postData.category = mapGrokCategoryToPostCategory(story.category);
+      
+      // Call publish endpoint
+      const result = await apiService.publishGrokStory(story.id, postData) as any;
+      
+      // Show success message
+      alert(`✅ Story published successfully!\n\nPost: ${result.title || story.title}\nURL: /${result.slug || 'post-slug'}`);
+      
+      // Refresh stories to update status
+      await fetchStories();
+      
+      // Close any open modals
+      setShowPreviewModal(false);
+      setPreviewStory(null);
+      setShowPublishModal(false);
+      setSelectedStory(null);
+      
+      // Optionally navigate to the published post
+      if (result.postId) {
+        const navigate = window.confirm('View the published post?');
+        if (navigate) {
+          router.push(`/admin/posts/${result.postId}/edit`);
+        }
+      }
+    } catch (error: any) {
+      console.error('Error publishing story:', error);
+      alert(`Failed to publish story: ${error.message || 'Please try again.'}`);
+    } finally {
+      setPublishingStory(null);
+    }
   };
 
   const handlePreviewStory = (story: GrokStory) => {
@@ -604,21 +801,6 @@ function GrokTrendsPage() {
             </p>
           </div>
           <div className="mt-4 sm:mt-0 flex gap-2">
-            {stats.total === 0 && (
-              <Button
-                variant="outline"
-                onClick={seedDummyData}
-                disabled={seeding}
-                className="border-purple-300 text-purple-700 hover:bg-purple-50"
-              >
-                {seeding ? (
-                  <Spinner size="sm" className="mr-2" />
-                ) : (
-                  <PlusIcon className="h-4 w-4 mr-2" />
-                )}
-                {seeding ? 'Adding...' : 'Add Sample Data'}
-              </Button>
-            )}
             <Button
               variant="outline"
               onClick={() => fetchStories()}
@@ -626,6 +808,23 @@ function GrokTrendsPage() {
             >
               <ArrowPathIcon className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
               Refresh
+            </Button>
+            <Button
+              onClick={() => setShowFetchModal(true)}
+              disabled={fetchingStories}
+              className="bg-purple-600 hover:bg-purple-700 text-white"
+            >
+              {fetchingStories ? (
+                <>
+                  <Spinner size="sm" className="mr-2" />
+                  Fetching...
+                </>
+              ) : (
+                <>
+                  <SparklesIcon className="h-4 w-4 mr-2" />
+                  Fetch from Grok
+                </>
+              )}
             </Button>
           </div>
         </div>
@@ -745,6 +944,92 @@ function GrokTrendsPage() {
           </CardContent>
         </Card>
 
+        {/* Auto-Draft Settings */}
+        <Card>
+          <CardContent className="py-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <BoltIcon className="h-5 w-5 text-purple-600" />
+                <div>
+                  <h3 className="text-sm font-semibold text-gray-900">Auto-Draft Generation</h3>
+                  <p className="text-xs text-gray-500 mt-0.5">
+                    Automatically generate drafts for high-engagement stories
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={autoDraftConfig.enabled}
+                    onChange={(e) => setAutoDraftConfig({ ...autoDraftConfig, enabled: e.target.checked })}
+                    className="w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500"
+                  />
+                  <span className="text-sm font-medium text-gray-700">
+                    {autoDraftConfig.enabled ? 'Enabled' : 'Disabled'}
+                  </span>
+                </label>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setShowAutoDraftSettings(!showAutoDraftSettings)}
+                >
+                  Configure
+                </Button>
+              </div>
+            </div>
+
+            {showAutoDraftSettings && (
+              <div className="mt-4 pt-4 border-t border-gray-200 space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Engagement Threshold
+                  </label>
+                  <input
+                    type="number"
+                    value={autoDraftConfig.engagementThreshold}
+                    onChange={(e) => setAutoDraftConfig({ 
+                      ...autoDraftConfig, 
+                      engagementThreshold: parseInt(e.target.value) || 5000 
+                    })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500"
+                    placeholder="5000"
+                    min="0"
+                  />
+                  <p className="mt-1 text-xs text-gray-500">
+                    Stories with engagement score above this threshold will have drafts auto-generated
+                  </p>
+                </div>
+
+                <div className="flex gap-2">
+                  <Button
+                    size="sm"
+                    onClick={handleSaveAutoDraftConfig}
+                    disabled={savingConfig}
+                    className="bg-purple-600 hover:bg-purple-700"
+                  >
+                    {savingConfig ? (
+                      <>
+                        <Spinner size="sm" className="mr-2" />
+                        Saving...
+                      </>
+                    ) : (
+                      'Save Configuration'
+                    )}
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setShowAutoDraftSettings(false)}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
         {/* Stories List */}
         {stories.length === 0 ? (
           <Card>
@@ -761,10 +1046,10 @@ function GrokTrendsPage() {
                 <p className="text-sm text-gray-500 max-w-md mx-auto mb-6">
                   {selectedStatus !== 'all' || selectedCategory !== 'all'
                     ? "No stories match your current filters. Try adjusting them or clear filters to see all stories."
-                    : "Get started by adding sample data to see how Grok Trends works, or configure the server-side function to fetch real stories from X."}
+                    : "No stories found. Stories are automatically fetched from X (Twitter) using Grok AI. Configure the server-side function to fetch real stories from X."}
                 </p>
                 <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                  {selectedStatus !== 'all' || selectedCategory !== 'all' ? (
+                  {(selectedStatus !== 'all' || selectedCategory !== 'all') && (
                     <Button 
                       variant="outline" 
                       onClick={() => {
@@ -774,19 +1059,6 @@ function GrokTrendsPage() {
                     >
                       <XCircleIcon className="h-4 w-4 mr-2" />
                       Clear Filters
-                    </Button>
-                  ) : (
-                    <Button
-                      onClick={seedDummyData}
-                      disabled={seeding}
-                      className="bg-purple-600 hover:bg-purple-700"
-                    >
-                      {seeding ? (
-                        <Spinner size="sm" className="mr-2" />
-                      ) : (
-                        <PlusIcon className="h-4 w-4 mr-2" />
-                      )}
-                      {seeding ? 'Adding Stories...' : 'Add Sample Stories'}
                     </Button>
                   )}
                 </div>
@@ -852,9 +1124,9 @@ function GrokTrendsPage() {
                             {story.author_handles.length > 2 && ` +${story.author_handles.length - 2}`}
                           </span>
                         )}
-                        {story.primary_link && (
+                        {getPrimaryLink(story) && (
                           <a
-                            href={story.primary_link}
+                            href={getPrimaryLink(story)}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="flex items-center gap-1 text-purple-600 hover:text-purple-800 hover:underline"
@@ -905,17 +1177,39 @@ function GrokTrendsPage() {
                         </Button>
                       )}
 
-                      {/* Draft Created - Link to edit */}
-                      {story.status === 'draft_created' && story.published_post_id && (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          href={`/admin/posts/${story.published_post_id}/edit`}
-                          className="flex-1 lg:flex-none"
-                        >
-                          <PencilSquareIcon className="h-4 w-4 mr-1" />
-                          Edit Draft
-                        </Button>
+                      {/* Draft Created - Quick Publish or Edit */}
+                      {story.status === 'draft_created' && (
+                        <>
+                          <Button
+                            size="sm"
+                            onClick={() => handlePublishStory(story)}
+                            disabled={publishingStory === story.id}
+                            className="flex-1 lg:flex-none bg-green-600 hover:bg-green-700 text-white"
+                          >
+                            {publishingStory === story.id ? (
+                              <>
+                                <Spinner size="sm" className="mr-2" />
+                                Publishing...
+                              </>
+                            ) : (
+                              <>
+                                <RocketLaunchIcon className="h-4 w-4 mr-1" />
+                                Quick Publish
+                              </>
+                            )}
+                          </Button>
+                          {story.published_post_id && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => router.push(`/admin/posts/${story.published_post_id}/edit`)}
+                              className="flex-1 lg:flex-none"
+                            >
+                              <PencilSquareIcon className="h-4 w-4 mr-1" />
+                              Edit Draft
+                            </Button>
+                          )}
+                        </>
                       )}
 
                       {/* Published - View post */}
@@ -923,7 +1217,7 @@ function GrokTrendsPage() {
                         <Button
                           size="sm"
                           variant="outline"
-                          href={`/admin/posts/${story.published_post_id}/edit`}
+                          onClick={() => router.push(`/admin/posts/${story.published_post_id}/edit`)}
                           className="flex-1 lg:flex-none"
                         >
                           <EyeIcon className="h-4 w-4 mr-1" />
@@ -977,6 +1271,70 @@ function GrokTrendsPage() {
           </div>
         )}
 
+        {/* Manual Fetch Modal */}
+        <Modal
+          isOpen={showFetchModal}
+          onClose={() => {
+            setShowFetchModal(false);
+            setFetchCategory('');
+          }}
+          title="Fetch Stories from Grok"
+        >
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Category (Optional)
+              </label>
+              <p className="text-xs text-gray-500 mb-3">
+                Select a specific category to fetch, or leave as "All Categories" to fetch trending stories.
+              </p>
+              <CustomDropdown
+                value={fetchCategory || 'all'}
+                onChange={setFetchCategory}
+                options={categoryOptions}
+                placeholder="Select category (optional)"
+              />
+            </div>
+
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+              <p className="text-sm text-blue-800">
+                <strong>Note:</strong> This will call the Grok API to fetch new stories from X (Twitter). 
+                Stories are automatically deduplicated, so existing stories won't be added again.
+              </p>
+            </div>
+
+            <div className="flex justify-end gap-2 pt-4 border-t">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setShowFetchModal(false);
+                  setFetchCategory('');
+                }}
+                disabled={fetchingStories}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleManualFetch}
+                disabled={fetchingStories}
+                className="bg-purple-600 hover:bg-purple-700"
+              >
+                {fetchingStories ? (
+                  <>
+                    <Spinner size="sm" className="mr-2" />
+                    Fetching...
+                  </>
+                ) : (
+                  <>
+                    <SparklesIcon className="h-4 w-4 mr-2" />
+                    Fetch Stories
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
+        </Modal>
+
         {/* Info Card */}
         <Card className="bg-purple-50 border-purple-200">
           <CardContent>
@@ -988,7 +1346,7 @@ function GrokTrendsPage() {
                 </h4>
                 <p className="mt-1 text-sm text-purple-700">
                   Stories are automatically fetched from X (Twitter) using Grok AI. 
-                  Click "Write Article" on any story to create a draft blog post. 
+                  Use "Fetch from Grok" to manually trigger a fetch, or click "Write Article" on any story to create a draft blog post. 
                   The draft will be pre-filled with the story content, ready for you to edit and publish.
                 </p>
               </div>
@@ -1151,13 +1509,13 @@ function GrokTrendsPage() {
                   </div>
 
                   {/* Source Link */}
-                  {previewStory.primary_link && (
+                  {getPrimaryLink(previewStory) && (
                     <div className="mb-6">
                       <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">
                         Original Source
                       </h3>
                       <a
-                        href={previewStory.primary_link}
+                        href={getPrimaryLink(previewStory)}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="inline-flex items-center gap-2 px-4 py-3 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors"
@@ -1240,12 +1598,34 @@ function GrokTrendsPage() {
                         </Button>
                       )}
 
+                      {/* Quick Publish for draft_created */}
+                      {previewStory.status === 'draft_created' && (
+                        <Button
+                          size="sm"
+                          onClick={() => handlePublishStory(previewStory)}
+                          disabled={publishingStory === previewStory.id}
+                          className="bg-green-600 hover:bg-green-700 text-white"
+                        >
+                          {publishingStory === previewStory.id ? (
+                            <>
+                              <Spinner size="sm" className="mr-2" />
+                              Publishing...
+                            </>
+                          ) : (
+                            <>
+                              <RocketLaunchIcon className="h-4 w-4 mr-1" />
+                              Quick Publish
+                            </>
+                          )}
+                        </Button>
+                      )}
+
                       {/* View Post if draft or published */}
                       {(previewStory.status === 'draft_created' || previewStory.status === 'published') && previewStory.published_post_id && (
                         <Button
                           size="sm"
                           variant="outline"
-                          href={`/admin/posts/${previewStory.published_post_id}/edit`}
+                          onClick={() => router.push(`/admin/posts/${previewStory.published_post_id}/edit`)}
                         >
                           <EyeIcon className="h-4 w-4 mr-1" />
                           {previewStory.status === 'published' ? 'View Post' : 'Edit Draft'}
@@ -1278,7 +1658,7 @@ function GrokTrendsPage() {
                     {/* Edit Draft if already created */}
                     {previewStory.status === 'draft_created' && previewStory.published_post_id && (
                       <Button
-                        href={`/admin/posts/${previewStory.published_post_id}/edit`}
+                        onClick={() => router.push(`/admin/posts/${previewStory.published_post_id}/edit`)}
                         className="bg-purple-600 hover:bg-purple-700 sm:ml-auto"
                         size="sm"
                       >

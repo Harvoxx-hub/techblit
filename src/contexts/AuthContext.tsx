@@ -13,6 +13,7 @@ import { useRouter } from 'next/navigation';
 import { auth } from '@/lib/firebase';
 import { User, UserRole, hasPermission } from '@/types/admin';
 import apiService from '@/lib/apiService';
+import { getFirebaseAuthErrorMessage } from '@/lib/firebaseAuthErrors';
 
 interface AuthContextType {
   user: User | null;
@@ -60,8 +61,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               isActive: userData.isActive !== false,
             });
           } catch (apiError: any) {
-            // If user profile doesn't exist (404), create it
-            if (apiError.message?.includes('404') || apiError.message?.includes('not found')) {
+            // Handle different error types
+            const errorMessage = apiError.message || '';
+            
+            // If user profile doesn't exist (404), use default values
+            if (errorMessage.includes('404') || errorMessage.includes('not found')) {
               const newUser: User = {
                 uid: firebaseUser.uid,
                 name: firebaseUser.displayName || 'Unknown User',
@@ -72,18 +76,62 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 permissions: [],
                 isActive: true,
               };
-              
-              // Note: User creation should be handled by backend on first login
-              // For now, set user with default values
               setUser(newUser);
-            } else {
+            } 
+            // If it's a CORS/network error, API might be unavailable - use Firebase Auth data
+            else if (errorMessage.includes('CORS') || 
+                     errorMessage.includes('Network error') || 
+                     errorMessage.includes('Failed to fetch') ||
+                     errorMessage.includes('Unable to reach API')) {
+              console.warn('API unavailable, using Firebase Auth data:', errorMessage);
+              // Fall back to Firebase Auth user data when API is unavailable
+              const fallbackUser: User = {
+                uid: firebaseUser.uid,
+                name: firebaseUser.displayName || 'Unknown User',
+                email: firebaseUser.email || '',
+                role: 'viewer', // Default role when API unavailable
+                createdAt: new Date(),
+                lastSeen: new Date(),
+                permissions: [],
+                isActive: true,
+              };
+              setUser(fallbackUser);
+            }
+            // For other errors (401, 403, etc.), still allow user but log error
+            else {
               console.error('Error fetching user data:', apiError);
-              setUser(null);
+              // Still set user from Firebase Auth to allow basic functionality
+              const fallbackUser: User = {
+                uid: firebaseUser.uid,
+                name: firebaseUser.displayName || 'Unknown User',
+                email: firebaseUser.email || '',
+                role: 'viewer',
+                createdAt: new Date(),
+                lastSeen: new Date(),
+                permissions: [],
+                isActive: true,
+              };
+              setUser(fallbackUser);
             }
           }
         } catch (error) {
           console.error('Error in auth state change:', error);
-          setUser(null);
+          // Don't set user to null on error - keep Firebase Auth user if available
+          if (firebaseUser) {
+            const fallbackUser: User = {
+              uid: firebaseUser.uid,
+              name: firebaseUser.displayName || 'Unknown User',
+              email: firebaseUser.email || '',
+              role: 'viewer',
+              createdAt: new Date(),
+              lastSeen: new Date(),
+              permissions: [],
+              isActive: true,
+            };
+            setUser(fallbackUser);
+          } else {
+            setUser(null);
+          }
         }
       } else {
         apiService.setAuthToken(null);
@@ -101,7 +149,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await signInWithEmailAndPassword(auth, email, password);
     } catch (error) {
       console.error('Sign in error:', error);
-      throw error;
+      // Create a new error with a user-friendly message
+      const friendlyMessage = getFirebaseAuthErrorMessage(error);
+      const authError = new Error(friendlyMessage);
+      // Preserve the original error code if available
+      if (error && typeof error === 'object' && 'code' in error) {
+        (authError as any).code = (error as any).code;
+      }
+      throw authError;
     }
   };
 
@@ -112,7 +167,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // No need to create it here via API
     } catch (error) {
       console.error('Sign up error:', error);
-      throw error;
+      // Create a new error with a user-friendly message
+      const friendlyMessage = getFirebaseAuthErrorMessage(error);
+      const authError = new Error(friendlyMessage);
+      // Preserve the original error code if available
+      if (error && typeof error === 'object' && 'code' in error) {
+        (authError as any).code = (error as any).code;
+      }
+      throw authError;
     }
   };
 

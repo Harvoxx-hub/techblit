@@ -3,6 +3,7 @@ import Link from 'next/link';
 import Navigation from '@/components/ui/Navigation';
 import Footer from '@/components/ui/Footer';
 import { Metadata } from 'next';
+import { getImageUrlFromData } from '@/lib/imageHelpers';
 
 interface Post {
   id: string;
@@ -71,36 +72,7 @@ export default async function BlogPage({ searchParams }: { searchParams: Promise
   const totalPages = Math.ceil(total / 25);
 
   const getImageUrl = (imageData: any): string | null => {
-    if (!imageData) return null;
-    
-    let url: string | null = null;
-    
-    if (typeof imageData === 'string') {
-      url = imageData;
-    } else if (typeof imageData === 'object') {
-      // Handle ProcessedImage format with original, thumbnail, ogImage
-      if (imageData.original && imageData.original.url) url = imageData.original.url;
-      else if (imageData.thumbnail && imageData.thumbnail.url) url = imageData.thumbnail.url;
-      else if (imageData.ogImage && imageData.ogImage.url) url = imageData.ogImage.url;
-      // Handle simple format
-      else if (imageData.url) url = imageData.url;
-      else if (imageData.downloadURL) url = imageData.downloadURL;
-      else if (imageData.src) url = imageData.src;
-      else if (typeof imageData.toString === 'function') {
-        const urlStr = imageData.toString();
-        if (urlStr.startsWith('http')) url = urlStr;
-      }
-    }
-    
-    // Filter out WordPress URLs to prevent 403 errors
-    if (url && (url.includes('wp-content/uploads') || url.includes('www.techblit.com/wp-content'))) {
-      if (process.env.NODE_ENV === 'development') {
-        console.warn(`⚠️ Filtered out WordPress featured image URL: ${url}`);
-      }
-      return null;
-    }
-    
-    return url;
+    return getImageUrlFromData(imageData, { preset: 'cover' });
   };
 
   const getCategoryGradient = (categoryName?: string) => {
@@ -128,20 +100,41 @@ export default async function BlogPage({ searchParams }: { searchParams: Promise
   const formatDate = (date: any): string => {
     if (!date) return '';
     
-    let dateObj: Date;
-    if (date.toDate) {
-      dateObj = date.toDate();
-    } else if (date instanceof Date) {
-      dateObj = date;
-    } else {
-      dateObj = new Date(date);
+    try {
+      let dateObj: Date | null = null;
+      
+      if (date.toDate && typeof date.toDate === 'function') {
+        try {
+          dateObj = date.toDate();
+        } catch {
+          dateObj = null;
+        }
+      } else if (date instanceof Date) {
+        dateObj = date;
+      } else if (typeof date === 'string' || typeof date === 'number') {
+        dateObj = new Date(date);
+      }
+      
+      // Check if date is valid
+      if (!dateObj || isNaN(dateObj.getTime())) {
+        return '';
+      }
+      
+      // Additional validation - ensure the date is reasonable
+      const timestamp = dateObj.getTime();
+      if (timestamp < 0 || timestamp > Date.now() + 100 * 365 * 24 * 60 * 60 * 1000) {
+        return '';
+      }
+      
+      return new Intl.DateTimeFormat('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric'
+      }).format(dateObj);
+    } catch (error) {
+      console.warn('Error formatting date:', error, date);
+      return '';
     }
-    
-    return new Intl.DateTimeFormat('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric'
-    }).format(dateObj);
   };
 
   const structuredData = {

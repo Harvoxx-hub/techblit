@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import apiService from '@/lib/apiService';
 import Link from 'next/link';
+import { getImageUrlFromData } from '@/lib/imageHelpers';
  
 interface BlogPost {
   id: string;
@@ -69,7 +70,9 @@ export default function SuggestedArticles({
     };
 
     fetchSuggestedPosts();
-  }, [currentPostId, currentPostCategories, currentPostTags]);
+    // Use stringified arrays in dependencies to prevent infinite loops
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentPostId, JSON.stringify(currentPostCategories), JSON.stringify(currentPostTags)]);
 
   if (loading) {
     return (
@@ -116,11 +119,13 @@ export default function SuggestedArticles({
               <Link href={`/${post.slug}`} className="block">
                 <div className="bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow duration-200 overflow-hidden">
                   {/* Featured Image */}
-                  {post.featuredImage?.url ? (
+                  {(() => {
+                    const imageUrl = getImageUrlFromData(post.featuredImage, { preset: 'thumbnail' });
+                    return imageUrl ? (
                     <div className="aspect-w-16 aspect-h-9">
                       <img
-                        src={post.featuredImage.url}
-                        alt={post.featuredImage.alt || post.title}
+                          src={imageUrl}
+                          alt={post.featuredImage?.alt || post.title}
                         className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-200"
                       />
                     </div>
@@ -130,7 +135,8 @@ export default function SuggestedArticles({
                         {post.title.charAt(0).toUpperCase()}
                       </span>
                     </div>
-                  )}
+                    );
+                  })()}
 
                   {/* Content */}
                   <div className="p-6">

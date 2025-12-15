@@ -47,12 +47,20 @@ interface BlogPost {
 }
 
 import { getCrawlableImageUrl, sanitizeWordPressUrls } from '@/lib/imageUrlUtils';
+import { getImageUrlFromData } from '@/lib/imageHelpers';
 
 // Helper function to get image URL from either format
-// Uses getCrawlableImageUrl to ensure SEO-friendly, crawlable URLs
-function getImageUrl(image: ProcessedImage | { url: string; alt: string; width?: number; height?: number } | undefined): string {
+// Prioritizes Cloudinary public_id over legacy URLs for migrated images
+function getImageUrl(image: ProcessedImage | { url: string; alt: string; width?: number; height?: number; public_id?: string; image_id?: string } | undefined): string {
   if (!image) return '';
   
+  // Use getImageUrlFromData which prioritizes public_id/image_id over legacy URLs
+  const cloudinaryUrl = getImageUrlFromData(image, { preset: 'cover' });
+  if (cloudinaryUrl) {
+    return cloudinaryUrl;
+  }
+  
+  // Fallback to legacy URL extraction (for unmigrated posts)
   let url = '';
   if ('original' in image) {
     url = image.original.url;
@@ -61,7 +69,7 @@ function getImageUrl(image: ProcessedImage | { url: string; alt: string; width?:
   }
   
   // Convert to crawlable URL (removes tokens, converts to public URLs)
-  return getCrawlableImageUrl(url);
+  return getCrawlableImageUrl(url) || '';
 }
 
 // Server-side function to fetch post data from API

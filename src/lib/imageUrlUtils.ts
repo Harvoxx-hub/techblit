@@ -100,20 +100,38 @@ export function convertToPublicUrl(tokenUrl: string): string | null {
  * Get the best crawlable URL for an image
  * 
  * Priority:
- * 1. Already public CDN URL (best)
- * 2. Original token URL (works but not optimal for SEO)
- * 3. Original URL (fallback)
+ * 1. Cloudinary URL (best - CDN, SEO-friendly, optimized)
+ * 2. Already public CDN URL
+ * 3. Original token URL (works but not optimal for SEO)
+ * 4. Original URL (fallback)
  * 
- * Note: We don't convert to public URLs automatically because:
- * - Files may not be public in Firebase Storage
- * - Public URL conversion can fail with access denied errors
- * - Token URLs work fine for display, just not optimal for SEO
- * 
- * @param url - The image URL to process
- * @returns The original URL (token URLs are kept as-is to avoid access errors)
+ * @param url - The image URL or public_id to process
+ * @param options - Optional Cloudinary transformation options
+ * @returns The best crawlable URL
  */
-export function getCrawlableImageUrl(url: string): string {
-  if (!url) return url;
+export function getCrawlableImageUrl(
+  url: string | null | undefined,
+  options?: { width?: number; height?: number; crop?: string }
+): string | null {
+  if (!url) return null;
+  
+  // Import Cloudinary utilities (dynamic import to avoid circular dependencies)
+  const { getImageUrl, isCloudinaryPublicId, normalizeToPublicId } = require('./cloudinaryUtils');
+  
+  // Check if it's a Cloudinary public_id
+  const publicId = normalizeToPublicId(url);
+  if (publicId) {
+    // Construct Cloudinary URL with transformations
+    const cloudinaryUrl = getImageUrl(publicId, options || 'cover');
+    if (cloudinaryUrl) {
+      return cloudinaryUrl;
+    }
+  }
+  
+  // If it's already a Cloudinary URL, return as-is
+  if (url.includes('res.cloudinary.com') || url.includes('cloudinary.com')) {
+    return url;
+  }
   
   // If it's already a good URL (CDN, public storage, etc.), return as-is
   if (!isTokenBasedUrl(url) && !isBlobUrl(url) && !isLocalImageUrl(url)) {
@@ -128,7 +146,7 @@ export function getCrawlableImageUrl(url: string): string {
     if (process.env.NODE_ENV === 'development') {
       console.log(
         'ℹ️ Image uses token-based Firebase Storage URL (works for display, not optimal for SEO).\n' +
-        'To improve SEO: Make files public in Firebase Storage or use a CDN.'
+        'To improve SEO: Migrate to Cloudinary or make files public in Firebase Storage.'
       );
     }
     return url; // Return original token URL to avoid access errors
@@ -140,7 +158,7 @@ export function getCrawlableImageUrl(url: string): string {
       console.warn(
         '⚠️ SEO Warning: Image uses blob URL which is not crawlable.\n' +
         `URL: ${url}\n` +
-        'Recommendation: Upload image to a CDN or Firebase Storage.'
+        'Recommendation: Upload image to Cloudinary or Firebase Storage.'
       );
     }
   }
@@ -151,7 +169,7 @@ export function getCrawlableImageUrl(url: string): string {
       console.warn(
         '⚠️ SEO Warning: Image uses local Next.js path.\n' +
         `URL: ${url}\n` +
-        'Recommendation: Use absolute URLs with CDN or Firebase Storage.'
+        'Recommendation: Use absolute URLs with Cloudinary or Firebase Storage.'
       );
     }
   }

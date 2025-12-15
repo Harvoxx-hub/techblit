@@ -112,6 +112,19 @@ export default function RichTextEditor({
     },
   });
 
+  // Sync editor content when content prop changes (for pre-filled data)
+  useEffect(() => {
+    if (editor && content !== undefined && editor.getHTML() !== content) {
+      // Only update if content actually changed to avoid unnecessary updates
+      const currentContent = editor.getHTML();
+      if (currentContent !== content) {
+        editor.commands.setContent(content, { 
+          emitUpdate: false // Don't trigger onUpdate callback
+        });
+      }
+    }
+  }, [content, editor]);
+
   const addImage = useCallback(async () => {
     if (!onImageUpload) return;
     

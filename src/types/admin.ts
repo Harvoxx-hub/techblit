@@ -44,6 +44,8 @@ export interface GrokStory {
   draft_body?: string;
   draft_title?: string;
   draft_excerpt?: string;
+  draft_meta_title?: string;
+  draft_meta_description?: string;
   suggested_tags?: string[];
   draftGeneratedAt?: Date | { toDate: () => Date };
   

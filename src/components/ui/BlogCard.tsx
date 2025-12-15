@@ -23,7 +23,21 @@ export default function BlogCard({ post, featured = false }: BlogCardProps) {
   const formatDate = (date: any) => {
     if (!date) return 'Unknown date';
     try {
-      return date.toDate?.()?.toLocaleDateString() || new Date(date).toLocaleDateString();
+      let dateObj: Date;
+      if (date.toDate) {
+        dateObj = date.toDate();
+      } else if (date instanceof Date) {
+        dateObj = date;
+      } else {
+        dateObj = new Date(date);
+      }
+      
+      // Check if date is valid
+      if (isNaN(dateObj.getTime())) {
+        return 'Unknown date';
+      }
+      
+      return dateObj.toLocaleDateString();
     } catch {
       return 'Unknown date';
     }

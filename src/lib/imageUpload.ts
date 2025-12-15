@@ -9,6 +9,7 @@ import {
   generateUniqueFileName,
   ProcessedImage 
 } from './imageProcessing';
+import { getCloudinaryUrl, CloudinaryPresets } from './cloudinaryUtils';
 
 export interface UploadResult {
   url: string;
@@ -18,6 +19,38 @@ export interface UploadResult {
   type: string;
 }
 
+/**
+ * Upload image to Cloudinary via backend API
+ * @param file - Image file to upload
+ * @param folder - Folder type ('posts', 'authors', 'categories', 'ui', 'media')
+ * @returns Upload result with public_id and metadata
+ */
+export const uploadImageToCloudinary = async (
+  file: File,
+  folder: 'posts' | 'authors' | 'categories' | 'ui' | 'media' = 'media'
+): Promise<{
+  public_id: string;
+  image_id: string;
+  url: string;
+  width: number;
+  height: number;
+  format: string;
+  filename: string;
+  size: number;
+}> => {
+  try {
+    const result = await apiService.uploadMedia(file, { folder });
+    return result;
+  } catch (error) {
+    console.error('Error uploading image to Cloudinary:', error);
+    throw new Error('Failed to upload image to Cloudinary');
+  }
+};
+
+/**
+ * Upload image to Firebase Storage (legacy - kept for backward compatibility)
+ * @deprecated Use uploadImageToCloudinary instead
+ */
 export const uploadImageToFirebase = async (
   file: File,
   path: string = 'images'
@@ -51,9 +84,14 @@ export const uploadImageToFirebase = async (
   }
 };
 
+/**
+ * Upload post image to Cloudinary
+ * Returns Cloudinary public_id (use getCloudinaryUrl to construct URLs)
+ */
 export const uploadPostImage = async (file: File): Promise<string> => {
-  const result = await uploadImageToFirebase(file, 'posts');
-  return result.url;
+  const result = await uploadImageToCloudinary(file, 'posts');
+  // Return public_id - frontend will construct Cloudinary URLs as needed
+  return result.public_id;
 };
 
 /**
@@ -81,60 +119,49 @@ const uploadSingleFile = async (file: File, path: string): Promise<{ url: string
 };
 
 /**
- * Process and upload image with multiple versions (original, thumbnail, OG)
+ * Upload image to Cloudinary (single upload, transformations handled by Cloudinary)
+ * Cloudinary handles transformations on-the-fly, so we only need one upload
  */
 export const uploadProcessedImage = async (
   file: File,
-  path: string = 'images'
+  folder: 'posts' | 'authors' | 'categories' | 'ui' | 'media' = 'media'
 ): Promise<ProcessedImage> => {
   try {
     // Get original image dimensions
     const originalDimensions = await getImageDimensions(file);
     
-    // Create compressed thumbnail (400x300 max)
-    const thumbnailFile = await compressImage(file, 400, 300, 0.8);
+    // Upload single image to Cloudinary
+    const uploadResult = await uploadImageToCloudinary(file, folder);
     
-    // Create Open Graph image (1200x630)
-    const ogFile = await createOGImage(file, 1200, 630, 0.9);
+    // Cloudinary handles transformations on-the-fly
+    // We construct URLs with different transformations for different use cases
+    const publicId = uploadResult.public_id;
     
-    // Upload all three versions
-    const [original, thumbnail, ogImage] = await Promise.all([
-      uploadSingleFile(file, path),
-      uploadSingleFile(thumbnailFile, `${path}/thumbnails`),
-      uploadSingleFile(ogFile, `${path}/og`),
-    ]);
-    
-    // Get dimensions for processed images
-    const [thumbnailDimensions, ogDimensions] = await Promise.all([
-      getImageDimensions(thumbnailFile),
-      getImageDimensions(ogFile),
-    ]);
-    
-    const result = {
+    const result: ProcessedImage = {
       original: {
-        url: original.url,
-        path: original.path,
-        width: originalDimensions.width,
-        height: originalDimensions.height,
-        size: original.size,
+        url: getCloudinaryUrl(publicId, CloudinaryPresets.cover) || uploadResult.url,
+        path: publicId, // Use public_id as path identifier
+        width: uploadResult.width,
+        height: uploadResult.height,
+        size: uploadResult.size,
       },
       thumbnail: {
-        url: thumbnail.url,
-        path: thumbnail.path,
-        width: thumbnailDimensions.width,
-        height: thumbnailDimensions.height,
-        size: thumbnail.size,
+        url: getCloudinaryUrl(publicId, CloudinaryPresets.thumbnail) || uploadResult.url,
+        path: publicId,
+        width: Math.min(400, uploadResult.width), // Approximate thumbnail dimensions
+        height: Math.min(300, uploadResult.height),
+        size: uploadResult.size, // Approximate
       },
       ogImage: {
-        url: ogImage.url,
-        path: ogImage.path,
-        width: ogDimensions.width,
-        height: ogDimensions.height,
-        size: ogImage.size,
+        url: getCloudinaryUrl(publicId, CloudinaryPresets.social) || uploadResult.url,
+        path: publicId,
+        width: 1200,
+        height: 630,
+        size: uploadResult.size, // Approximate
       },
     };
     
-    console.log('Processed image result:', result);
+    console.log('Processed image result (Cloudinary):', result);
     return result;
   } catch (error) {
     console.error('Error processing and uploading image:', error);
@@ -143,7 +170,8 @@ export const uploadProcessedImage = async (
 };
 
 /**
- * Upload featured image for posts with multiple versions
+ * Upload featured image for posts
+ * Uses Cloudinary with on-the-fly transformations
  */
 export const uploadFeaturedImage = async (file: File): Promise<ProcessedImage> => {
   return uploadProcessedImage(file, 'posts');
@@ -156,33 +184,14 @@ export const uploadImageToMediaLibrary = async (
   caption: string = ''
 ): Promise<string> => {
   try {
-    // Process image with multiple versions
-    const processedImage = await uploadProcessedImage(file, 'media');
-    
-    // Create media document with all versions
-    const mediaDoc: Omit<Media, 'id'> = {
-      fileName: file.name,
-      storagePath: processedImage.original.path,
-      url: processedImage.original.url,
-      uploadedBy,
-      width: processedImage.original.width,
-      height: processedImage.original.height,
+    // Upload to Cloudinary via API (this also registers in media library)
+    const result = await apiService.uploadMedia(file, {
+      folder: 'media',
       alt: alt || file.name,
-      caption: caption || '',
-      sizes: {
-        thumbnail: processedImage.thumbnail.url,
-        medium: processedImage.original.url,
-        large: processedImage.original.url,
-      },
-      createdAt: new Date(),
-      fileSize: processedImage.original.size,
-      mimeType: file.type,
-    };
+    });
     
-    // Register in media library via API
-    await apiService.uploadMedia(file);
-    
-    return processedImage.original.url;
+    // Return public_id - frontend will construct Cloudinary URLs as needed
+    return result.public_id;
   } catch (error) {
     console.error('Error uploading image to media library:', error);
     throw new Error('Failed to upload image to media library');

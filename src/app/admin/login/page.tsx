@@ -46,7 +46,8 @@ function LoginForm() {
       await signIn(email, password);
       // Redirect will be handled by useEffect above
     } catch (error: any) {
-      setError(error.message || 'Failed to sign in');
+      // The error message should already be user-friendly from AuthContext
+      setError(error.message || 'Failed to sign in. Please try again.');
     } finally {
       setLoading(false);
     }

@@ -100,19 +100,29 @@ export default function CategoryHighlights() {
     if (!date) return '';
     
     let dateObj: Date;
-    if (date.toDate) {
-      dateObj = date.toDate();
-    } else if (date instanceof Date) {
-      dateObj = date;
-    } else {
-      dateObj = new Date(date);
+    try {
+      if (date.toDate) {
+        dateObj = date.toDate();
+      } else if (date instanceof Date) {
+        dateObj = date;
+      } else {
+        dateObj = new Date(date);
+      }
+      
+      // Check if date is valid
+      if (isNaN(dateObj.getTime())) {
+        return '';
+      }
+      
+      return new Intl.DateTimeFormat('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric'
+      }).format(dateObj);
+    } catch (error) {
+      console.warn('Error formatting date:', error, date);
+      return '';
     }
-    
-    return new Intl.DateTimeFormat('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric'
-    }).format(dateObj);
   };
 
   if (loading) {
@@ -216,7 +226,7 @@ export default function CategoryHighlights() {
                   
                   <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
                     <span>{formatAuthor(post.author)}</span>
-                    <span>{formatDate(post.publishedAt)}</span>
+                    <span>{formatDate(post.publishedAt || post.createdAt)}</span>
                   </div>
                   
                   {post.readTime && (

@@ -13,6 +13,7 @@ interface Post {
   category?: string;
   author?: string | { name: string };
   publishedAt?: any;
+  createdAt?: any;
   featuredImage?: any;
   readTime?: string;
 }
@@ -24,37 +25,10 @@ interface CategorySectionProps {
   limit?: number;
 }
 
+import { getImageUrlFromData } from '@/lib/imageHelpers';
+
 const getImageUrl = (imageData: any): string | null => {
-  if (!imageData) return null;
-  
-  let url: string | null = null;
-  
-  if (typeof imageData === 'string') {
-    url = imageData;
-  } else if (typeof imageData === 'object') {
-    // Handle ProcessedImage format with original, thumbnail, ogImage
-    if (imageData.original && imageData.original.url) url = imageData.original.url;
-    else if (imageData.thumbnail && imageData.thumbnail.url) url = imageData.thumbnail.url;
-    else if (imageData.ogImage && imageData.ogImage.url) url = imageData.ogImage.url;
-    // Handle simple format
-    else if (imageData.url) url = imageData.url;
-    else if (imageData.downloadURL) url = imageData.downloadURL;
-    else if (imageData.src) url = imageData.src;
-    else if (typeof imageData.toString === 'function') {
-      const urlStr = imageData.toString();
-      if (urlStr.startsWith('http')) url = urlStr;
-    }
-  }
-  
-  // Filter out WordPress URLs to prevent 403 errors
-  if (url && (url.includes('wp-content/uploads') || url.includes('www.techblit.com/wp-content'))) {
-    if (process.env.NODE_ENV === 'development') {
-      console.warn(`⚠️ Filtered out WordPress featured image URL: ${url}`);
-    }
-    return null;
-  }
-  
-  return url;
+  return getImageUrlFromData(imageData, { preset: 'thumbnail' });
 };
 
 const formatAuthor = (author: any): string => {
@@ -65,19 +39,42 @@ const formatAuthor = (author: any): string => {
 
 const formatDate = (date: any): string => {
   if (!date) return '';
-  let dateObj: Date;
-  if (date.toDate) {
-    dateObj = date.toDate();
-  } else if (date instanceof Date) {
-    dateObj = date;
-  } else {
-    dateObj = new Date(date);
+  
+  try {
+    let dateObj: Date | null = null;
+    
+    if (date.toDate && typeof date.toDate === 'function') {
+      try {
+        dateObj = date.toDate();
+      } catch {
+        dateObj = null;
+      }
+    } else if (date instanceof Date) {
+      dateObj = date;
+    } else if (typeof date === 'string' || typeof date === 'number') {
+      dateObj = new Date(date);
+    }
+    
+    // Check if date is valid
+    if (!dateObj || isNaN(dateObj.getTime())) {
+      return '';
+    }
+    
+    // Additional validation - ensure the date is reasonable
+    const timestamp = dateObj.getTime();
+    if (timestamp < 0 || timestamp > Date.now() + 100 * 365 * 24 * 60 * 60 * 1000) {
+      return '';
+    }
+    
+    return new Intl.DateTimeFormat('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric'
+    }).format(dateObj);
+  } catch (error) {
+    console.warn('Error formatting date:', error, date);
+    return '';
   }
-  return new Intl.DateTimeFormat('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric'
-  }).format(dateObj);
 };
 
 export default function CategorySection({ 
@@ -93,25 +90,34 @@ export default function CategorySection({
     const fetchCategoryPosts = async () => {
       setLoading(true);
       try {
-        // Fetch from API and filter by category
-        const allPosts = await apiService.getPosts({ limit: 100 });
+        // Fetch posts by category using the category-specific endpoint
+        const response = await apiService.getPostsByCategory(categorySlug, { limit: postsLimit });
         
-        // Filter posts by category case-insensitively
-        const categoryLower = categoryLabel.toLowerCase();
-        const filteredPosts = (allPosts as Post[])
-          .filter(post => post.category?.toLowerCase() === categoryLower)
-          .slice(0, postsLimit);
+        // Extract posts from response (API returns { category, posts })
+        const categoryPosts: Post[] = (response as any)?.posts || [];
         
-        setPosts(filteredPosts);
+        setPosts(categoryPosts.slice(0, postsLimit));
       } catch (error) {
         console.error(`Error fetching ${categoryLabel} posts:`, error);
+        // Fallback: try fetching all posts and filtering client-side
+        try {
+          const allPosts = await apiService.getPosts({ limit: 100 });
+          const categoryLower = categoryLabel.toLowerCase();
+          const filteredPosts = (allPosts as Post[])
+            .filter(post => post.category?.toLowerCase() === categoryLower)
+            .slice(0, postsLimit);
+          setPosts(filteredPosts);
+        } catch (fallbackError) {
+          console.error(`Fallback fetch also failed for ${categoryLabel}:`, fallbackError);
+          setPosts([]);
+        }
       } finally {
         setLoading(false);
       }
     };
 
     fetchCategoryPosts();
-  }, [categoryLabel, postsLimit]);
+  }, [categorySlug, categoryLabel, postsLimit]);
 
   if (loading) {
     return (
@@ -195,7 +201,7 @@ export default function CategorySection({
                   
                   <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
                     <span>{formatAuthor(post.author)}</span>
-                    <span>{formatDate(post.publishedAt)}</span>
+                    <span>{formatDate(post.publishedAt || post.createdAt)}</span>
                   </div>
                   
                   {post.readTime && (

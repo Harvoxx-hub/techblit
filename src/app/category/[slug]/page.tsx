@@ -5,6 +5,7 @@ import Footer from '@/components/ui/Footer';
 import { CATEGORIES, getCategoryBySlug } from '@/lib/categories';
 import { generateCategorySEO } from '@/lib/seo';
 import { Metadata } from 'next';
+import { getImageUrlFromData } from '@/lib/imageHelpers';
 
 interface Post {
   id: string;
@@ -12,8 +13,10 @@ interface Post {
   slug: string;
   excerpt?: string;
   category?: string;
+  categories?: string[];
   author?: string | { name: string };
   publishedAt?: any;
+  createdAt?: any;
   featuredImage?: any;
   readTime?: string;
 }
@@ -31,13 +34,53 @@ async function getCategoryPosts(categorySlug: string): Promise<{ posts: Post[]; 
     });
     
     if (!response.ok) {
-      // If category not found, return empty
+      const errorText = await response.text();
+      console.error(`Category API error (${response.status}) for slug "${categorySlug}":`, errorText);
+      
+      // If category not found, try fetching all posts and filtering client-side as fallback
+      try {
+        const allPostsResponse = await fetch(`${API_BASE}/posts?limit=100`, {
+          next: { revalidate: 3600 }
+        });
+        if (allPostsResponse.ok) {
+          const allPostsResult = await allPostsResponse.json();
+          const allPosts = (allPostsResult.data || allPostsResult) as Post[];
+          
+          // Map slug to category name
+          const slugToCategoryMap: Record<string, string> = {
+            'events': 'Events',
+            'startup': 'Startup',
+            'tech-news': 'Tech News',
+            'brand-press': 'Brand Press'
+          };
+          
+          const categoryName = slugToCategoryMap[categorySlug.toLowerCase()] || 
+                              categorySlug.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+          
+          // Filter posts by category
+          const filteredPosts = allPosts.filter(post => {
+            const postCategory = post.category?.toLowerCase();
+            const postCategories = (post.categories || []).map((c: string) => c.toLowerCase());
+            const searchCategory = categoryName.toLowerCase();
+            
+            return postCategory === searchCategory || postCategories.includes(searchCategory);
+          });
+          
+          console.log(`Fallback: Found ${filteredPosts.length} posts for category "${categoryName}"`);
+          return { posts: filteredPosts.slice(0, 20), recommendedPosts: [] };
+        }
+      } catch (fallbackError) {
+        console.error('Fallback fetch also failed:', fallbackError);
+      }
+      
       return { posts: [], recommendedPosts: [] };
     }
     
     const result = await response.json();
     const categoryData = result.data || result;
     const categoryPosts = categoryData.posts || [];
+    
+    console.log(`Found ${categoryPosts.length} posts for category slug "${categorySlug}"`);
     
     // Fetch recommended posts if no category posts
     let recommendedPosts: Post[] = [];
@@ -54,7 +97,7 @@ async function getCategoryPosts(categorySlug: string): Promise<{ posts: Post[]; 
     return { posts: categoryPosts, recommendedPosts };
 
   } catch (error) {
-    console.error('Error fetching posts:', error);
+    console.error('Error fetching category posts:', error);
     return { posts: [], recommendedPosts: [] };
   }
 }
@@ -107,24 +150,7 @@ export default async function CategoryPage({ params }: { params: Promise<{ slug:
   }
 
   const getImageUrl = (imageData: any): string | null => {
-    if (!imageData) return null;
-    if (typeof imageData === 'string') return imageData;
-    if (typeof imageData === 'object') {
-      // Handle ProcessedImage format with original, thumbnail, ogImage
-      if (imageData.original && imageData.original.url) return imageData.original.url;
-      if (imageData.thumbnail && imageData.thumbnail.url) return imageData.thumbnail.url;
-      if (imageData.ogImage && imageData.ogImage.url) return imageData.ogImage.url;
-      
-      // Handle simple format
-      if (imageData.url) return imageData.url;
-      if (imageData.downloadURL) return imageData.downloadURL;
-      if (imageData.src) return imageData.src;
-      if (typeof imageData.toString === 'function') {
-        const url = imageData.toString();
-        if (url.startsWith('http')) return url;
-      }
-    }
-    return null;
+    return getImageUrlFromData(imageData, { preset: 'cover' });
   };
 
   const getCategoryGradient = (categoryName?: string) => {
@@ -152,20 +178,41 @@ export default async function CategoryPage({ params }: { params: Promise<{ slug:
   const formatDate = (date: any): string => {
     if (!date) return '';
     
-    let dateObj: Date;
-    if (date.toDate) {
-      dateObj = date.toDate();
-    } else if (date instanceof Date) {
-      dateObj = date;
-    } else {
-      dateObj = new Date(date);
+    try {
+      let dateObj: Date | null = null;
+      
+      if (date.toDate && typeof date.toDate === 'function') {
+        try {
+          dateObj = date.toDate();
+        } catch {
+          dateObj = null;
+        }
+      } else if (date instanceof Date) {
+        dateObj = date;
+      } else if (typeof date === 'string' || typeof date === 'number') {
+        dateObj = new Date(date);
+      }
+      
+      // Check if date is valid
+      if (!dateObj || isNaN(dateObj.getTime())) {
+        return '';
+      }
+      
+      // Additional validation - ensure the date is reasonable
+      const timestamp = dateObj.getTime();
+      if (timestamp < 0 || timestamp > Date.now() + 100 * 365 * 24 * 60 * 60 * 1000) {
+        return '';
+      }
+      
+      return new Intl.DateTimeFormat('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric'
+      }).format(dateObj);
+    } catch (error) {
+      console.warn('Error formatting date:', error, date);
+      return '';
     }
-    
-    return new Intl.DateTimeFormat('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric'
-    }).format(dateObj);
   };
 
   return (
@@ -237,7 +284,7 @@ export default async function CategoryPage({ params }: { params: Promise<{ slug:
                       
                       <div className="flex items-center justify-between text-sm text-gray-500 dark:text-gray-400">
                         <span>{formatAuthor(post.author)}</span>
-                        <span>{formatDate(post.publishedAt)}</span>
+                        <span>{formatDate(post.publishedAt || post.createdAt)}</span>
                       </div>
                       
                       {post.readTime && (
@@ -313,7 +360,7 @@ export default async function CategoryPage({ params }: { params: Promise<{ slug:
                           
                           <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
                             <span>{formatAuthor(post.author)}</span>
-                            <span>{formatDate(post.publishedAt)}</span>
+                            <span>{formatDate(post.publishedAt || post.createdAt)}</span>
                           </div>
                         </div>
                       </div>

@@ -26,8 +26,9 @@ class ApiService {
 
   /**
    * Get authentication token from Firebase Auth
+   * Forces token refresh to ensure it's valid
    */
-  async getAuthToken(): Promise<string | null> {
+  async getAuthToken(forceRefresh: boolean = false): Promise<string | null> {
     if (typeof window === 'undefined') return null;
     
     try {
@@ -35,10 +36,24 @@ class ApiService {
       const auth = getAuth();
       const user = auth.currentUser;
       if (user) {
-        return await user.getIdToken();
+        // Force refresh if requested or if token is expired
+        return await user.getIdToken(forceRefresh);
       }
     } catch (error) {
       console.error('Error getting auth token:', error);
+      // If token refresh fails, try to get a fresh token
+      if (!forceRefresh) {
+        try {
+          const { getAuth } = await import('firebase/auth');
+          const auth = getAuth();
+          const user = auth.currentUser;
+          if (user) {
+            return await user.getIdToken(true); // Force refresh
+          }
+        } catch (retryError) {
+          console.error('Error retrying auth token:', retryError);
+        }
+      }
     }
     return null;
   }
@@ -48,9 +63,11 @@ class ApiService {
    */
   private async request<T>(
     endpoint: string,
-    options: RequestInit = {}
+    options: RequestInit = {},
+    retryCount: number = 0
   ): Promise<T> {
-    const token = this.authToken || await this.getAuthToken();
+    // Get fresh token (force refresh on retry)
+    const token = this.authToken || await this.getAuthToken(retryCount > 0);
     
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
@@ -61,16 +78,110 @@ class ApiService {
       headers['Authorization'] = `Bearer ${token}`;
     }
 
-    const response = await fetch(`${this.baseUrl}${endpoint}`, {
-      ...options,
-      headers,
-    });
+    const url = `${this.baseUrl}${endpoint}`;
+    
+    // Log request in development
+    if (process.env.NODE_ENV === 'development') {
+      console.log('API Request:', {
+        method: options.method || 'GET',
+        url,
+        hasToken: !!token
+      });
+    }
+
+    let response: Response;
+    try {
+      response = await fetch(url, {
+        ...options,
+        headers,
+        // Use 'omit' since we're using Bearer tokens in headers, not cookies
+        // This simplifies CORS and avoids credential-related CORS issues
+        credentials: 'omit',
+        mode: 'cors',
+      });
+    } catch (fetchError: any) {
+      // Handle network errors (CORS, connectivity, etc.)
+      console.error('Network error fetching:', {
+        url,
+        baseUrl: this.baseUrl,
+        endpoint,
+        error: fetchError.message,
+        name: fetchError.name,
+        stack: fetchError.stack
+      });
+      
+      // Provide helpful error message
+      let errorMessage = 'Network error: Failed to connect to API';
+      if (fetchError.message?.includes('CORS') || fetchError.name === 'TypeError') {
+        errorMessage = `CORS/Network error: Unable to reach API at ${url}. Check if the function is deployed and CORS is configured.`;
+      } else if (fetchError.message?.includes('Failed to fetch')) {
+        errorMessage = `Failed to fetch from ${url}. Check your internet connection and ensure the API server is running.`;
+      } else {
+        errorMessage = `Network error: ${fetchError.message || 'Unknown error'}`;
+      }
+      
+      throw new Error(errorMessage);
+    }
 
     if (!response.ok) {
-      const error = await response.json().catch(() => ({ 
-        error: `HTTP error! status: ${response.status}` 
-      }));
-      throw new Error(error.error || error.message || `API call failed with status ${response.status}`);
+      // If unauthorized and we haven't retried, try refreshing token
+      if (response.status === 401 && retryCount === 0) {
+        // Clear cached token and retry with fresh token (force refresh)
+        this.authToken = null;
+        const freshToken = await this.getAuthToken(true);
+        if (freshToken) {
+          return this.request<T>(endpoint, options, retryCount + 1);
+        }
+      }
+      
+      let errorData: any = {};
+      let errorText: string = '';
+      
+      try {
+        // Try to get response as text first to see what we're dealing with
+        errorText = await response.text();
+        
+        // Try to parse as JSON
+        if (errorText) {
+          try {
+            errorData = JSON.parse(errorText);
+          } catch (parseError) {
+            // If not JSON, use the text as error message
+            errorData = { error: errorText || `HTTP error! status: ${response.status}` };
+          }
+        } else {
+          errorData = { error: `HTTP error! status: ${response.status}` };
+        }
+      } catch (error) {
+        // Fallback if we can't read the response
+        errorData = { error: `HTTP error! status: ${response.status}` };
+        errorText = `Failed to read error response: ${error}`;
+      }
+      
+      // Handle nested error structure: { success: false, error: { message, code, ... } }
+      const errorMessage = 
+        errorData?.error?.message || 
+        (typeof errorData?.error === 'string' ? errorData.error : null) ||
+        errorData?.message || 
+        errorText ||
+        `API call failed with status ${response.status}`;
+      
+      // Log full error details for debugging
+      console.error('API Error:', {
+        status: response.status,
+        statusText: response.statusText,
+        endpoint,
+        errorData: errorData && Object.keys(errorData).length > 0 ? errorData : 'No error data',
+        errorText: errorText || 'No error text',
+        errorMessage
+      });
+      
+      // If still unauthorized after retry, suggest re-login
+      if (response.status === 401) {
+        throw new Error(`${errorMessage}. Please try logging out and logging back in.`);
+      }
+      
+      throw new Error(errorMessage);
     }
 
     const data = await response.json();
@@ -187,18 +298,63 @@ class ApiService {
     return this.request(`/media${query ? `?${query}` : ''}`);
   }
 
-  async uploadMedia(file: File | {
+  async uploadMedia(
+    file: File,
+    options?: {
+      folder?: 'posts' | 'authors' | 'categories' | 'ui' | 'media';
+      alt?: string;
+    }
+  ): Promise<{
+    id: string;
+    public_id: string;
+    image_id: string;
+    url: string;
+    width: number;
+    height: number;
+    format: string;
+    filename: string;
+    size: number;
+  }>;
+  
+  async uploadMedia(metadata: {
     url: string;
     filename: string;
     size?: number;
     type?: string;
     alt?: string;
-  }) {
-    // If it's a File, we need to use FormData for actual file upload
-    // Otherwise, just register the metadata
-    if (file instanceof File) {
+    public_id?: string;
+    image_id?: string;
+  }): Promise<any>;
+  
+  async uploadMedia(
+    fileOrMetadata: File | {
+      url: string;
+      filename: string;
+      size?: number;
+      type?: string;
+      alt?: string;
+      public_id?: string;
+      image_id?: string;
+    },
+    options?: {
+      folder?: 'posts' | 'authors' | 'categories' | 'ui' | 'media';
+      alt?: string;
+    }
+  ) {
+    // If it's a File, upload to Cloudinary via backend
+    if (fileOrMetadata instanceof File) {
       const formData = new FormData();
-      formData.append('file', file);
+      formData.append('file', fileOrMetadata);
+      
+      // Add folder if specified
+      if (options?.folder) {
+        formData.append('folder', options.folder);
+      }
+      
+      // Add alt text if specified
+      if (options?.alt) {
+        formData.append('alt', options.alt);
+      }
       
       // For file uploads, we need multipart form data
       const token = this.authToken || await this.getAuthToken();
@@ -206,6 +362,7 @@ class ApiService {
       if (token) {
         headers['Authorization'] = `Bearer ${token}`;
       }
+      // Don't set Content-Type - browser will set it with boundary for multipart/form-data
       
       const response = await fetch(`${this.baseUrl}/media/upload`, {
         method: 'POST',
@@ -214,15 +371,29 @@ class ApiService {
       });
       
       if (!response.ok) {
-        throw new Error(`Upload failed: ${response.status}`);
+        let errorMessage = `Upload failed: ${response.status}`;
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.error || errorData.message || errorMessage;
+        } catch {
+          // Ignore JSON parse errors
+        }
+        throw new Error(errorMessage);
       }
       
-      return response.json();
+      const result = await response.json();
+      
+      // Return the data in a consistent format
+      if (result.success && result.data) {
+        return result.data;
+      }
+      
+      return result;
     } else {
-      // Register existing media URL
+      // Register existing media metadata (supports both legacy URLs and public_ids)
       return this.request('/media', {
         method: 'POST',
-        body: JSON.stringify(file),
+        body: JSON.stringify(fileOrMetadata),
       });
     }
   }
@@ -360,6 +531,56 @@ class ApiService {
     return this.request('/grok-trends/stories', {
       method: 'POST',
       body: JSON.stringify(data),
+    });
+  }
+
+  async generateGrokDraft(storyId: string) {
+    return this.request(`/grok-trends/stories/${storyId}/generate-draft`, {
+      method: 'POST',
+    });
+  }
+
+  async publishGrokStory(storyId: string, postData?: {
+    title?: string;
+    content?: string;
+    contentHtml?: string;
+    excerpt?: string;
+    tags?: string[];
+    category?: string;
+    metaTitle?: string;
+    metaDescription?: string;
+    canonical?: string;
+    featuredImage?: any;
+  }) {
+    return this.request(`/grok-trends/stories/${storyId}/publish`, {
+      method: 'POST',
+      body: JSON.stringify(postData || {}),
+    });
+  }
+
+  async fetchGrokStoriesWithAutoDraft(data?: { 
+    category?: string; 
+    autoGenerateDrafts?: boolean; 
+    engagementThreshold?: number;
+  }) {
+    return this.request('/grok-trends/fetch', {
+      method: 'POST',
+      body: JSON.stringify(data || {}),
+    });
+  }
+
+  async getAutoDraftConfig() {
+    return this.request('/grok-trends/config/auto-draft');
+  }
+
+  async updateAutoDraftConfig(config: {
+    enabled: boolean;
+    engagementThreshold?: number;
+    categories?: string[];
+  }) {
+    return this.request('/grok-trends/config/auto-draft', {
+      method: 'PUT',
+      body: JSON.stringify(config),
     });
   }
 

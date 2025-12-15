@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import apiService from '@/lib/apiService';
 import AdminLayout from '@/components/admin/AdminLayout';
 import { withAuth, useAuth } from '@/contexts/AuthContext';
@@ -17,7 +17,8 @@ import {
   DocumentIcon,
   EyeSlashIcon,
   CalendarIcon,
-  PhotoIcon
+  PhotoIcon,
+  SparklesIcon
 } from '@heroicons/react/24/outline';
 import { Input, Textarea, Button, Card, CardContent, Dropdown, TagInput } from '@/components/ui';
 import RichTextEditor from '@/components/editor/RichTextEditor';
@@ -33,10 +34,12 @@ import { sanitizeWordPressUrls } from '@/lib/imageUrlUtils';
 
 function NewPostEditor() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [postId, setPostId] = useState<string | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [isPrefilled, setIsPrefilled] = useState(false);
 
   // Wrapper function to upload featured images with multiple versions
   // For RichTextEditor, we need to return just the URL string
@@ -59,6 +62,25 @@ function NewPostEditor() {
   ];
 
   // Categories are now fetched from centralized list
+
+  // Check for pre-filled data from Grok draft generation
+  const [prefilledData, setPrefilledData] = useState<any>(null);
+  
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const data = sessionStorage.getItem('grok_draft_data');
+        if (data) {
+          const parsed = JSON.parse(data);
+          sessionStorage.removeItem('grok_draft_data'); // Clear after reading
+          setPrefilledData(parsed);
+          setIsPrefilled(true);
+        }
+      } catch (error) {
+        console.error('Error reading prefilled data:', error);
+      }
+    }
+  }, []);
 
   const [post, setPost] = useState<Partial<Post>>({
     title: '',
@@ -84,6 +106,36 @@ function NewPostEditor() {
       twitterCard: 'summary_large_image',
     },
   });
+
+  // Update post state when prefilled data is loaded
+  useEffect(() => {
+    if (prefilledData) {
+      // Handle both 'content' and 'contentHtml' field names for compatibility
+      const content = prefilledData.content || prefilledData.contentHtml || '';
+      
+      setPost(prev => ({
+        ...prev,
+        title: prefilledData.title || prev.title,
+        slug: prefilledData.slug || prev.slug,
+        excerpt: prefilledData.excerpt || prev.excerpt,
+        contentHtml: content || prev.contentHtml,
+        metaTitle: prefilledData.metaTitle || prev.metaTitle,
+        metaDescription: prefilledData.metaDescription || prev.metaDescription,
+        tags: prefilledData.tags || prev.tags,
+        category: prefilledData.category || prev.category,
+        social: {
+          ...prev.social,
+          ogTitle: prefilledData.metaTitle || prev.social?.ogTitle || '',
+          ogDescription: prefilledData.metaDescription || prev.social?.ogDescription || '',
+        },
+      }));
+      
+      // Hide notification after 5 seconds
+      setTimeout(() => {
+        setIsPrefilled(false);
+      }, 5000);
+    }
+  }, [prefilledData]);
 
   // Auto-save functionality
   const autoSaveState = useAutoSave(postId, post, {
@@ -199,12 +251,31 @@ function NewPostEditor() {
   return (
     <AdminLayout>
       <div className="space-y-6">
+        {/* Pre-filled Notification */}
+        {isPrefilled && (
+          <div className="bg-purple-50 border-l-4 border-purple-500 p-4 rounded-md">
+            <div className="flex items-start">
+              <div className="flex-shrink-0">
+                <SparklesIcon className="h-5 w-5 text-purple-600" />
+              </div>
+              <div className="ml-3">
+                <h3 className="text-sm font-medium text-purple-800">
+                  AI-Generated Draft Loaded
+                </h3>
+                <p className="mt-1 text-sm text-purple-700">
+                  Your post has been pre-filled with AI-generated content from Grok Trends. Review and edit as needed before publishing.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+        
         {/* Header */}
         <div className="sm:flex sm:items-center sm:justify-between">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">New Post</h1>
             <p className="mt-1 text-sm text-gray-500">
-              Create a new blog post
+              {isPrefilled ? 'Review and edit your AI-generated draft' : 'Create a new blog post'}
             </p>
             {postId && (
               <div className="mt-2">
@@ -389,6 +460,7 @@ function NewPostEditor() {
                     onUpload={handleImageUpload}
                     required
                     error={errors.featuredImage}
+                    recommendedImages={prefilledData?.recommendedImages || []}
                   />
                 </div>
               </CardContent>
