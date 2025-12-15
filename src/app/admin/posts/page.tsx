@@ -2,8 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { collection, getDocs, query, orderBy, where, limit, doc, deleteDoc } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import apiService from '@/lib/apiService';
 import AdminLayout from '@/components/admin/AdminLayout';
 import { withAuth } from '@/contexts/AuthContext';
 import { Post, PostStatus, getStatusColor, getStatusLabel, getStatusBadgeClasses, getStatusIconClasses } from '@/types/admin';
@@ -29,30 +28,24 @@ function PostsManager() {
   useEffect(() => {
     const fetchPosts = async () => {
       try {
-        const postsQuery = query(
-          collection(db, 'posts'),
-          orderBy('updatedAt', 'desc')
-        );
-        const postsSnapshot = await getDocs(postsQuery);
-        const postsData: Post[] = postsSnapshot.docs.map(doc => {
-          const data = doc.data();
-          return { 
-            id: doc.id, 
-            ...data,
-            // Ensure author field exists with fallback
-            author: data.author || { name: 'Unknown Author', uid: 'unknown' },
-            // Ensure required fields have defaults
-            title: data.title || 'Untitled Post',
-            slug: data.slug || doc.id,
-            excerpt: data.excerpt || 'No excerpt available',
-            status: data.status || 'draft',
-            updatedAt: data.updatedAt || new Date(),
-          } as Post;
-        });
+        // Note: API currently only returns published posts
+        // For admin, we need all posts - this may need a new endpoint
+        // For now, using the existing endpoint
+        const postsData = await apiService.getPosts({ limit: 100 });
         
+        const formattedPosts: Post[] = postsData.map((post: any) => ({
+          id: post.id,
+          ...post,
+          author: post.author || { name: 'Unknown Author', uid: 'unknown' },
+          title: post.title || 'Untitled Post',
+          slug: post.slug || post.id,
+          excerpt: post.excerpt || 'No excerpt available',
+          status: post.status || 'draft',
+          updatedAt: post.updatedAt ? new Date(post.updatedAt) : new Date(),
+        }));
         
-        setPosts(postsData);
-        setFilteredPosts(postsData);
+        setPosts(formattedPosts);
+        setFilteredPosts(formattedPosts);
       } catch (error) {
         console.error('Error fetching posts:', error);
       } finally {
@@ -90,7 +83,7 @@ function PostsManager() {
 
     setDeleting(postId);
     try {
-      await deleteDoc(doc(db, 'posts', postId));
+      await apiService.deletePost(postId);
       // Remove from local state
       setPosts(prev => prev.filter(post => post.id !== postId));
       setFilteredPosts(prev => prev.filter(post => post.id !== postId));

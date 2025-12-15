@@ -1,8 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { collection, getDocs, doc, updateDoc, deleteDoc } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import apiService from '@/lib/apiService';
 import AdminLayout from '@/components/admin/AdminLayout';
 import { withAuth, useAuth } from '@/contexts/AuthContext';
 import { User, UserRole } from '@/types/admin';
@@ -36,14 +35,14 @@ function UserManager() {
   useEffect(() => {
     const fetchUsers = async () => {
       try {
-        const usersSnapshot = await getDocs(collection(db, 'users'));
-        const usersData = usersSnapshot.docs.map(doc => ({ 
-          uid: doc.id, 
-          ...doc.data() 
+        const usersData = await apiService.getUsers({ limit: 100 });
+        const formattedUsers = usersData.map((user: any) => ({
+          uid: user.uid || user.id,
+          ...user
         } as User));
         
-        setUsers(usersData);
-        setFilteredUsers(usersData);
+        setUsers(formattedUsers);
+        setFilteredUsers(formattedUsers);
       } catch (error) {
         console.error('Error fetching users:', error);
       } finally {
@@ -103,10 +102,7 @@ function UserManager() {
 
   const handleRoleChange = async (userId: string, newRole: UserRole) => {
     try {
-      await updateDoc(doc(db, 'users', userId), {
-        role: newRole,
-        permissions: [], // Will be updated based on role
-      });
+      await apiService.updateUserRole(userId, newRole);
       
       // Update local state
       setUsers(prev => prev.map(user => 
@@ -124,7 +120,7 @@ function UserManager() {
     }
 
     try {
-      await deleteDoc(doc(db, 'users', userId));
+      await apiService.deleteUser(userId);
       setUsers(prev => prev.filter(user => user.uid !== userId));
     } catch (error) {
       console.error('Error deleting user:', error);

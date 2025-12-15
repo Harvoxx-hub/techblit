@@ -2,8 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { collection, query, where, orderBy, limit, getDocs } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import apiService from '@/lib/apiService';
 import { getCategoryGradient } from '@/lib/categories';
 
 interface Post {
@@ -82,27 +81,15 @@ export default function BrandPressSection() {
     const fetchBrandPressPosts = async () => {
       setLoading(true);
       try {
-        const postsRef = collection(db, 'posts');
-        // Query all published posts and filter case-insensitively
-        const q = query(
-          postsRef,
-          where('status', '==', 'published'),
-          orderBy('publishedAt', 'desc'),
-          limit(100) // Fetch more to filter case-insensitively
-        );
-        const querySnapshot = await getDocs(q);
-        const allPosts = querySnapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        })) as Post[];
+        // Fetch posts via API
+        const allPosts = await apiService.getPosts({ limit: 100 });
         
         // Filter posts by category case-insensitively
         const categoryLower = 'Brand Press'.toLowerCase();
-        const filteredPosts = allPosts
+        const filteredPosts = (allPosts as Post[])
           .filter(post => post.category?.toLowerCase() === categoryLower)
           .slice(0, 6); // Limit to 6 posts for 3x2 grid
         
-        console.log('Brand Press posts fetched:', filteredPosts.length, filteredPosts);
         setPosts(filteredPosts);
       } catch (error) {
         console.error('Error fetching brand press posts:', error);

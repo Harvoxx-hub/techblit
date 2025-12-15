@@ -1,6 +1,4 @@
-import { adminDb, isAdminInitialized } from './firebase-admin';
-import { db } from './firebase';
-import { collection, query, where, orderBy, getDocs } from 'firebase/firestore';
+// Server-side API calls for sitemap generation
 
 export interface SitemapUrl {
   loc: string;
@@ -48,36 +46,21 @@ export async function generateSitemap(): Promise<SitemapUrl[]> {
       priority: 0.9,
     });
 
-    // Fetch published blog posts - use Admin SDK in production, client SDK in local dev
+    // Fetch published blog posts via API
     let posts: BlogPost[] = [];
 
     try {
-      if (isAdminInitialized && adminDb) {
-        // Use Admin SDK (production)
-        const postsSnapshot = await adminDb
-          .collection('posts')
-          .where('status', '==', 'published')
-          .orderBy('publishedAt', 'desc')
-          .get();
-        
-        posts = postsSnapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        })) as BlogPost[];
-      } else if (db) {
-        // Fallback to client SDK (local development)
-        const postsRef = collection(db, 'posts');
-        const postsQuery = query(
-          postsRef,
-          where('status', '==', 'published'),
-          orderBy('publishedAt', 'desc')
-        );
-        
-        const postsSnapshot = await getDocs(postsQuery);
-        posts = postsSnapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        })) as BlogPost[];
+      const FUNCTIONS_URL = process.env.NEXT_PUBLIC_FIREBASE_FUNCTIONS_URL || 
+                            'https://us-central1-techblit.cloudfunctions.net';
+      const API_BASE = `${FUNCTIONS_URL}/api/v1`;
+      
+      const response = await fetch(`${API_BASE}/posts?limit=1000`, {
+        cache: 'no-store'
+      });
+      
+      if (response.ok) {
+        const result = await response.json();
+        posts = (result.data || result) as BlogPost[];
       }
     } catch (error) {
       console.error('Error fetching posts for sitemap:', error);

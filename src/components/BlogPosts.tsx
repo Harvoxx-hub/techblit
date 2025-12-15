@@ -1,8 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { collection, query, where, getDocs, orderBy } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import apiService from '@/lib/apiService';
 import Navigation from './ui/Navigation';
 import Footer from './ui/Footer';
 import Hero from './ui/Hero';
@@ -30,20 +29,8 @@ export default function BlogPosts() {
   useEffect(() => {
     const fetchPosts = async () => {
       try {
-        // Fetch from posts collection
-        const postsRef = collection(db, 'posts');
-        const q = query(
-          postsRef,
-          where('status', '==', 'published'),
-          orderBy('publishedAt', 'desc')
-        );
-        const postsSnapshot = await getDocs(q);
-        const postsData = postsSnapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        })) as BlogPost[];
-        
-        setPosts(postsData);
+        const postsData = await apiService.getPosts({ limit: 20 });
+        setPosts(postsData as BlogPost[]);
       } catch (error) {
         console.error('Error fetching posts:', error);
       } finally {

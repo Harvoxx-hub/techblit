@@ -2,8 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { collection, addDoc, serverTimestamp, doc, updateDoc } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import apiService from '@/lib/apiService';
 import AdminLayout from '@/components/admin/AdminLayout';
 import { withAuth, useAuth } from '@/contexts/AuthContext';
 import { Post, PostStatus } from '@/types/admin';
@@ -92,11 +91,9 @@ function NewPostEditor() {
     enabled: !!postId && (post.title?.length || 0) > 0, // Only auto-save if we have a post ID and title
     onSave: async (data) => {
       if (!postId) return;
-      const docRef = doc(db, 'posts', postId);
-      await updateDoc(docRef, {
+      await apiService.updatePost(postId, {
         ...data,
-        updatedAt: serverTimestamp(),
-        lastAutoSaved: serverTimestamp()
+        lastAutoSaved: new Date().toISOString()
       });
     },
     onError: (error) => {
@@ -167,32 +164,22 @@ function NewPostEditor() {
       const sanitizedContentHtml = post.contentHtml ? sanitizeWordPressUrls(post.contentHtml) : '';
       
       const postData = {
-        ...post,
+        title: post.title,
+        content: post.contentHtml || '',
         contentHtml: sanitizedContentHtml,
+        excerpt: post.excerpt,
+        tags: post.tags || [],
+        categories: post.category ? [post.category] : [],
         status: finalStatus,
-        author: {
-          name: user?.name || 'Unknown User',
-          uid: user?.uid || '',
-        },
-        updatedAt: serverTimestamp(),
-        createdAt: serverTimestamp(),
-        publishedAt: finalStatus === 'published' ? serverTimestamp() : null,
-        scheduledAt: post.scheduledAt ? post.scheduledAt : null,
-        history: [{
-          action: finalStatus === 'published' ? 'published' : 
-                  finalStatus === 'scheduled' ? 'scheduled' : 
-                  finalStatus === 'in_review' ? 'review_requested' : 'saved',
-          by: user?.uid || '',
-          at: now.toISOString(),
-          note: finalStatus === 'published' ? 'Post published' : 
-                finalStatus === 'scheduled' ? `Post scheduled for ${post.scheduledAt?.toLocaleString()}` :
-                finalStatus === 'in_review' ? 'Post submitted for review' :
-                'Post saved as draft',
-        }],
+        featuredImage: post.featuredImage,
+        metaTitle: post.metaTitle,
+        metaDescription: post.metaDescription,
+        canonical: post.canonical,
+        scheduledAt: post.scheduledAt ? post.scheduledAt.toISOString() : undefined,
       };
 
-      const docRef = await addDoc(collection(db, 'posts'), postData);
-      setPostId(docRef.id);
+      const result = await apiService.createPost(postData);
+      setPostId(result.id);
       
       // If this is a draft save, stay on the page for auto-save
       if (finalStatus === 'draft') {

@@ -5,6 +5,74 @@ export type PostStatus = 'draft' | 'in_review' | 'scheduled' | 'published' | 'ar
 export type PostVisibility = 'public' | 'private' | 'members-only';
 export type RedirectType = 301 | 302;
 
+// Grok Trends Types
+export type GrokStoryStatus = 'new' | 'draft_created' | 'published' | 'archived';
+
+export const GROK_CATEGORIES = [
+  'Breaking News',
+  'Trending Stories',
+  'Company News',
+  'Product Launches & Reviews',
+  'Funding & Investments',
+  'Regulatory & Policy Changes',
+  'Security & Hacking',
+  'Emerging Technologies'
+] as const;
+
+export type GrokCategory = typeof GROK_CATEGORIES[number];
+
+export interface GrokStory {
+  id: string;
+  title: string;
+  summary: string;
+  category: GrokCategory;
+  x_post_ids: string[];
+  primary_link: string;
+  engagement_score: number;
+  author_handles?: string[];
+  media_urls?: string[];
+  first_seen_at: Date | { toDate: () => Date };
+  fetched_at: Date | { toDate: () => Date };
+  status: GrokStoryStatus;
+  
+  // Review fields
+  reviewedBy?: string;
+  reviewedAt?: Date | { toDate: () => Date };
+  reviewNotes?: string;
+  
+  // Draft fields
+  draft_body?: string;
+  draft_title?: string;
+  draft_excerpt?: string;
+  suggested_tags?: string[];
+  draftGeneratedAt?: Date | { toDate: () => Date };
+  
+  // Published fields
+  published_post_id?: string;
+  publishedAt?: Date | { toDate: () => Date };
+  publishedBy?: string;
+}
+
+export const getGrokStatusBadgeVariant = (status: GrokStoryStatus): 'default' | 'success' | 'warning' | 'danger' | 'info' => {
+  switch (status) {
+    case 'new': return 'info';
+    case 'draft_created': return 'warning';
+    case 'published': return 'success';
+    case 'archived': return 'default';
+    default: return 'default';
+  }
+};
+
+export const getGrokStatusLabel = (status: GrokStoryStatus): string => {
+  switch (status) {
+    case 'new': return 'New';
+    case 'draft_created': return 'Draft Created';
+    case 'published': return 'Published';
+    case 'archived': return 'Archived';
+    default: return 'Unknown';
+  }
+};
+
 export interface User {
   uid: string;
   name: string;

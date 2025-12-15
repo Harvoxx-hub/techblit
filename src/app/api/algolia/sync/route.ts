@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { collection, query, where, getDocs, orderBy, limit } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import apiService from '@/lib/apiService';
 import { bulkIndexPosts } from '@/lib/algolia';
 
 interface BlogPost {
@@ -29,23 +28,8 @@ function stripHtmlTags(html: string): string {
 
 export async function GET(request: NextRequest) {
   try {
-    if (!db) {
-      return NextResponse.json({ error: 'Firebase not initialized' }, { status: 500 });
-    }
-
-    // Fetch all published posts
-    const postsRef = collection(db, 'posts');
-    const postsQuery = query(
-      postsRef,
-      where('status', '==', 'published'),
-      orderBy('publishedAt', 'desc')
-    );
-
-    const postsSnapshot = await getDocs(postsQuery);
-    const posts: BlogPost[] = postsSnapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data()
-    })) as BlogPost[];
+    // Fetch all published posts via API
+    const posts = await apiService.getPosts({ limit: 1000 }) as BlogPost[];
 
     console.log(`Found ${posts.length} published posts to index`);
 

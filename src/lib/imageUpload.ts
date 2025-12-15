@@ -1,7 +1,7 @@
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
-import { storage, db } from '@/lib/firebase';
+import { storage } from '@/lib/firebase';
 import { Media } from '@/types/admin';
+import apiService from '@/lib/apiService';
 import { 
   compressImage, 
   createOGImage, 
@@ -179,11 +179,8 @@ export const uploadImageToMediaLibrary = async (
       mimeType: file.type,
     };
     
-    // Add to Firestore media collection
-    await addDoc(collection(db, 'media'), {
-      ...mediaDoc,
-      createdAt: serverTimestamp(),
-    });
+    // Register in media library via API
+    await apiService.uploadMedia(file);
     
     return processedImage.original.url;
   } catch (error) {

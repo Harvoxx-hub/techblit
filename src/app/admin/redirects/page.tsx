@@ -1,8 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import apiService from '@/lib/apiService';
 import AdminLayout from '@/components/admin/AdminLayout';
 import { withAuth, useAuth } from '@/contexts/AuthContext';
 import { Redirect, RedirectType } from '@/types/admin';
@@ -33,13 +32,8 @@ function RedirectManager() {
   useEffect(() => {
     const fetchRedirects = async () => {
       try {
-        const redirectsSnapshot = await getDocs(collection(db, 'redirects'));
-        const redirectsData = redirectsSnapshot.docs.map(doc => ({ 
-          id: doc.id, 
-          ...doc.data() 
-        } as Redirect));
-        
-        setRedirects(redirectsData);
+        const redirectsData = await apiService.getRedirects();
+        setRedirects(redirectsData as Redirect[]);
       } catch (error) {
         console.error('Error fetching redirects:', error);
       } finally {
@@ -61,10 +55,7 @@ function RedirectManager() {
     try {
       if (editingId) {
         // Update existing redirect
-        await updateDoc(doc(db, 'redirects', editingId), {
-          ...formData,
-          updatedAt: new Date(),
-        });
+        await apiService.updateRedirect(editingId, formData);
         
         setRedirects(prev => prev.map(redirect => 
           redirect.id === editingId 
@@ -73,14 +64,8 @@ function RedirectManager() {
         ));
       } else {
         // Add new redirect
-        const newRedirect = {
-          ...formData,
-          createdBy: user?.uid || 'unknown',
-          createdAt: new Date(),
-        };
-        
-        const docRef = await addDoc(collection(db, 'redirects'), newRedirect);
-        setRedirects(prev => [...prev, { id: docRef.id, ...newRedirect }]);
+        const result = await apiService.createRedirect(formData);
+        setRedirects(prev => [...prev, { id: result.id, ...formData, createdBy: user?.uid || 'unknown', createdAt: new Date() }]);
       }
       
       // Reset form
@@ -117,7 +102,7 @@ function RedirectManager() {
     }
 
     try {
-      await deleteDoc(doc(db, 'redirects', redirectId));
+      await apiService.deleteRedirect(redirectId);
       setRedirects(prev => prev.filter(redirect => redirect.id !== redirectId));
     } catch (error) {
       console.error('Error deleting redirect:', error);
@@ -127,10 +112,7 @@ function RedirectManager() {
 
   const handleToggleActive = async (redirectId: string, currentActive: boolean) => {
     try {
-      await updateDoc(doc(db, 'redirects', redirectId), {
-        active: !currentActive,
-        updatedAt: new Date(),
-      });
+      await apiService.updateRedirect(redirectId, { active: !currentActive });
       
       setRedirects(prev => prev.map(redirect => 
         redirect.id === redirectId 

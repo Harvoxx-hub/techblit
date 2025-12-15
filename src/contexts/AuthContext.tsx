@@ -6,12 +6,13 @@ import {
   onAuthStateChanged, 
   signInWithEmailAndPassword,
   signOut,
-  createUserWithEmailAndPassword
+  createUserWithEmailAndPassword,
+  getIdToken
 } from 'firebase/auth';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
-import { auth, db } from '@/lib/firebase';
+import { auth } from '@/lib/firebase';
 import { User, UserRole, hasPermission } from '@/types/admin';
+import apiService from '@/lib/apiService';
 
 interface AuthContextType {
   user: User | null;
@@ -24,6 +25,7 @@ interface AuthContextType {
   isAdmin: boolean;
   isEditor: boolean;
   isAuthor: boolean;
+  getToken: () => Promise<string | null>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -39,48 +41,52 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       
       if (firebaseUser) {
         try {
-          // Fetch user data from Firestore
-          const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid));
+          // Set auth token for API service
+          const token = await firebaseUser.getIdToken();
+          apiService.setAuthToken(token);
           
-          if (userDoc.exists()) {
-            const userData = userDoc.data();
+          // Fetch user data from API
+          try {
+            const userData = await apiService.getUserProfile() as any;
             setUser({
               uid: firebaseUser.uid,
               name: userData.name,
               email: userData.email,
               role: userData.role,
               avatar: userData.avatar,
-              createdAt: userData.createdAt?.toDate() || new Date(),
-              lastSeen: userData.lastSeen?.toDate() || new Date(),
+              createdAt: userData.createdAt ? new Date(userData.createdAt) : new Date(),
+              lastSeen: userData.lastSeen ? new Date(userData.lastSeen) : new Date(),
               permissions: userData.permissions || [],
               isActive: userData.isActive !== false,
             });
-          } else {
-            // Create user document if it doesn't exist
-            const newUser: User = {
-              uid: firebaseUser.uid,
-              name: firebaseUser.displayName || 'Unknown User',
-              email: firebaseUser.email || '',
-              role: 'viewer',
-              createdAt: new Date(),
-              lastSeen: new Date(),
-              permissions: [],
-              isActive: true,
-            };
-            
-            await setDoc(doc(db, 'users', firebaseUser.uid), {
-              ...newUser,
-              createdAt: new Date(),
-              lastSeen: new Date(),
-            });
-            
-            setUser(newUser);
+          } catch (apiError: any) {
+            // If user profile doesn't exist (404), create it
+            if (apiError.message?.includes('404') || apiError.message?.includes('not found')) {
+              const newUser: User = {
+                uid: firebaseUser.uid,
+                name: firebaseUser.displayName || 'Unknown User',
+                email: firebaseUser.email || '',
+                role: 'viewer',
+                createdAt: new Date(),
+                lastSeen: new Date(),
+                permissions: [],
+                isActive: true,
+              };
+              
+              // Note: User creation should be handled by backend on first login
+              // For now, set user with default values
+              setUser(newUser);
+            } else {
+              console.error('Error fetching user data:', apiError);
+              setUser(null);
+            }
           }
         } catch (error) {
-          console.error('Error fetching user data:', error);
+          console.error('Error in auth state change:', error);
           setUser(null);
         }
       } else {
+        apiService.setAuthToken(null);
         setUser(null);
       }
       
@@ -102,22 +108,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signUp = async (email: string, password: string, name: string, role: UserRole) => {
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      const newUser: User = {
-        uid: userCredential.user.uid,
-        name,
-        email,
-        role,
-        createdAt: new Date(),
-        lastSeen: new Date(),
-        permissions: [],
-        isActive: true,
-      };
-      
-      await setDoc(doc(db, 'users', userCredential.user.uid), {
-        ...newUser,
-        createdAt: new Date(),
-        lastSeen: new Date(),
-      });
+      // User document creation is handled by backend on first login
+      // No need to create it here via API
     } catch (error) {
       console.error('Sign up error:', error);
       throw error;
@@ -138,6 +130,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return hasPermission(user.role, permission);
   };
 
+  const getToken = async (): Promise<string | null> => {
+    if (!firebaseUser) return null;
+    try {
+      return await getIdToken(firebaseUser);
+    } catch (error) {
+      console.error('Error getting auth token:', error);
+      return null;
+    }
+  };
+
   const value: AuthContextType = {
     user,
     firebaseUser,
@@ -149,6 +151,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     isAdmin: user?.role === 'super_admin',
     isEditor: user?.role === 'editor' || user?.role === 'super_admin',
     isAuthor: ['author', 'editor', 'super_admin'].includes(user?.role || ''),
+    getToken,
   };
 
   return (

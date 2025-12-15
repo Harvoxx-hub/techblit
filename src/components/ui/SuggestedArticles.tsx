@@ -1,8 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { collection, query, where, getDocs, limit, orderBy } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import apiService from '@/lib/apiService';
 import Link from 'next/link';
  
 interface BlogPost {
@@ -40,89 +39,28 @@ export default function SuggestedArticles({
   useEffect(() => {
     const fetchSuggestedPosts = async () => {
       try {
-        if (!db) {
-          setLoading(false);
-          return;
-        }
+        // Fetch recent posts from API
+        const allPosts = await apiService.getPosts({ limit: 10 });
+        let posts = allPosts as BlogPost[];
 
-        // Fetch from posts collection
-        const postsRef = collection(db, 'posts');
-        let suggestedQuery;
+        // Filter out the current post
+        posts = posts.filter(post => post.id !== currentPostId);
 
-        // If we have categories or tags, try to find related posts
-        if (currentPostCategories.length > 0 || currentPostTags.length > 0) {
-          // First try to find posts with matching categories
-          if (currentPostCategories.length > 0) {
-            suggestedQuery = query(
-              postsRef,
-              where('categories', 'array-contains-any', currentPostCategories),
-              where('status', '==', 'published'),
-              orderBy('publishedAt', 'desc'),
-              limit(3)
-            );
-          }
-          // If no category matches, try tags
-          else if (currentPostTags.length > 0) {
-            suggestedQuery = query(
-              postsRef,
-              where('tags', 'array-contains-any', currentPostTags),
-              where('status', '==', 'published'),
-              orderBy('publishedAt', 'desc'),
-              limit(3)
-            );
-          }
-        }
-
-        // If no specific query, get recent posts
-        if (!suggestedQuery) {
-          suggestedQuery = query(
-            postsRef,
-            where('status', '==', 'published'),
-            orderBy('publishedAt', 'desc'),
-            limit(4)
+        // If we have categories, prioritize matching posts
+        if (currentPostCategories.length > 0) {
+          const categoryPosts = posts.filter(post => 
+            post.categories?.some(cat => 
+              currentPostCategories.includes(cat)
+            )
           );
-        }
-
-        try {
-          const snapshot = await getDocs(suggestedQuery);
-          let posts = snapshot.docs.map(doc => ({
-            id: doc.id,
-            ...doc.data()
-          })) as BlogPost[];
-
-          // Filter out the current post
-          posts = posts.filter(post => post.id !== currentPostId);
-
-          // If we don't have enough posts, fetch more recent ones
-          if (posts.length < 3) {
-            const recentQuery = query(
-              postsRef,
-              where('status', '==', 'published'),
-              orderBy('publishedAt', 'desc'),
-              limit(6)
-            );
-            const recentSnapshot = await getDocs(recentQuery);
-            const recentPosts = recentSnapshot.docs.map(doc => ({
-              id: doc.id,
-              ...doc.data()
-            })) as BlogPost[];
-
-            // Combine and deduplicate
-            const allPosts = [...posts, ...recentPosts];
-            const uniquePosts = allPosts.filter((post, index, self) => 
-              index === self.findIndex(p => p.id === post.id) && post.id !== currentPostId
-            );
-
-            posts = uniquePosts.slice(0, 3);
-          } else {
-            posts = posts.slice(0, 3);
+          if (categoryPosts.length >= 3) {
+            posts = categoryPosts;
           }
-
-          setSuggestedPosts(posts);
-        } catch (error) {
-          console.error('Error fetching suggested posts:', error);
-          setSuggestedPosts([]);
         }
+        
+        // Limit to 3 posts
+        posts = posts.slice(0, 3);
+        setSuggestedPosts(posts);
       } catch (error) {
         console.error('Error fetching suggested posts:', error);
       } finally {

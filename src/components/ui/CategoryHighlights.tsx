@@ -2,8 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { collection, query, orderBy, limit, getDocs } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import apiService from '@/lib/apiService';
 import { gradients } from '@/lib/colors';
 
 interface Post {
@@ -28,20 +27,9 @@ export default function CategoryHighlights() {
       try {
         setLoading(true);
         
-        // Query latest 8 posts across all categories
-        const postsQuery = query(
-          collection(db, 'posts'),
-          orderBy('publishedAt', 'desc'),
-          limit(8)
-        );
-
-        const postsSnapshot = await getDocs(postsQuery);
-        const fetchedPosts: Post[] = postsSnapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        })) as Post[];
-
-        setPosts(fetchedPosts);
+        // Fetch latest posts via API
+        const fetchedPosts = await apiService.getPosts({ limit: 8 });
+        setPosts(fetchedPosts as Post[]);
       } catch (err) {
         console.error('Error fetching latest posts:', err);
         setError('Failed to load latest posts');

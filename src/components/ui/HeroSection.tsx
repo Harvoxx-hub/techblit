@@ -1,8 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { collection, query, where, getDocs, orderBy, limit } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import apiService from '@/lib/apiService';
 import Link from 'next/link';
 import { gradients } from '@/lib/colors';
 
@@ -31,40 +30,9 @@ export default function HeroSection({ mainPost, secondaryPosts }: HeroSectionPro
   useEffect(() => {
     const fetchFeaturedPosts = async () => {
       try {
-        // Try to fetch featured posts first
-        const postsRef = collection(db, 'posts');
-        const featuredQuery = query(
-          postsRef,
-          where('status', '==', 'published'),
-          where('isFeatured', '==', true),
-          orderBy('publishedAt', 'desc'),
-          limit(5)
-        );
-        
-        const featuredSnapshot = await getDocs(featuredQuery);
-        
-        if (!featuredSnapshot.empty) {
-          const posts = featuredSnapshot.docs.map(doc => ({
-            id: doc.id,
-            ...doc.data()
-          })) as FeaturedPost[];
-          setFeaturedPosts(posts);
-        } else {
-          // Fallback to most recent posts
-          const recentQuery = query(
-            postsRef,
-            where('status', '==', 'published'),
-            orderBy('publishedAt', 'desc'),
-            limit(5)
-          );
-          
-          const recentSnapshot = await getDocs(recentQuery);
-          const posts = recentSnapshot.docs.map(doc => ({
-            id: doc.id,
-            ...doc.data()
-          })) as FeaturedPost[];
-          setFeaturedPosts(posts);
-        }
+        // Fetch recent posts from API
+        const posts = await apiService.getPosts({ limit: 5 });
+        setFeaturedPosts(posts as FeaturedPost[]);
       } catch (error) {
         console.error('Error fetching featured posts:', error);
       } finally {

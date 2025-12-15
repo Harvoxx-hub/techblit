@@ -1,5 +1,4 @@
-import { collection, query, where, getDocs, orderBy, limit } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+// Server-side API calls
 import Link from 'next/link';
 import Navigation from '@/components/ui/Navigation';
 import Footer from '@/components/ui/Footer';
@@ -21,34 +20,27 @@ interface Post {
 async function getBlogPosts(page: number = 1): Promise<{ posts: Post[]; total: number }> {
   const pageSize = 25;
   try {
-    if (!db) {
-      console.error('Firebase not initialized');
+    const FUNCTIONS_URL = process.env.NEXT_PUBLIC_FIREBASE_FUNCTIONS_URL || 
+                          'https://us-central1-techblit.cloudfunctions.net';
+    const API_BASE = `${FUNCTIONS_URL}/api/v1`;
+    
+    // Fetch all posts (API doesn't support pagination yet, so we fetch all and paginate client-side)
+    const response = await fetch(`${API_BASE}/posts?limit=1000`, {
+      next: { revalidate: 3600 } // Revalidate every hour
+    });
+    
+    if (!response.ok) {
+      console.error('Failed to fetch posts');
       return { posts: [], total: 0 };
     }
-
-    // Fetch from posts collection where all published posts are stored
-    const postsRef = collection(db, 'posts');
-    const q = query(
-      postsRef,
-      where('status', '==', 'published'),
-      orderBy('publishedAt', 'desc'),
-      limit(1000) // Get all to calculate total
-    );
-    const postsSnapshot = await getDocs(q);
-    const allPosts = postsSnapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data()
-    })) as Post[];
-
+    
+    const result = await response.json();
+    const allPosts = (result.data || result) as Post[];
+    
     const total = allPosts.length;
     const startIndex = (page - 1) * pageSize;
     const endIndex = startIndex + pageSize;
     const posts = allPosts.slice(startIndex, endIndex);
-
-    console.log('✓ Fetched from posts collection');
-    console.log('Total posts:', total);
-    console.log('Page:', page, 'Showing:', posts.length);
-    console.log('First 3 posts:', posts.slice(0, 3).map(p => ({ title: p.title, publishedAt: p.publishedAt })));
     
     return { posts, total };
   } catch (error) {

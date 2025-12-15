@@ -2,8 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { collection, query, where, orderBy, limit, getDocs } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import apiService from '@/lib/apiService';
 import { getCategoryGradient } from '@/lib/categories';
 
 interface Post {
@@ -94,26 +93,14 @@ export default function CategorySection({
     const fetchCategoryPosts = async () => {
       setLoading(true);
       try {
-        const postsRef = collection(db, 'posts');
-        // Query all published posts and filter case-insensitively
-        // We fetch more than needed to account for filtering
-        const q = query(
-          postsRef,
-          where('status', '==', 'published'),
-          orderBy('publishedAt', 'desc'),
-          limit(100) // Fetch more to filter case-insensitively
-        );
-        const querySnapshot = await getDocs(q);
-        const allPosts = querySnapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        })) as Post[];
+        // Fetch from API and filter by category
+        const allPosts = await apiService.getPosts({ limit: 100 });
         
         // Filter posts by category case-insensitively
         const categoryLower = categoryLabel.toLowerCase();
-        const filteredPosts = allPosts
+        const filteredPosts = (allPosts as Post[])
           .filter(post => post.category?.toLowerCase() === categoryLower)
-          .slice(0, postsLimit); // Limit after filtering
+          .slice(0, postsLimit);
         
         setPosts(filteredPosts);
       } catch (error) {

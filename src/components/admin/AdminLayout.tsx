@@ -14,7 +14,8 @@ import {
   ChartBarIcon,
   ClipboardDocumentListIcon,
   Bars3Icon,
-  XMarkIcon
+  XMarkIcon,
+  SparklesIcon
 } from '@heroicons/react/24/outline';
 
 interface AdminLayoutProps {
@@ -28,6 +29,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   const navigation = [
     { name: 'Dashboard', href: '/admin', icon: HomeIcon, permission: null },
     { name: 'Posts', href: '/admin/posts', icon: DocumentTextIcon, permission: 'create_post' },
+    { name: 'Grok Trends', href: '/admin/grok-trends', icon: SparklesIcon, permission: 'create_post' },
     { name: 'Media', href: '/admin/media', icon: PhotoIcon, permission: 'upload_media' },
     { name: 'Redirects', href: '/admin/redirects', icon: ArrowPathIcon, permission: 'manage_redirects' },
     { name: 'Users', href: '/admin/users', icon: UsersIcon, permission: 'manage_users' },

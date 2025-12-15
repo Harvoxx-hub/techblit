@@ -1,5 +1,4 @@
-import { collection, query, where, getDocs, orderBy, limit } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+// Server-side API calls
 import Link from 'next/link';
 import Navigation from '@/components/ui/Navigation';
 import Footer from '@/components/ui/Footer';
@@ -22,47 +21,34 @@ interface Post {
 // Server-side function to fetch posts for a category
 async function getCategoryPosts(categorySlug: string): Promise<{ posts: Post[]; recommendedPosts: Post[] }> {
   try {
-    if (!db) {
-      console.error('Firebase not initialized');
+    const FUNCTIONS_URL = process.env.NEXT_PUBLIC_FIREBASE_FUNCTIONS_URL || 
+                          'https://us-central1-techblit.cloudfunctions.net';
+    const API_BASE = `${FUNCTIONS_URL}/api/v1`;
+    
+    // Fetch posts by category from API
+    const response = await fetch(`${API_BASE}/categories/${categorySlug}/posts?limit=20`, {
+      next: { revalidate: 3600 }
+    });
+    
+    if (!response.ok) {
+      // If category not found, return empty
       return { posts: [], recommendedPosts: [] };
     }
-
-    const category = getCategoryBySlug(categorySlug);
-    if (!category) {
-      return { posts: [], recommendedPosts: [] };
-    }
-
-    // Fetch posts for this category
-    const postsRef = collection(db, 'posts');
-    const categoryQuery = query(
-      postsRef,
-      where('status', '==', 'published'),
-      where('category', '==', category.label),
-      orderBy('publishedAt', 'desc'),
-      limit(20)
-    );
-
-    const categorySnapshot = await getDocs(categoryQuery);
-    const categoryPosts = categorySnapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data()
-    })) as Post[];
-
-    // If no posts found, fetch recommended posts (latest posts)
+    
+    const result = await response.json();
+    const categoryData = result.data || result;
+    const categoryPosts = categoryData.posts || [];
+    
+    // Fetch recommended posts if no category posts
     let recommendedPosts: Post[] = [];
     if (categoryPosts.length === 0) {
-      const recommendedQuery = query(
-        postsRef,
-        where('status', '==', 'published'),
-        orderBy('publishedAt', 'desc'),
-        limit(6)
-      );
-
-      const recommendedSnapshot = await getDocs(recommendedQuery);
-      recommendedPosts = recommendedSnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      })) as Post[];
+      const recommendedResponse = await fetch(`${API_BASE}/posts?limit=6`, {
+        next: { revalidate: 3600 }
+      });
+      if (recommendedResponse.ok) {
+        const recommendedResult = await recommendedResponse.json();
+        recommendedPosts = recommendedResult.data || recommendedResult;
+      }
     }
 
     return { posts: categoryPosts, recommendedPosts };

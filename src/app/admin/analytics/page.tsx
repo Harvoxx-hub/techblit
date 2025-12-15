@@ -1,8 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { collection, getDocs, query, orderBy, limit } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import apiService from '@/lib/apiService';
 import AdminLayout from '@/components/admin/AdminLayout';
 import { withAuth } from '@/contexts/AuthContext';
 import { Post } from '@/types/admin';
@@ -23,17 +22,8 @@ function AnalyticsDashboard() {
   useEffect(() => {
     const fetchAnalyticsData = async () => {
       try {
-        const postsQuery = query(
-          collection(db, 'posts'),
-          orderBy('publishedAt', 'desc')
-        );
-        const postsSnapshot = await getDocs(postsQuery);
-        const postsData = postsSnapshot.docs.map(doc => ({ 
-          id: doc.id, 
-          ...doc.data() 
-        } as Post));
-        
-        setPosts(postsData);
+        const postsData = await apiService.getPosts({ limit: 100 });
+        setPosts(postsData as Post[]);
       } catch (error) {
         console.error('Error fetching analytics data:', error);
       } finally {

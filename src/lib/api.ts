@@ -47,6 +47,12 @@ export const API_ENDPOINTS = {
   getAuditLogFilters: `${FUNCTIONS_URL}/getAuditLogFilters`,
   getAuditLogById: `${FUNCTIONS_URL}/getAuditLogById`,
   
+  // Admin API - Grok Trends
+  getGrokStories: `${FUNCTIONS_URL}/getGrokStories`,
+  updateGrokStoryStatus: `${FUNCTIONS_URL}/updateGrokStoryStatus`,
+  getGrokStats: `${FUNCTIONS_URL}/getGrokStats`,
+  fetchGrokStories: `${FUNCTIONS_URL}/fetchGrokStories`,
+  
   // Notification API
   getNotifications: `${FUNCTIONS_URL}/getNotifications`,
   markNotificationRead: `${FUNCTIONS_URL}/markNotificationRead`,

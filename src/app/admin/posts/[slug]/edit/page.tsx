@@ -2,8 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import { doc, getDoc, updateDoc, serverTimestamp, collection, query, where, getDocs } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import apiService from '@/lib/apiService';
 import AdminLayout from '@/components/admin/AdminLayout';
 import { withAuth, useAuth } from '@/contexts/AuthContext';
 
@@ -90,18 +89,13 @@ function EditPostEditor() {
           return;
         }
 
-        // Query posts by slug
-        const postsRef = collection(db, 'posts');
-        const q = query(postsRef, where('slug', '==', slug));
-        const querySnapshot = await getDocs(q);
+        // Fetch post by slug from API
+        const postData = await apiService.getPostBySlug(slug);
         
-        if (querySnapshot.empty) {
+        if (!postData) {
           setError('Post not found');
           return;
         }
-
-        const postDoc = querySnapshot.docs[0];
-        const postData = { id: postDoc.id, ...postDoc.data() } as Post;
         
         // Check permissions
         const canEditAnyPost = hasPermission(user?.role || 'viewer', PERMISSIONS.EDIT_ANY_POST);
@@ -175,12 +169,30 @@ function EditPostEditor() {
         ],
       };
 
-      // Filter out undefined values
-      const filteredPostData = Object.fromEntries(
-        Object.entries(postData).filter(([_, value]) => value !== undefined)
-      );
+      // Filter out undefined values and prepare for API
+      const updateData: any = {
+        title: post.title,
+        content: post.contentHtml,
+        contentHtml: sanitizedContentHtml,
+        excerpt: post.excerpt,
+        tags: post.tags || [],
+        categories: post.category ? [post.category] : [],
+        status: finalStatus,
+        featuredImage: post.featuredImage,
+        metaTitle: post.metaTitle,
+        metaDescription: post.metaDescription,
+        canonical: post.canonical,
+        scheduledAt: post.scheduledAt ? post.scheduledAt.toISOString() : undefined,
+      };
 
-      await updateDoc(doc(db, 'posts', post.id!), filteredPostData);
+      // Remove undefined values
+      Object.keys(updateData).forEach(key => {
+        if (updateData[key] === undefined) {
+          delete updateData[key];
+        }
+      });
+
+      await apiService.updatePost(post.id!, updateData);
       router.push('/admin/posts');
     } catch (error) {
       console.error('Error saving post:', error);

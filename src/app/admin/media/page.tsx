@@ -1,9 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { collection, getDocs, addDoc, deleteDoc, doc } from 'firebase/firestore';
-import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
-import { db, storage } from '@/lib/firebase';
+import apiService from '@/lib/apiService';
 import AdminLayout from '@/components/admin/AdminLayout';
 import { withAuth, useAuth } from '@/contexts/AuthContext';
 import { Media } from '@/types/admin';
@@ -41,14 +39,9 @@ function MediaLibrary() {
   useEffect(() => {
     const fetchMedia = async () => {
       try {
-        const mediaSnapshot = await getDocs(collection(db, 'media'));
-        const mediaData = mediaSnapshot.docs.map(doc => ({ 
-          id: doc.id, 
-          ...doc.data() 
-        } as Media));
-        
-        setMedia(mediaData);
-        setFilteredMedia(mediaData);
+        const mediaData = await apiService.getMedia();
+        setMedia(mediaData as Media[]);
+        setFilteredMedia(mediaData as Media[]);
       } catch (error) {
         console.error('Error fetching media:', error);
       } finally {
@@ -80,46 +73,14 @@ function MediaLibrary() {
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
         
-        // Create storage reference
-        const storageRef = ref(storage, `media/${Date.now()}-${file.name}`);
-        
-        // Upload file
-        const snapshot = await uploadBytes(storageRef, file);
-        const downloadURL = await getDownloadURL(snapshot.ref);
-        
-        // Get image dimensions for images
-        const dimensions = file.type.startsWith('image/') 
-          ? await getImageDimensions(file)
-          : { width: 0, height: 0 };
-
-        // Create media document
-        const mediaDoc = {
-          fileName: file.name,
-          storagePath: snapshot.ref.fullPath,
-          url: downloadURL,
-          uploadedBy: user?.uid || 'unknown',
-          width: dimensions.width,
-          height: dimensions.height,
-          alt: file.name,
-          caption: '',
-          sizes: {},
-          createdAt: new Date(),
-          fileSize: file.size,
-          mimeType: file.type,
-        };
-        
-        await addDoc(collection(db, 'media'), mediaDoc);
+        // Upload via API
+        await apiService.uploadMedia(file);
       }
       
       // Refresh media list
-      const mediaSnapshot = await getDocs(collection(db, 'media'));
-      const mediaData = mediaSnapshot.docs.map(doc => ({ 
-        id: doc.id, 
-        ...doc.data() 
-      } as Media));
-      
-      setMedia(mediaData);
-      setFilteredMedia(mediaData);
+      const mediaData = await apiService.getMedia();
+      setMedia(mediaData as Media[]);
+      setFilteredMedia(mediaData as Media[]);
     } catch (error) {
       console.error('Error uploading files:', error);
       alert('Failed to upload files');
@@ -134,12 +95,8 @@ function MediaLibrary() {
     }
 
     try {
-      // Delete from storage
-      const storageRef = ref(storage, storagePath);
-      await deleteObject(storageRef);
-      
-      // Delete from Firestore
-      await deleteDoc(doc(db, 'media', mediaId));
+      // Delete via API (handles storage and database)
+      await apiService.deleteMedia(mediaId);
       
       // Update local state
       setMedia(prev => prev.filter(item => item.id !== mediaId));

@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
-import { collection, query, where, getDocs, orderBy, limit } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import apiService from '@/lib/apiService';
 
 interface BlogPost {
   id: string;
@@ -41,34 +40,11 @@ export function usePosts(options: UsePostsOptions = {}) {
         setLoading(true);
         setError(null);
 
-        // Fetch from posts collection
-        const postsRef = collection(db, 'posts');
-        let postsQuery = query(
-          postsRef,
-          where('status', '==', 'published')
-        );
+        const postsData = await apiService.getPosts({
+          limit: options.limit
+        });
         
-        // Apply ordering
-        if (options.orderBy) {
-          postsQuery = query(
-            postsRef,
-            where('status', '==', 'published'),
-            orderBy(options.orderBy, options.orderDirection || 'desc')
-          );
-        }
-        
-        // Apply limit
-        if (options.limit) {
-          postsQuery = query(postsQuery, limit(options.limit));
-        }
-        
-        const postsSnapshot = await getDocs(postsQuery);
-        const postsData = postsSnapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        })) as BlogPost[];
-        
-        setPosts(postsData);
+        setPosts(postsData as BlogPost[]);
       } catch (error) {
         console.error('Error fetching posts:', error);
         setError('Failed to load posts');
@@ -102,27 +78,8 @@ export function usePost(slug: string) {
         setLoading(true);
         setError(null);
 
-        // Fetch from posts collection
-        const postsRef = collection(db, 'posts');
-        const postQuery = query(
-          postsRef, 
-          where('slug', '==', slug),
-          where('status', '==', 'published'),
-          limit(1)
-        );
-        
-        const querySnapshot = await getDocs(postQuery);
-        
-        if (querySnapshot.empty) {
-          setError('Post not found or not published');
-          return;
-        }
-
-        const postDoc = querySnapshot.docs[0];
-        setPost({
-          id: postDoc.id,
-          ...postDoc.data()
-        } as BlogPost);
+        const postData = await apiService.getPostBySlug(slug);
+        setPost(postData as BlogPost);
       } catch (error) {
         console.error('Error fetching post:', error);
         setError('Failed to load post');

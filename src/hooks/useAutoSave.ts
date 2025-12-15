@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { doc, updateDoc, serverTimestamp } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import apiService from '@/lib/apiService';
 
 interface AutoSaveOptions {
   interval?: number; // milliseconds
@@ -67,12 +66,10 @@ export function useAutoSave<T>(
       if (onSave) {
         await onSave(dataToSave);
       } else {
-        // Default save to Firestore
-        const docRef = doc(db, 'posts', documentId);
-        await updateDoc(docRef, {
+        // Default save via API
+        await apiService.updatePost(documentId, {
           ...dataToSave,
-          updatedAt: serverTimestamp(),
-          lastAutoSaved: serverTimestamp()
+          lastAutoSaved: new Date().toISOString()
         });
       }
 

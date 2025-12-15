@@ -1,21 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { doc, getDoc } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import apiService from '@/lib/apiService';
 import { generateRobotsTxt } from '@/lib/sitemap';
 
 export async function GET(request: NextRequest) {
   try {
     const siteUrl = process.env.SITE_URL || 'https://techblit.com';
     
-    // Try to get custom robots.txt from settings
-    const settingsDoc = await getDoc(doc(db, 'settings', 'site'));
+    // Try to get custom robots.txt from settings via API
     let robotsContent = generateRobotsTxt(siteUrl);
     
-    if (settingsDoc.exists()) {
-      const settings = settingsDoc.data();
-      if (settings.customRobotsTxt) {
-        robotsContent = settings.customRobotsTxt;
+    try {
+      const settings = await apiService.getSettings();
+      if (settings?.customRobotsTxt) {
+        robotsContent = settings.customRobotsTxt as string;
       }
+    } catch (settingsError) {
+      // Use default if settings fetch fails
+      console.warn('Failed to fetch settings for robots.txt:', settingsError);
     }
     
     return new NextResponse(robotsContent, {

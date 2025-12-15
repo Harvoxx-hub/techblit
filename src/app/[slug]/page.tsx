@@ -8,9 +8,8 @@ import NewsletterSection from '@/components/ui/NewsletterSection';
 import SideBanner from '@/components/ui/SideBanner';
 import { generatePostSEO, generateStructuredData } from '@/lib/seo';
 import { Metadata } from 'next';
-import { adminDb, isAdminInitialized } from '@/lib/firebase-admin';
-import { db } from '@/lib/firebase';
-import { collection, query, where, getDocs, limit } from 'firebase/firestore';
+// Note: This is a server component, so we'll use direct API calls
+// For server-side, we can call the API directly
 import { ProcessedImage } from '@/lib/imageProcessing';
 
 interface BlogPost {
@@ -65,52 +64,26 @@ function getImageUrl(image: ProcessedImage | { url: string; alt: string; width?:
   return getCrawlableImageUrl(url);
 }
 
-// Server-side function to fetch post data from Firebase
-// Uses Admin SDK in production, falls back to client SDK in local development
+// Server-side function to fetch post data from API
 async function getPost(slug: string): Promise<BlogPost | null> {
   try {
-    // Try Admin SDK first (for production)
-    if (isAdminInitialized && adminDb) {
-      const postsSnapshot = await adminDb
-        .collection('posts')
-        .where('slug', '==', slug)
-        .where('status', '==', 'published')
-        .limit(1)
-        .get();
-      
-      if (!postsSnapshot.empty) {
-        const postDoc = postsSnapshot.docs[0];
-        return {
-          id: postDoc.id,
-          ...postDoc.data()
-        } as BlogPost;
-      }
-    } else {
-      // Fallback to client SDK for local development
-      if (!db) {
-        console.error('Firebase not initialized');
+    const FUNCTIONS_URL = process.env.NEXT_PUBLIC_FIREBASE_FUNCTIONS_URL || 
+                          'https://us-central1-techblit.cloudfunctions.net';
+    const API_BASE = `${FUNCTIONS_URL}/api/v1`;
+    
+    const response = await fetch(`${API_BASE}/posts/${slug}`, {
+      cache: 'no-store' // Ensure fresh data
+    });
+    
+    if (!response.ok) {
+      if (response.status === 404) {
         return null;
       }
-
-      const postsRef = collection(db, 'posts');
-      const postsQuery = query(
-        postsRef,
-        where('slug', '==', slug),
-        where('status', '==', 'published'),
-        limit(1)
-      );
-      
-      const postsSnapshot = await getDocs(postsQuery);
-      if (!postsSnapshot.empty) {
-        const postDoc = postsSnapshot.docs[0];
-        return {
-          id: postDoc.id,
-          ...postDoc.data()
-        } as BlogPost;
-      }
+      throw new Error(`Failed to fetch post: ${response.status}`);
     }
-
-    return null;
+    
+    const result = await response.json();
+    return result.data || result as BlogPost;
   } catch (error) {
     console.error('Error fetching post:', error);
     return null;
@@ -120,42 +93,25 @@ async function getPost(slug: string): Promise<BlogPost | null> {
 // Generate static params for SSG - fetch all published post slugs at build time
 export async function generateStaticParams() {
   try {
-    const slugs: { slug: string }[] = [];
-
-    // Try Admin SDK first (for production)
-    if (isAdminInitialized && adminDb) {
-      const postsSnapshot = await adminDb
-        .collection('posts')
-        .where('status', '==', 'published')
-        .get();
-      
-      postsSnapshot.forEach((doc) => {
-        const data = doc.data();
-        if (data.slug) {
-          slugs.push({ slug: data.slug });
-        }
-      });
-    } else if (db) {
-      // Fallback to client SDK for local development
-      const postsRef = collection(db, 'posts');
-      const postsQuery = query(
-        postsRef,
-        where('status', '==', 'published')
-      );
-      
-      const postsSnapshot = await getDocs(postsQuery);
-      postsSnapshot.forEach((doc) => {
-        const data = doc.data();
-        if (data.slug) {
-          slugs.push({ slug: data.slug });
-        }
-      });
-    } else {
-      console.warn('Firebase not initialized, skipping static generation');
+    const FUNCTIONS_URL = process.env.NEXT_PUBLIC_FIREBASE_FUNCTIONS_URL || 
+                          'https://us-central1-techblit.cloudfunctions.net';
+    const API_BASE = `${FUNCTIONS_URL}/api/v1`;
+    
+    const response = await fetch(`${API_BASE}/posts?limit=1000`, {
+      next: { revalidate: 3600 } // Revalidate every hour
+    });
+    
+    if (!response.ok) {
+      console.warn('Failed to fetch posts for static generation');
       return [];
     }
-
-    return slugs;
+    
+    const result = await response.json();
+    const posts = result.data || result;
+    
+    return posts.map((post: any) => ({
+      slug: post.slug || post.id
+    }));
   } catch (error) {
     console.error('Error generating static params:', error);
     return [];

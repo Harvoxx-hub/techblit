@@ -2,8 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { collection, getDocs, query, where, orderBy, limit } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import apiService from '@/lib/apiService';
 import AdminLayout from '@/components/admin/AdminLayout';
 import { withAuth } from '@/contexts/AuthContext';
 import { Post, User } from '@/types/admin';
@@ -44,69 +43,37 @@ function AdminDashboard() {
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
-        // Fetch posts stats
-        const postsSnapshot = await getDocs(collection(db, 'posts'));
-        const posts: Post[] = postsSnapshot.docs.map(doc => {
-          const data = doc.data();
-          return { 
-            id: doc.id, 
-            ...data,
-            // Ensure author field exists with fallback
-            author: data.author || { name: 'Unknown Author', uid: 'unknown' },
-            // Ensure required fields have defaults
-            title: data.title || 'Untitled Post',
-            slug: data.slug || doc.id,
-            excerpt: data.excerpt || 'No excerpt available',
-            status: data.status || 'draft',
-            updatedAt: data.updatedAt || new Date(),
-          } as Post;
-        });
+        // Fetch posts via API
+        const posts = await apiService.getPosts({ limit: 100 });
         
         const stats = {
           totalPosts: posts.length,
-          publishedPosts: posts.filter(p => p.status === 'published').length,
-          draftPosts: posts.filter(p => p.status === 'draft').length,
-          inReviewPosts: posts.filter(p => p.status === 'in_review').length,
+          publishedPosts: posts.filter((p: any) => p.status === 'published').length,
+          draftPosts: posts.filter((p: any) => p.status === 'draft').length,
+          inReviewPosts: posts.filter((p: any) => p.status === 'in_review').length,
           totalUsers: 0, // Will be fetched separately
         };
 
-        // Fetch recent posts
-        const recentPostsQuery = query(
-          collection(db, 'posts'),
-          orderBy('updatedAt', 'desc'),
-          limit(5)
-        );
-        const recentPostsSnapshot = await getDocs(recentPostsQuery);
-        const recentPostsData = recentPostsSnapshot.docs.map(doc => {
-          const data = doc.data();
-          return { 
-            id: doc.id, 
-            ...data,
-            // Ensure author field exists with fallback
-            author: data.author || { name: 'Unknown Author', uid: 'unknown' },
-            // Ensure required fields have defaults
-            title: data.title || 'Untitled Post',
-            slug: data.slug || doc.id,
-            excerpt: data.excerpt || 'No excerpt available',
-            status: data.status || 'draft',
-            updatedAt: data.updatedAt || new Date(),
-          } as Post;
-        });
+        // Get recent posts (first 5)
+        const recentPostsData = posts.slice(0, 5).map((data: any) => ({
+          id: data.id,
+          ...data,
+          author: data.author || { name: 'Unknown Author', uid: 'unknown' },
+          title: data.title || 'Untitled Post',
+          slug: data.slug || data.id,
+          excerpt: data.excerpt || 'No excerpt available',
+          status: data.status || 'draft',
+          updatedAt: data.updatedAt || new Date(),
+        } as Post));
 
-        // Fetch users count
-        const usersSnapshot = await getDocs(collection(db, 'users'));
-        stats.totalUsers = usersSnapshot.docs.length;
+        // Fetch users via API
+        const users = await apiService.getUsers({ limit: 100 });
+        stats.totalUsers = users.length;
 
-        // Fetch recent users
-        const recentUsersQuery = query(
-          collection(db, 'users'),
-          orderBy('lastSeen', 'desc'),
-          limit(5)
-        );
-        const recentUsersSnapshot = await getDocs(recentUsersQuery);
-        const recentUsersData = recentUsersSnapshot.docs.map(doc => ({ 
-          uid: doc.id, 
-          ...doc.data() 
+        // Get recent users (first 5)
+        const recentUsersData = users.slice(0, 5).map((data: any) => ({
+          uid: data.uid || data.id,
+          ...data,
         } as User));
 
         setStats(stats);

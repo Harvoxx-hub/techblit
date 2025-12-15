@@ -1,8 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import apiService from '@/lib/apiService';
 import AdminLayout from '@/components/admin/AdminLayout';
 import { withAuth } from '@/contexts/AuthContext';
 import { SiteSettings } from '@/types/admin';
@@ -57,10 +56,9 @@ function SettingsManager() {
   useEffect(() => {
     const fetchSettings = async () => {
       try {
-        const settingsDoc = await getDoc(doc(db, 'settings', 'site'));
-        if (settingsDoc.exists()) {
-          const settingsData = settingsDoc.data() as SiteSettings;
-          setSettings(settingsData);
+        const settingsData = await apiService.getSettings();
+        if (settingsData) {
+          setSettings(settingsData as SiteSettings);
         }
       } catch (error) {
         console.error('Error fetching settings:', error);
@@ -77,10 +75,7 @@ function SettingsManager() {
     setMessage('');
     
     try {
-      await setDoc(doc(db, 'settings', 'site'), {
-        ...settings,
-        updatedAt: new Date(),
-      });
+      await apiService.updateSettings(settings);
       setMessage('Settings saved successfully!');
     } catch (error) {
       console.error('Error saving settings:', error);

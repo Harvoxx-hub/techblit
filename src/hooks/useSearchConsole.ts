@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import apiService from '@/lib/apiService';
 
 export interface SearchConsoleData {
   indexedPages: number;
@@ -34,33 +33,20 @@ export function useSearchConsole(propertyUrl?: string) {
         setLoading(true);
         setError(null);
 
-        // Get current settings to check for Search Console data
-        const settingsDoc = await getDoc(doc(db, 'settings', 'site'));
+        // Get current settings via API
+        const settings = await apiService.getSettings();
         
-        if (settingsDoc.exists()) {
-          const settings = settingsDoc.data();
-          const indexingStatus = settings.indexingStatus;
-          
-          if (indexingStatus) {
-            setData({
-              indexedPages: indexingStatus.indexedPages || 0,
-              crawlErrors: indexingStatus.crawlErrors || 0,
-              sitemapStatus: indexingStatus.sitemapStatus || 'pending',
-              lastChecked: indexingStatus.lastChecked?.toDate() || new Date(),
-              crawlErrorsDetails: indexingStatus.crawlErrorsDetails || [],
-            });
-          } else {
-            // Initialize with default values
-            setData({
-              indexedPages: 0,
-              crawlErrors: 0,
-              sitemapStatus: 'pending',
-              lastChecked: new Date(),
-              crawlErrorsDetails: [],
-            });
-          }
+        if (settings?.indexingStatus) {
+          const indexingStatus = settings.indexingStatus as any;
+          setData({
+            indexedPages: indexingStatus.indexedPages || 0,
+            crawlErrors: indexingStatus.crawlErrors || 0,
+            sitemapStatus: indexingStatus.sitemapStatus || 'pending',
+            lastChecked: indexingStatus.lastChecked ? new Date(indexingStatus.lastChecked) : new Date(),
+            crawlErrorsDetails: indexingStatus.crawlErrorsDetails || [],
+          });
         } else {
-          // No settings found, initialize with defaults
+          // Initialize with default values
           setData({
             indexedPages: 0,
             crawlErrors: 0,
@@ -104,17 +90,16 @@ export function useSearchConsole(propertyUrl?: string) {
 
       setData(mockData);
 
-      // Update settings with new data
-      await setDoc(doc(db, 'settings', 'site'), {
+      // Update settings with new data via API
+      await apiService.updateSettings({
         indexingStatus: {
           indexedPages: mockData.indexedPages,
           crawlErrors: mockData.crawlErrors,
           sitemapStatus: mockData.sitemapStatus,
-          lastChecked: mockData.lastChecked,
+          lastChecked: mockData.lastChecked.toISOString(),
           crawlErrorsDetails: mockData.crawlErrorsDetails,
         },
-        updatedAt: new Date(),
-      }, { merge: true });
+      });
 
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to refresh indexing status';
@@ -144,14 +129,13 @@ export function useSearchConsole(propertyUrl?: string) {
         };
         setData(updatedData);
 
-        // Update settings
-        await setDoc(doc(db, 'settings', 'site'), {
+        // Update settings via API
+        await apiService.updateSettings({
           indexingStatus: {
             ...updatedData,
-            lastChecked: updatedData.lastChecked,
+            lastChecked: updatedData.lastChecked.toISOString(),
           },
-          updatedAt: new Date(),
-        }, { merge: true });
+        });
       }
 
       return result;
