@@ -1,7 +1,7 @@
 {
   "indexes": [
     {
-      "collectionGroup": "publicPosts",
+      "collectionGroup": "posts",
       "queryScope": "COLLECTION",
       "fields": [
         {
@@ -10,11 +10,35 @@
         },
         {
           "fieldPath": "publishedAt",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "grok_stories",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "status",
           "order": "ASCENDING"
         },
         {
-          "fieldPath": "__name__",
+          "fieldPath": "first_seen_at",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "grok_stories",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "category",
           "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "first_seen_at",
+          "order": "DESCENDING"
         }
       ]
     }

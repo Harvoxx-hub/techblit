@@ -1,386 +1,54 @@
+// Load environment variables from .env file (for local development only)
+// In production, Firebase automatically injects environment variables
+if (process.env.NODE_ENV !== 'production' || process.env.FUNCTIONS_EMULATOR) {
+  require('dotenv').config();
+}
+
 const { onRequest } = require("firebase-functions/v2/https");
 const { onDocumentCreated, onDocumentUpdated, onDocumentDeleted } = require("firebase-functions/v2/firestore");
 const { onSchedule } = require("firebase-functions/v2/scheduler");
 const logger = require("firebase-functions/logger");
 
-// Import middleware
-const { corsMiddleware, authMiddleware, adminMiddleware, loggingMiddleware } = require('./src/middleware');
+// Import Express app
+const app = require('./src/app');
 
-// Import handlers
-const postHandlers = require('./src/handlers/posts');
-const userHandlers = require('./src/handlers/users');
-const invitationHandlers = require('./src/handlers/invitations');
+// Import handlers for background functions
 const scheduledPostHandlers = require('./src/handlers/scheduledPosts');
-const notificationHandlers = require('./src/handlers/notifications');
 const previewTokenHandlers = require('./src/handlers/previewTokens');
-const postMigrationHandlers = require('./src/handlers/postMigration');
-const auditLogHandlers = require('./src/handlers/auditLogs');
+const grokTrendsHandlers = require('./src/handlers/grokTrends');
+const notificationHandlers = require('./src/handlers/notifications');
 
 // Import utilities
 const { createAuditLog } = require('./src/utils/helpers');
 const { CollectionNames } = require('./src/types/constants');
 
 // =============================================================================
-// HTTP FUNCTIONS (API Endpoints)
+// EXPRESS API (Main API Endpoint)
 // =============================================================================
 
 /**
- * Public API - Get published posts
+ * Main API endpoint using Express
+ * All routes are available under /api/v1/*
+ * 
+ * Examples:
+ * - GET /api/v1/posts
+ * - POST /api/v1/posts
+ * - GET /api/v1/users
+ * - POST /api/v1/invitations
+ * - POST /api/v1/grok-trends/fetch (requires XAI_API_KEY)
+ * - POST /api/v1/grok-trends/stories/:id/generate-draft (requires XAI_API_KEY)
  */
-exports.getPosts = onRequest({
-  cors: true,
-  region: 'us-central1'
-}, async (req, res) => {
-  loggingMiddleware(req, res, () => {
-    corsMiddleware(req, res, () => {
-      postHandlers.getPublishedPosts(req, res);
-    });
-  });
-});
-
-/**
- * Public API - Get single post by slug
- */
-exports.getPost = onRequest({
-  cors: true,
-  region: 'us-central1'
-}, async (req, res) => {
-  loggingMiddleware(req, res, () => {
-    corsMiddleware(req, res, () => {
-      postHandlers.getPostBySlug(req, res);
-    });
-  });
-});
-
-/**
- * Public API - Increment view count
- */
-exports.incrementViewCount = onRequest({
-  cors: true,
-  region: 'us-central1'
-}, async (req, res) => {
-  loggingMiddleware(req, res, () => {
-    corsMiddleware(req, res, () => {
-      postHandlers.incrementViewCount(req, res);
-    });
-  });
-});
-
-/**
- * Admin API - Create post
- */
-exports.createPost = onRequest({
-  cors: true,
-  region: 'us-central1'
-}, async (req, res) => {
-  loggingMiddleware(req, res, () => {
-    corsMiddleware(req, res, () => {
-      authMiddleware(req, res, () => {
-        adminMiddleware(req, res, () => {
-          postHandlers.createPost(req, res);
-        });
-      });
-    });
-  });
-});
-
-/**
- * Admin API - Update post
- */
-exports.updatePost = onRequest({
-  cors: true,
-  region: 'us-central1'
-}, async (req, res) => {
-  loggingMiddleware(req, res, () => {
-    corsMiddleware(req, res, () => {
-      authMiddleware(req, res, () => {
-        adminMiddleware(req, res, () => {
-          postHandlers.updatePost(req, res);
-        });
-      });
-    });
-  });
-});
-
-/**
- * Admin API - Get all users
- */
-exports.getUsers = onRequest({
-  cors: true,
-  region: 'us-central1'
-}, async (req, res) => {
-  loggingMiddleware(req, res, () => {
-    corsMiddleware(req, res, () => {
-      authMiddleware(req, res, () => {
-        adminMiddleware(req, res, () => {
-          userHandlers.getAllUsers(req, res);
-        });
-      });
-    });
-  });
-});
-
-/**
- * Admin API - Update user role
- */
-exports.updateUserRole = onRequest({
-  cors: true,
-  region: 'us-central1'
-}, async (req, res) => {
-  loggingMiddleware(req, res, () => {
-    corsMiddleware(req, res, () => {
-      authMiddleware(req, res, () => {
-        adminMiddleware(req, res, () => {
-          userHandlers.updateUserRole(req, res);
-        });
-      });
-    });
-  });
-});
-
-/**
- * User API - Get user profile
- */
-exports.getUserProfile = onRequest({
-  cors: true,
-  region: 'us-central1'
-}, async (req, res) => {
-  loggingMiddleware(req, res, () => {
-    corsMiddleware(req, res, () => {
-      authMiddleware(req, res, () => {
-        userHandlers.getUserProfile(req, res);
-      });
-    });
-  });
-});
-
-/**
- * User API - Update user profile
- */
-exports.updateUserProfile = onRequest({
-  cors: true,
-  region: 'us-central1'
-}, async (req, res) => {
-  loggingMiddleware(req, res, () => {
-    corsMiddleware(req, res, () => {
-      authMiddleware(req, res, () => {
-        userHandlers.updateUserProfile(req, res);
-      });
-    });
-  });
-});
-
-/**
- * Admin API - Invite new user
- */
-exports.inviteUser = onRequest({
-  cors: true,
-  region: 'us-central1'
-}, async (req, res) => {
-  loggingMiddleware(req, res, () => {
-    corsMiddleware(req, res, () => {
-      authMiddleware(req, res, () => {
-        adminMiddleware(req, res, () => {
-          invitationHandlers.inviteUser(req, res);
-        });
-      });
-    });
-  });
-});
-
-/**
- * Admin API - Resend invitation
- */
-exports.resendInvitation = onRequest({
-  cors: true,
-  region: 'us-central1'
-}, async (req, res) => {
-  loggingMiddleware(req, res, () => {
-    corsMiddleware(req, res, () => {
-      authMiddleware(req, res, () => {
-        adminMiddleware(req, res, () => {
-          invitationHandlers.resendInvitation(req, res);
-        });
-      });
-    });
-  });
-});
-
-/**
- * Admin API - Get invitation statistics
- */
-exports.getInvitationStats = onRequest({
-  cors: true,
-  region: 'us-central1'
-}, async (req, res) => {
-  loggingMiddleware(req, res, () => {
-    corsMiddleware(req, res, () => {
-      authMiddleware(req, res, () => {
-        adminMiddleware(req, res, () => {
-          invitationHandlers.getInvitationStats(req, res);
-        });
-      });
-    });
-  });
-});
-
-/**
- * Admin API - Generate preview token for a post
- */
-exports.generatePreviewToken = onRequest({
-  cors: true,
-  region: 'us-central1'
-}, async (req, res) => {
-  loggingMiddleware(req, res, () => {
-    corsMiddleware(req, res, () => {
-      authMiddleware(req, res, () => {
-        adminMiddleware(req, res, () => {
-          previewTokenHandlers.generatePreviewTokenHandler(req, res);
-        });
-      });
-    });
-  });
-});
-
-/**
- * Public API - Validate preview token
- */
-exports.validatePreviewToken = onRequest({
-  cors: true,
-  region: 'us-central1'
-}, async (req, res) => {
-  loggingMiddleware(req, res, () => {
-    corsMiddleware(req, res, () => {
-      previewTokenHandlers.validatePreviewTokenHandler(req, res);
-    });
-  });
-});
-
-/**
- * Admin API - Get preview token statistics
- */
-exports.getPreviewTokenStats = onRequest({
-  cors: true,
-  region: 'us-central1'
-}, async (req, res) => {
-  loggingMiddleware(req, res, () => {
-    corsMiddleware(req, res, () => {
-      authMiddleware(req, res, () => {
-        adminMiddleware(req, res, () => {
-          previewTokenHandlers.getPreviewTokenStatsHandler(req, res);
-        });
-      });
-    });
-  });
-});
-
-/**
- * Admin API - Migrate all published posts to publicPosts collection
- */
-exports.migrateAllPublishedPosts = onRequest({
-  cors: true,
-  region: 'us-central1'
-}, async (req, res) => {
-  loggingMiddleware(req, res, () => {
-    corsMiddleware(req, res, () => {
-      authMiddleware(req, res, () => {
-        adminMiddleware(req, res, () => {
-          postMigrationHandlers.migrateAllPublishedPostsHandler(req, res);
-        });
-      });
-    });
-  });
-});
-
-/**
- * Admin API - Get audit logs
- */
-exports.getAuditLogs = onRequest({
-  cors: true,
-  region: 'us-central1'
-}, async (req, res) => {
-  loggingMiddleware(req, res, () => {
-    corsMiddleware(req, res, () => {
-      authMiddleware(req, res, () => {
-        adminMiddleware(req, res, () => {
-          auditLogHandlers.getAuditLogsHandler(req, res);
-        });
-      });
-    });
-  });
-});
-
-/**
- * Admin API - Get audit log statistics
- */
-exports.getAuditLogStats = onRequest({
-  cors: true,
-  region: 'us-central1'
-}, async (req, res) => {
-  loggingMiddleware(req, res, () => {
-    corsMiddleware(req, res, () => {
-      authMiddleware(req, res, () => {
-        adminMiddleware(req, res, () => {
-          auditLogHandlers.getAuditLogStatsHandler(req, res);
-        });
-      });
-    });
-  });
-});
-
-/**
- * Admin API - Get audit log filters
- */
-exports.getAuditLogFilters = onRequest({
-  cors: true,
-  region: 'us-central1'
-}, async (req, res) => {
-  loggingMiddleware(req, res, () => {
-    corsMiddleware(req, res, () => {
-      authMiddleware(req, res, () => {
-        adminMiddleware(req, res, () => {
-          auditLogHandlers.getAuditLogFiltersHandler(req, res);
-        });
-      });
-    });
-  });
-});
-
-/**
- * Admin API - Get audit log by ID
- */
-exports.getAuditLogById = onRequest({
-  cors: true,
-  region: 'us-central1'
-}, async (req, res) => {
-  loggingMiddleware(req, res, () => {
-    corsMiddleware(req, res, () => {
-      authMiddleware(req, res, () => {
-        adminMiddleware(req, res, () => {
-          auditLogHandlers.getAuditLogByIdHandler(req, res);
-        });
-      });
-    });
-  });
-});
-
-/**
- * Admin API - Get publicPosts collection statistics
- */
-exports.getPublicPostsStats = onRequest({
-  cors: true,
-  region: 'us-central1'
-}, async (req, res) => {
-  loggingMiddleware(req, res, () => {
-    corsMiddleware(req, res, () => {
-      authMiddleware(req, res, () => {
-        adminMiddleware(req, res, () => {
-          postMigrationHandlers.getPublicPostsStatsHandler(req, res);
-        });
-      });
-    });
-  });
-});
+exports.api = onRequest({
+  cors: false, // Disable Firebase's built-in CORS - we handle it in middleware
+  region: 'us-central1',
+  memory: '256MiB',
+  cpu: 0.5,
+  maxInstances: 10,
+  secrets: [
+    'XAI_API_KEY', // Required for Grok Trends endpoints
+    'CLOUDINARY_URL' // Required for image uploads (or use individual: CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET)
+  ]
+}, app);
 
 // =============================================================================
 // FIRESTORE TRIGGERS (Background Functions)
@@ -460,14 +128,26 @@ exports.onPostUpdated = onDocumentUpdated({
       if (afterData.status === 'published' && beforeData.status !== 'published') {
         logger.info(`Post published, triggering post-publish actions: ${postId}`);
         await scheduledPostHandlers.triggerPostPublishActions(postId, afterData);
-      }
-
-      // Sync post with publicPosts collection for read optimization
-      try {
-        await postMigrationHandlers.syncPostWithPublic(postId, afterData, beforeData.status, afterData.status);
-      } catch (migrationError) {
-        logger.error(`Error syncing post with publicPosts: ${postId}`, migrationError);
-        // Don't fail the entire operation if migration fails
+        
+        // Update Grok story status if this post was created from a Grok story
+        if (afterData.source && afterData.source.type === 'grok_story' && afterData.source.storyId) {
+          try {
+            const { GrokStoryStatus } = require('./src/types/constants');
+            const storyRef = db.collection(CollectionNames.GROK_STORIES).doc(afterData.source.storyId);
+            const storyDoc = await storyRef.get();
+            
+            if (storyDoc.exists) {
+              await storyRef.update({
+                status: GrokStoryStatus.PUBLISHED,
+                published_post_id: postId,
+                publishedAt: new Date()
+              });
+              logger.info(`Updated Grok story status to published: ${afterData.source.storyId}`);
+            }
+          } catch (grokError) {
+            logger.error('Error updating Grok story status:', grokError);
+          }
+        }
       }
 
       // If post was submitted for review, send notifications
@@ -479,8 +159,6 @@ exports.onPostUpdated = onDocumentUpdated({
       // If post was approved from review, send notification to author
       if (afterData.status === 'published' && beforeData.status === 'in_review') {
         logger.info(`Post approved from review: ${postId}`);
-        // Note: We need to get the reviewer info from the history or context
-        // For now, we'll use a generic reviewer name
         await notificationHandlers.notifyAuthor(postId, afterData, { name: 'Reviewer', uid: 'system' }, 'approved');
       }
     }
@@ -525,84 +203,16 @@ exports.onUserCreated = onDocumentCreated({
 });
 
 // =============================================================================
-// UTILITY FUNCTIONS
-// =============================================================================
-
-/**
- * Health check endpoint
- */
-exports.healthCheck = onRequest({
-  region: 'us-central1',
-  memory: '128MB',
-  cpu: 0.5,
-  maxInstances: 2,
-  minInstances: 0
-}, async (req, res) => {
-  res.status(200).json({
-    status: 'healthy',
-    timestamp: new Date().toISOString(),
-    version: '1.0.0',
-    environment: process.env.NODE_ENV || 'production'
-  });
-});
-
-/**
- * Generate sitemap
- */
-exports.generateSitemap = onRequest({
-  region: 'us-central1'
-}, async (req, res) => {
-  const { db } = require('./src/config/firebase');
-  
-  try {
-    const snapshot = await db.collection(CollectionNames.POSTS)
-      .where('status', '==', 'published')
-      .orderBy('publishedAt', 'desc')
-      .get();
-    
-    const posts = snapshot.docs.map(doc => ({
-      slug: doc.data().slug,
-      updatedAt: doc.data().updatedAt
-    }));
-    
-    const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url>
-    <loc>https://techblit.com</loc>
-    <lastmod>${new Date().toISOString()}</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>1.0</priority>
-  </url>
-  ${posts.map(post => `
-  <url>
-    <loc>https://techblit.com/${post.slug}</loc>
-    <lastmod>${post.updatedAt.toISOString()}</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>`).join('')}
-</urlset>`;
-    
-    res.set('Content-Type', 'application/xml');
-    res.send(sitemap);
-    
-  } catch (error) {
-    logger.error('Error generating sitemap:', error);
-    res.status(500).json({ error: 'Failed to generate sitemap' });
-  }
-});
-
-// =============================================================================
 // SCHEDULED FUNCTIONS
 // =============================================================================
 
 /**
- * Process scheduled posts every minute
- * This function runs automatically to publish posts that are ready
+ * Process scheduled posts every hour
  */
 exports.processScheduledPosts = onSchedule({
   schedule: 'every 1 hours',
   region: 'us-central1',
-  timeZone: 'UTC'
+  timeZone: 'Africa/Lagos'
 }, async (event) => {
   try {
     logger.info('Starting scheduled post processing');
@@ -614,7 +224,7 @@ exports.processScheduledPosts = onSchedule({
 });
 
 /**
- * Clean up expired preview tokens every hour
+ * Clean up expired preview tokens every 24 hours
  */
 exports.cleanupExpiredPreviewTokens = onSchedule({
   schedule: 'every 24 hours',
@@ -631,102 +241,86 @@ exports.cleanupExpiredPreviewTokens = onSchedule({
 });
 
 /**
- * Manual trigger for processing scheduled posts
- * Useful for testing or manual intervention
+ * Scheduled Grok fetch - Trending Stories (hourly)
  */
-exports.triggerScheduledPosts = onRequest({
-  region: 'us-central1'
-}, async (req, res) => {
+exports.scheduledGrokFetchTrending = onSchedule({
+  schedule: 'every 1 hours',
+  region: 'us-central1',
+  timeZone: 'Africa/Lagos',
+  secrets: ['XAI_API_KEY']
+}, async (event) => {
   try {
-    const result = await scheduledPostHandlers.processScheduledPosts();
-    res.json({
-      success: true,
-      message: `Processed ${result.processed} scheduled posts`,
-      processed: result.processed
-    });
+    logger.info('Starting scheduled Grok fetch - Trending Stories');
+    const { GrokCategory } = require('./src/types/constants');
+    const result = await grokTrendsHandlers.scheduledFetch(GrokCategory.TRENDING);
+    logger.info('Scheduled Grok fetch completed', result);
   } catch (error) {
-    logger.error('Error triggering scheduled posts:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Failed to process scheduled posts',
-      details: error.message
-    });
+    logger.error('Error in scheduled Grok fetch:', error);
   }
 });
 
-// =============================================================================
-// NOTIFICATION API ENDPOINTS
-// =============================================================================
-
 /**
- * Get user notifications
+ * Scheduled Grok fetch - Breaking News (every 30 minutes during business hours)
  */
-exports.getNotifications = onRequest({
-  cors: true,
-  region: 'us-central1'
-}, async (req, res) => {
-  loggingMiddleware(req, res, () => {
-    corsMiddleware(req, res, () => {
-      authMiddleware(req, res, async () => {
-        try {
-          const { limit = 50 } = req.query;
-          const notifications = await notificationHandlers.getUserNotifications(req.user.uid, parseInt(limit));
-          
-          res.json({
-            success: true,
-            notifications
-          });
-        } catch (error) {
-          logger.error('Error getting notifications:', error);
-          res.status(500).json({
-            success: false,
-            error: 'Failed to get notifications'
-          });
-        }
-      });
-    });
-  });
+exports.scheduledGrokFetchBreaking = onSchedule({
+  schedule: 'every 30 minutes',
+  region: 'us-central1',
+  timeZone: 'Africa/Lagos',
+  secrets: ['XAI_API_KEY'],
+  memory: '256MiB',
+  cpu: 0.5,
+  maxInstances: 1
+}, async (event) => {
+  try {
+    const hour = new Date().getHours();
+    // Only fetch during business hours (8 AM - 8 PM WAT)
+    if (hour >= 8 && hour < 20) {
+      logger.info('Starting scheduled Grok fetch - Breaking News');
+      const { GrokCategory } = require('./src/types/constants');
+      const result = await grokTrendsHandlers.scheduledFetch(GrokCategory.BREAKING_NEWS);
+      logger.info('Scheduled Grok fetch (Breaking News) completed', result);
+    } else {
+      logger.info('Skipping Breaking News fetch outside business hours');
+    }
+  } catch (error) {
+    logger.error('Error in scheduled Grok fetch (Breaking News):', error);
+  }
 });
 
 /**
- * Mark notification as read
+ * Scheduled Grok fetch - Company News (every 2 hours)
  */
-exports.markNotificationRead = onRequest({
-  cors: true,
-  region: 'us-central1'
-}, async (req, res) => {
-  loggingMiddleware(req, res, () => {
-    corsMiddleware(req, res, () => {
-      authMiddleware(req, res, async () => {
-        try {
-          const { notificationId } = req.body;
-          
-          if (!notificationId) {
-            res.status(400).json({
-              success: false,
-              error: 'Notification ID is required'
-            });
-            return;
-          }
-
-          await notificationHandlers.markNotificationAsRead(notificationId, req.user.uid);
-          
-          res.json({
-            success: true,
-            message: 'Notification marked as read'
-          });
-        } catch (error) {
-          logger.error('Error marking notification as read:', error);
-          res.status(500).json({
-            success: false,
-            error: error.message || 'Failed to mark notification as read'
-          });
-        }
-      });
-    });
-  });
+exports.scheduledGrokFetchCompany = onSchedule({
+  schedule: 'every 2 hours',
+  region: 'us-central1',
+  timeZone: 'Africa/Lagos',
+  secrets: ['XAI_API_KEY']
+}, async (event) => {
+  try {
+    logger.info('Starting scheduled Grok fetch - Company News');
+    const { GrokCategory } = require('./src/types/constants');
+    const result = await grokTrendsHandlers.scheduledFetch(GrokCategory.COMPANY_NEWS);
+    logger.info('Scheduled Grok fetch (Company News) completed', result);
+  } catch (error) {
+    logger.error('Error in scheduled Grok fetch (Company News):', error);
+  }
 });
 
-// =============================================================================
-// END OF CLOUD FUNCTIONS
-// =============================================================================
+/**
+ * Scheduled Grok fetch - Funding (every 4 hours)
+ */
+exports.scheduledGrokFetchFunding = onSchedule({
+  schedule: 'every 4 hours',
+  region: 'us-central1',
+  timeZone: 'Africa/Lagos',
+  secrets: ['XAI_API_KEY']
+}, async (event) => {
+  try {
+    logger.info('Starting scheduled Grok fetch - Funding');
+    const { GrokCategory } = require('./src/types/constants');
+    const result = await grokTrendsHandlers.scheduledFetch(GrokCategory.FUNDING);
+    logger.info('Scheduled Grok fetch (Funding) completed', result);
+  } catch (error) {
+    logger.error('Error in scheduled Grok fetch (Funding):', error);
+  }
+});

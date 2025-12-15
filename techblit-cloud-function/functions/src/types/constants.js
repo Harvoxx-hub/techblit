@@ -25,11 +25,34 @@ const CollectionNames = {
   NOTIFICATIONS: 'notifications',
   INVITATIONS: 'invitations',
   PREVIEW_TOKENS: 'preview_tokens',
-  PUBLIC_POSTS: 'publicPosts'
+  GROK_STORIES: 'grok_stories',
+  GROK_SETTINGS: 'grok_settings',
+  CATEGORIES: 'categories',
+  NEWSLETTER_SUBSCRIPTIONS: 'newsletter_subscriptions'
+};
+
+const GrokStoryStatus = {
+  NEW: 'new',
+  DRAFT_CREATED: 'draft_created',
+  PUBLISHED: 'published',
+  ARCHIVED: 'archived'
+};
+
+const GrokCategory = {
+  BREAKING_NEWS: 'Breaking News',
+  TRENDING: 'Trending Stories',
+  COMPANY_NEWS: 'Company News',
+  PRODUCT_LAUNCHES: 'Product Launches & Reviews',
+  FUNDING: 'Funding & Investments',
+  REGULATORY: 'Regulatory & Policy Changes',
+  SECURITY: 'Security & Hacking',
+  EMERGING_TECH: 'Emerging Technologies'
 };
 
 module.exports = {
   PostStatus,
   UserRole,
-  CollectionNames
+  CollectionNames,
+  GrokStoryStatus,
+  GrokCategory
 };

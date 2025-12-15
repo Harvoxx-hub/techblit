@@ -6,17 +6,53 @@ const config = require('../config');
  * @returns {object} - Nodemailer transporter
  */
 function createTransporter() {
-  // For development, use Gmail SMTP
-  // In production, use a proper email service like SendGrid, Mailgun, etc.
-  const transporter = nodemailer.createTransport({
-    service: 'gmail',
-    auth: {
-      user: "seguncodes@gmail.com",
-      pass:  "vwtq xcuf nmmt ecuh"
-    }
-  });
+  // Email configuration from environment variables
+  const emailService = process.env.EMAIL_SERVICE || 'gmail';
+  const emailUser = process.env.EMAIL_USER;
+  const emailPassword = process.env.EMAIL_PASSWORD;
   
-  return transporter;
+  if (!emailUser || !emailPassword) {
+    throw new Error('Email configuration missing: EMAIL_USER and EMAIL_PASSWORD must be set');
+  }
+  
+  // For Gmail, use 'gmail' service
+  // For SendGrid, Mailgun, etc., use SMTP configuration
+  // if (emailService === 'gmail') {
+  //   return nodemailer.createTransport({
+  //     service: 'gmail',
+  //     auth: {
+  //       user: emailUser,
+  //       pass: emailPassword
+  //     }
+  //   });
+  // }
+  
+  // For other services (SendGrid, Mailgun, AWS SES, etc.)
+  // Use SMTP configuration
+  const port = parseInt(process.env.EMAIL_PORT || '465');
+  const isSecure = port === 465 || process.env.EMAIL_SECURE === 'true';
+  
+  return nodemailer.createTransport({
+    host: process.env.EMAIL_HOST || 'smtp.zoho.com',
+    port: port,
+    secure: isSecure, // true for 465, false for other ports
+    auth: {
+      user: emailUser,
+      pass: emailPassword
+    },
+    // Connection timeout settings
+    connectionTimeout: 20000, // 20 seconds
+    socketTimeout: 20000, // 20 seconds
+    greetingTimeout: 10000, // 10 seconds
+    // TLS/SSL options
+    tls: {
+      rejectUnauthorized: true, // Verify SSL certificate
+      minVersion: 'TLSv1.2'
+    },
+    // Disable pooling since we create a new transporter each time
+    // This prevents connection reuse issues
+    pool: false
+  });
 }
 
 /**
@@ -28,11 +64,19 @@ function createTransporter() {
  * @returns {Promise<boolean>} - Whether email was sent successfully
  */
 async function sendWelcomeEmail(email, name, temporaryPassword, invitedBy) {
+  let transporter;
   try {
-    const transporter = createTransporter();
+    transporter = createTransporter();
+    
+    // Verify connection before sending
+    await transporter.verify();
+    
+    // Use EMAIL_USER as FROM address (required by most SMTP servers)
+    // EMAIL_FROM can override if it matches the authenticated account's domain
+    const fromAddress = process.env.EMAIL_USER || process.env.EMAIL_FROM || config.email.from;
     
     const mailOptions = {
-      from: config.email.from,
+      from: fromAddress,
       replyTo: config.email.replyTo,
       to: email,
       subject: 'Welcome to TechBlit Team! 🎉',
@@ -140,10 +184,23 @@ async function sendWelcomeEmail(email, name, temporaryPassword, invitedBy) {
     
     const result = await transporter.sendMail(mailOptions);
     console.log('Welcome email sent successfully:', result.messageId);
+    
     return true;
     
   } catch (error) {
     console.error('Error sending welcome email:', error);
+    
+    // Connection will be automatically closed when transporter goes out of scope
+    
+    // Provide more detailed error information
+    if (error.code === 'ECONNECTION' || error.code === 'ETIMEDOUT') {
+      console.error('Connection error - check SMTP settings and network connectivity');
+    } else if (error.code === 'EAUTH') {
+      console.error('Authentication error - check EMAIL_USER and EMAIL_PASSWORD');
+    } else if (error.message && error.message.includes('socket close')) {
+      console.error('Socket closed unexpectedly - this may indicate SMTP server issues or incorrect port/security settings');
+    }
+    
     return false;
   }
 }
@@ -156,13 +213,21 @@ async function sendWelcomeEmail(email, name, temporaryPassword, invitedBy) {
  * @returns {Promise<boolean>} - Whether email was sent successfully
  */
 async function sendPasswordResetEmail(email, name, resetToken) {
+  let transporter;
   try {
-    const transporter = createTransporter();
+    transporter = createTransporter();
+    
+    // Verify connection before sending
+    await transporter.verify();
+    
+    // Use EMAIL_USER as FROM address (required by most SMTP servers)
+    // EMAIL_FROM can override if it matches the authenticated account's domain
+    const fromAddress = process.env.EMAIL_USER || process.env.EMAIL_FROM || config.email.from;
     
     const resetUrl = `https://techblit.com/admin/reset-password?token=${resetToken}`;
     
     const mailOptions = {
-      from: config.email.from,
+      from: fromAddress,
       replyTo: config.email.replyTo,
       to: email,
       subject: 'Reset Your TechBlit Password',
@@ -221,10 +286,23 @@ async function sendPasswordResetEmail(email, name, resetToken) {
     
     const result = await transporter.sendMail(mailOptions);
     console.log('Password reset email sent successfully:', result.messageId);
+    
     return true;
     
   } catch (error) {
     console.error('Error sending password reset email:', error);
+    
+    // Connection will be automatically closed when transporter goes out of scope
+    
+    // Provide more detailed error information
+    if (error.code === 'ECONNECTION' || error.code === 'ETIMEDOUT') {
+      console.error('Connection error - check SMTP settings and network connectivity');
+    } else if (error.code === 'EAUTH') {
+      console.error('Authentication error - check EMAIL_USER and EMAIL_PASSWORD');
+    } else if (error.message && error.message.includes('socket close')) {
+      console.error('Socket closed unexpectedly - this may indicate SMTP server issues or incorrect port/security settings');
+    }
+    
     return false;
   }
 }

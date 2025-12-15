@@ -28,7 +28,7 @@ interface UsePostsOptions {
 }
 
 /**
- * Hook for fetching blog posts with automatic fallback from publicPosts to posts collection
+ * Hook for fetching blog posts from posts collection
  */
 export function usePosts(options: UsePostsOptions = {}) {
   const [posts, setPosts] = useState<BlogPost[]>([]);
@@ -41,48 +41,16 @@ export function usePosts(options: UsePostsOptions = {}) {
         setLoading(true);
         setError(null);
 
-        // Try to fetch from publicPosts collection first (optimized)
-        const publicPostsRef = collection(db, 'publicPosts');
-        let publicPostsQuery = query(publicPostsRef);
-        
-        // Apply ordering
-        if (options.orderBy) {
-          publicPostsQuery = query(
-            publicPostsRef,
-            orderBy(options.orderBy, options.orderDirection || 'desc')
-          );
-        }
-        
-        // Apply limit
-        if (options.limit) {
-          publicPostsQuery = query(publicPostsQuery, limit(options.limit));
-        }
-        
-        try {
-          const publicPostsSnapshot = await getDocs(publicPostsQuery);
-          if (!publicPostsSnapshot.empty) {
-            const postsData = publicPostsSnapshot.docs.map(doc => ({
-              id: doc.id,
-              ...doc.data()
-            })) as BlogPost[];
-            
-            setPosts(postsData);
-            return; // Successfully fetched from publicPosts
-          }
-        } catch (publicPostsError) {
-          console.warn('Failed to fetch from publicPosts, falling back to posts collection:', publicPostsError);
-        }
-        
-        // Fallback to posts collection if publicPosts fails or is empty
+        // Fetch from posts collection
         const postsRef = collection(db, 'posts');
-        let fallbackQuery = query(
+        let postsQuery = query(
           postsRef,
           where('status', '==', 'published')
         );
         
         // Apply ordering
         if (options.orderBy) {
-          fallbackQuery = query(
+          postsQuery = query(
             postsRef,
             where('status', '==', 'published'),
             orderBy(options.orderBy, options.orderDirection || 'desc')
@@ -91,10 +59,10 @@ export function usePosts(options: UsePostsOptions = {}) {
         
         // Apply limit
         if (options.limit) {
-          fallbackQuery = query(fallbackQuery, limit(options.limit));
+          postsQuery = query(postsQuery, limit(options.limit));
         }
         
-        const postsSnapshot = await getDocs(fallbackQuery);
+        const postsSnapshot = await getDocs(postsQuery);
         const postsData = postsSnapshot.docs.map(doc => ({
           id: doc.id,
           ...doc.data()
@@ -134,38 +102,16 @@ export function usePost(slug: string) {
         setLoading(true);
         setError(null);
 
-        // Try to fetch from publicPosts collection first (optimized)
-        const publicPostsRef = collection(db, 'publicPosts');
-        const publicPostsQuery = query(
-          publicPostsRef,
-          where('slug', '==', slug),
-          limit(1)
-        );
-        
-        try {
-          const publicPostsSnapshot = await getDocs(publicPostsQuery);
-          if (!publicPostsSnapshot.empty) {
-            const postDoc = publicPostsSnapshot.docs[0];
-            setPost({
-              id: postDoc.id,
-              ...postDoc.data()
-            } as BlogPost);
-            return; // Successfully fetched from publicPosts
-          }
-        } catch (publicPostsError) {
-          console.warn('Failed to fetch from publicPosts, falling back to posts collection:', publicPostsError);
-        }
-
-        // Fallback to posts collection if publicPosts fails or is empty
+        // Fetch from posts collection
         const postsRef = collection(db, 'posts');
-        const fallbackQuery = query(
+        const postQuery = query(
           postsRef, 
           where('slug', '==', slug),
           where('status', '==', 'published'),
           limit(1)
         );
         
-        const querySnapshot = await getDocs(fallbackQuery);
+        const querySnapshot = await getDocs(postQuery);
         
         if (querySnapshot.empty) {
           setError('Post not found or not published');

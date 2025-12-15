@@ -2,6 +2,7 @@
 
 const { formatErrorResponse } = require('../utils/helpers');
 const config = require('../config');
+const logger = require('firebase-functions/logger');
 
 /**
  * CORS middleware
@@ -10,16 +11,81 @@ const config = require('../config');
  * @param {function} next - Next middleware function
  */
 function corsMiddleware(req, res, next) {
-  const origin = req.headers.origin || req.headers.referer;
+  // Extract origin from headers
+  const origin = req.headers.origin;
   
-  if (config.cors.origin.includes(origin) || !origin) {
-    res.set('Access-Control-Allow-Origin', origin || '*');
+  // Get allowed origins from config
+  const allowedOrigins = config.cors.origin || [];
+  const allowVercelPreviews = config.cors.allowVercelPreviews !== false;
+  const isDevelopment = process.env.NODE_ENV !== 'production' || 
+                       process.env.FUNCTIONS_EMULATOR === 'true' ||
+                       !process.env.NODE_ENV;
+  
+  // Determine if origin is allowed
+  let isAllowedOrigin = false;
+  let allowedOrigin = null;
+  
+  if (origin) {
+    // Check if origin matches allowed list exactly
+    if (allowedOrigins.includes(origin)) {
+      isAllowedOrigin = true;
+      allowedOrigin = origin;
+    }
+    // Check for Vercel preview deployments (if enabled)
+    else if (allowVercelPreviews && origin.match(/^https:\/\/.*\.vercel\.app$/)) {
+      isAllowedOrigin = true;
+      allowedOrigin = origin;
+    }
+    // Check for Netlify preview deployments
+    else if (origin.match(/^https:\/\/.*\.netlify\.app$/) || 
+             origin.match(/^https:\/\/.*\.netlify\.com$/)) {
+      isAllowedOrigin = true;
+      allowedOrigin = origin;
+    }
+    // In development, allow localhost and 127.0.0.1
+    else if (isDevelopment) {
+      if (origin.match(/^http:\/\/localhost(:\d+)?$/) || 
+          origin.match(/^http:\/\/127\.0\.0\.1(:\d+)?$/)) {
+        isAllowedOrigin = true;
+        allowedOrigin = origin;
+      }
+    }
   }
   
-  res.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-  res.set('Access-Control-Allow-Credentials', 'true');
+  // If no origin header (same-origin request), allow it
+  if (!origin) {
+    isAllowedOrigin = true;
+  }
   
+  // Set CORS headers
+  // Since we're using Bearer tokens (not cookies), we don't need Access-Control-Allow-Credentials
+  if (isAllowedOrigin && origin) {
+    res.set('Access-Control-Allow-Origin', allowedOrigin || origin);
+  } else if (isAllowedOrigin && !origin) {
+    // Same-origin request, no CORS headers needed
+  } else {
+    // Unallowed origin - in production, reject; in development, allow with warning
+    if (isDevelopment) {
+      logger.warn('CORS request from unconfigured origin (allowing in dev):', origin);
+      if (origin) {
+        res.set('Access-Control-Allow-Origin', origin);
+      }
+    } else {
+      logger.warn('CORS request from unconfigured origin (blocked):', origin);
+      res.status(403).json({
+        success: false,
+        error: 'CORS policy violation: Origin not allowed',
+        origin: origin
+      });
+      return;
+    }
+  }
+  
+  res.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
+  res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept');
+  res.set('Access-Control-Max-Age', '86400'); // 24 hours
+  
+  // Handle preflight OPTIONS requests
   if (req.method === 'OPTIONS') {
     res.status(204).send('');
     return;

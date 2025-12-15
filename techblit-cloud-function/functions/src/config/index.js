@@ -7,10 +7,13 @@ const config = {
   cors: {
     origin: [
       'http://localhost:3000',
+      'http://127.0.0.1:3000',
       'https://techblit.vercel.app',
       'https://techblit.com'
     ],
-    credentials: true
+    credentials: true,
+    // Allow Vercel preview deployments (pattern matching handled in middleware)
+    allowVercelPreviews: true
   },
   
   // Rate limiting
@@ -21,8 +24,9 @@ const config = {
   
   // Email configuration
   email: {
-    from: 'noreply@techblit.com',
-    replyTo: 'support@techblit.com'
+    // Use EMAIL_USER as FROM if EMAIL_FROM is not set (required by most SMTP servers)
+    from: process.env.EMAIL_FROM || process.env.EMAIL_USER || 'noreply@techblit.com',
+    replyTo: process.env.EMAIL_REPLY_TO || process.env.EMAIL_USER || 'support@techblit.com'
   },
   
   // Image processing

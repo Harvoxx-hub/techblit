@@ -8,18 +8,42 @@
     "shell": "firebase functions:shell",
     "start": "npm run shell",
     "deploy": "firebase deploy --only functions",
-    "logs": "firebase functions:log"
+    "logs": "firebase functions:log",
+    "test:email": "node src/scripts/test-email.js",
+    "test:email:verify": "node src/scripts/test-email.js verify",
+    "test:email:welcome": "node src/scripts/test-email.js welcome",
+    "test:email:reset": "node src/scripts/test-email.js reset",
+    "test:scheduled": "node src/scripts/test-scheduled-posts.js",
+    "migrate": "node src/scripts/migration-runner.js",
+    "migrate:fetch": "node src/scripts/migration-runner.js --fetch-only",
+    "migrate:upload": "node src/scripts/migration-runner.js --skip-fetch",
+    "migrate:images": "node src/scripts/migrate-images-to-cloudinary.js",
+    "migrate:images:dry-run": "node src/scripts/migrate-images-to-cloudinary.js --dry-run",
+    "migrate:images:limit": "node src/scripts/migrate-images-to-cloudinary.js --limit=10",
+    "migrate:post-images": "node src/scripts/migrate-post-images-to-cloudinary.js",
+    "migrate:post-images:dry-run": "node src/scripts/migrate-post-images-to-cloudinary.js --dry-run",
+    "migrate:post-images:featured": "node src/scripts/migrate-post-images-to-cloudinary.js --featured-only",
+    "migrate:post-images:content": "node src/scripts/migrate-post-images-to-cloudinary.js --content-only",
+    "upload:posts": "node src/scripts/upload-posts-only.js",
+    "upload:posts:force": "node src/scripts/upload-posts-only.js --force",
+    "upload:posts:fast": "node src/scripts/upload-posts-only.js --skip-images"
   },
   "engines": {
     "node": "20"
   },
   "dependencies": {
+    "axios": "^1.7.9",
     "bcryptjs": "^3.0.2",
+    "cloudinary": "^1.41.0",
+    "express": "^4.18.2",
     "firebase-admin": "^12.0.0",
     "firebase-functions": "^6.1.1",
+    "googleapis": "^164.1.0",
+    "multer": "^2.0.0",
     "nodemailer": "^7.0.10"
   },
   "devDependencies": {
+    "dotenv": "^17.2.3",
     "firebase-functions-test": "^3.1.0"
   }
 }

@@ -1,7 +1,28 @@
 const { db } = require('../config/firebase');
+const admin = require('firebase-admin');
 const { CollectionNames } = require('../types/constants');
 const { createAuditLog } = require('../utils/helpers');
+const { generateSitemapXML } = require('../utils/sitemapGenerator');
 const logger = require('firebase-functions/logger');
+
+/**
+ * Safely convert Firestore Timestamp or Date to ISO string
+ * @param {any} dateValue - Firestore Timestamp, Date, or string
+ * @returns {string|null} - ISO string or null
+ */
+function toISOString(dateValue) {
+  if (!dateValue) return null;
+  if (dateValue.toDate && typeof dateValue.toDate === 'function') {
+    // Firestore Timestamp
+    return dateValue.toDate().toISOString();
+  }
+  if (dateValue.toISOString && typeof dateValue.toISOString === 'function') {
+    // Date object
+    return dateValue.toISOString();
+  }
+  // Already a string or other type
+  return dateValue;
+}
 
 /**
  * Process scheduled posts that are ready to be published
@@ -29,9 +50,12 @@ async function processScheduledPosts() {
       const postData = doc.data();
       const postId = doc.id;
 
+      // Convert Firestore Timestamp to Date if needed
+      const scheduledAtDate = postData.scheduledAt?.toDate ? postData.scheduledAt.toDate() : postData.scheduledAt;
+
       logger.info(`Publishing scheduled post: ${postId}`, {
         title: postData.title,
-        scheduledAt: postData.scheduledAt,
+        scheduledAt: scheduledAtDate,
         author: postData.author?.name
       });
 
@@ -46,7 +70,7 @@ async function processScheduledPosts() {
             action: 'published',
             by: 'system',
             at: now.toISOString(),
-            note: `Post automatically published from scheduled time: ${postData.scheduledAt.toISOString()}`
+            note: `Post automatically published from scheduled time: ${toISOString(scheduledAtDate) || scheduledAtDate}`
           }
         ]
       };
@@ -56,7 +80,7 @@ async function processScheduledPosts() {
         // Create audit log
         const auditLog = createAuditLog('post_auto_published', 'system', postId, {
           title: postData.title,
-          scheduledAt: postData.scheduledAt,
+          scheduledAt: scheduledAtDate,
           publishedAt: now
         });
         
@@ -129,8 +153,8 @@ async function generateStructuredData(postId, postData) {
         "@type": "Person",
         "name": postData.author?.name || "Unknown Author"
       },
-      "datePublished": postData.publishedAt?.toISOString(),
-      "dateModified": postData.updatedAt?.toISOString(),
+      "datePublished": toISOString(postData.publishedAt),
+      "dateModified": toISOString(postData.updatedAt),
       "url": `https://techblit.com/${postData.slug}`,
       "mainEntityOfPage": {
         "@type": "WebPage",
@@ -195,21 +219,125 @@ async function triggerISRRevalidation(postId) {
 }
 
 /**
- * Update sitemap
+ * Update sitemap - Regenerates and optionally caches the sitemap
+ * This function handles errors gracefully so it doesn't break the publishing process
  */
 async function updateSitemap() {
   try {
-    // This could trigger a sitemap regeneration or update
-    // For now, we'll just log that it should be updated
-    logger.info('Sitemap update triggered');
+    let siteUrl = process.env.SITE_URL || 'https://www.techblit.com';
+    // Ensure www version for consistency
+    siteUrl = siteUrl.replace(/^https?:\/\/(?!www\.)/, 'https://www.');
+    logger.info('Regenerating sitemap...');
     
-    // In a real implementation, you might:
-    // 1. Call a Cloud Function to regenerate the sitemap
-    // 2. Update a cached sitemap in Cloud Storage
-    // 3. Trigger a build process that includes sitemap generation
+    // Generate the sitemap XML
+    const sitemapData = await generateSitemapXML(siteUrl);
+    
+    logger.info(`Sitemap regenerated successfully with ${sitemapData.postCount} posts`);
+    
+    // Determine sitemap URL (could be Cloud Storage URL or endpoint URL)
+    let sitemapUrl = `${siteUrl}/sitemap.xml`; // Default to site URL
+    
+    // Optionally cache the sitemap in Cloud Storage for faster access
+    // This is useful if you have a CDN or want to reduce Firestore reads
+    const cacheToStorage = process.env.CACHE_SITEMAP_TO_STORAGE === 'true';
+    
+    if (cacheToStorage) {
+      try {
+        // Initialize storage only if needed (legacy feature - Storage API not enabled)
+        const storage = admin.storage();
+        const bucket = storage.bucket();
+        const file = bucket.file('sitemap.xml');
+        
+        await file.save(sitemapData.xml, {
+          metadata: {
+            contentType: 'application/xml',
+            cacheControl: 'public, max-age=3600', // Cache for 1 hour
+          },
+        });
+        
+        // Make the file publicly accessible
+        await file.makePublic();
+        
+        // Get public URL
+        sitemapUrl = `https://storage.googleapis.com/${bucket.name}/sitemap.xml`;
+        
+        logger.info(`Sitemap cached to Cloud Storage: ${sitemapUrl}`);
+      } catch (storageError) {
+        // Don't fail the whole process if storage caching fails (expected since Storage API is not enabled)
+        logger.warn('Failed to cache sitemap to Cloud Storage (Storage API not enabled):', storageError);
+        // Fallback to endpoint URL
+        sitemapUrl = process.env.SITEMAP_ENDPOINT_URL || `${siteUrl}/sitemap.xml`;
+      }
+    } else {
+      // Use the Cloud Function endpoint URL
+      sitemapUrl = process.env.SITEMAP_ENDPOINT_URL || 'https://generatesitemap-4alcog3g7q-uc.a.run.app';
+    }
+    
+    // Store sitemap metadata in Firestore for tracking
+    try {
+      await db.collection(CollectionNames.SETTINGS).doc('sitemap').set({
+        lastGenerated: new Date(),
+        postCount: sitemapData.postCount,
+        generatedAt: sitemapData.generatedAt,
+        cached: cacheToStorage,
+        sitemapUrl: sitemapUrl
+      }, { merge: true });
+      
+      logger.info('Sitemap metadata updated in Firestore');
+    } catch (firestoreError) {
+      // Don't fail if metadata update fails
+      logger.warn('Failed to update sitemap metadata:', firestoreError);
+    }
+    
+    // Automatically submit sitemap to Google Search Console
+    const autoSubmitSitemap = process.env.AUTO_SUBMIT_SITEMAP !== 'false'; // Default to true
+    
+    if (autoSubmitSitemap) {
+      try {
+        const { submitSitemapToSearchConsole } = require('../utils/searchConsole');
+        const googleClientEmail = process.env.GOOGLE_CLIENT_EMAIL;
+        const googlePrivateKey = process.env.GOOGLE_PRIVATE_KEY;
+
+        if (googleClientEmail && googlePrivateKey) {
+          logger.info(`Submitting sitemap to Google Search Console: ${sitemapUrl}`);
+          
+          const submitResult = await submitSitemapToSearchConsole(sitemapUrl, siteUrl);
+          
+          if (submitResult.success) {
+            logger.info('Sitemap successfully submitted to Google Search Console');
+            
+            // Update metadata with submission status
+            await db.collection(CollectionNames.SETTINGS).doc('sitemap').update({
+              searchConsoleSubmitted: true,
+              searchConsoleSubmittedAt: new Date(),
+              searchConsoleSitemapUrl: sitemapUrl
+            }).catch(() => {}); // Ignore errors
+          } else {
+            logger.warn(`Failed to submit sitemap to Search Console: ${submitResult.error}`);
+          }
+        } else {
+          logger.info('Google Search Console credentials not configured, skipping sitemap submission');
+        }
+      } catch (submitError) {
+        // Don't fail the whole process if submission fails
+        logger.warn('Error submitting sitemap to Search Console:', submitError.message);
+      }
+    }
+    
+    return {
+      success: true,
+      postCount: sitemapData.postCount,
+      generatedAt: sitemapData.generatedAt,
+      sitemapUrl: sitemapUrl
+    };
 
   } catch (error) {
+    // Log error but don't throw - we don't want to fail the publishing process
     logger.error('Error updating sitemap:', error);
+    return {
+      success: false,
+      error: error.message
+    };
   }
 }
 
@@ -231,7 +359,7 @@ async function sendSocialShareWebhook(postId, postData) {
       excerpt: postData.excerpt,
       url: `https://techblit.com/${postData.slug}`,
       image: postData.featuredImage?.url,
-      publishedAt: postData.publishedAt?.toISOString()
+      publishedAt: toISOString(postData.publishedAt)
     };
 
     const response = await fetch(webhookUrl, {
@@ -255,29 +383,95 @@ async function sendSocialShareWebhook(postId, postData) {
 
 /**
  * Index with Google Indexing API
+ * Submits new/updated post URLs to Google for faster indexing
  */
 async function indexWithGoogle(postId, postData) {
   try {
-    const googleApiKey = process.env.GOOGLE_API_KEY;
+    const { submitUrlToIndexing } = require('../utils/googleIndexing');
+    let siteUrl = process.env.SITE_URL || 'https://www.techblit.com';
+    // Ensure www version for consistency
+    siteUrl = siteUrl.replace(/^https?:\/\/(?!www\.)/, 'https://www.');
+    
+    // Check if Google Indexing API is configured
     const googleClientEmail = process.env.GOOGLE_CLIENT_EMAIL;
+    const googlePrivateKey = process.env.GOOGLE_PRIVATE_KEY;
 
-    if (!googleApiKey || !googleClientEmail) {
-      logger.info('Google Indexing API not configured, skipping');
-      return;
+    if (!googleClientEmail || !googlePrivateKey) {
+      logger.info('Google Indexing API not configured (missing GOOGLE_CLIENT_EMAIL or GOOGLE_PRIVATE_KEY), skipping');
+      return {
+        success: false,
+        skipped: true,
+        reason: 'Not configured'
+      };
     }
 
-    // This is a simplified implementation
-    // In a real implementation, you would use the Google Indexing API
-    // to request indexing of the new post URL
-    
-    const postUrl = `https://techblit.com/${postData.slug}`;
-    logger.info(`Google indexing requested for: ${postUrl}`);
+    // Only index published posts
+    if (postData.status !== 'published') {
+      logger.info(`Skipping Google indexing for non-published post: ${postId}`);
+      return {
+        success: false,
+        skipped: true,
+        reason: 'Post not published'
+      };
+    }
 
-    // TODO: Implement actual Google Indexing API call
-    // const indexingResponse = await googleIndexingApi.indexUrl(postUrl);
+    // Skip posts with noindex set to true
+    if (postData.seo?.noindex === true) {
+      logger.info(`Skipping Google indexing for post with noindex: ${postId}`);
+      return {
+        success: false,
+        skipped: true,
+        reason: 'Post has noindex set'
+      };
+    }
+
+    // Construct the post URL
+    const postUrl = `${siteUrl}/${postData.slug}`;
+    
+    if (!postData.slug) {
+      logger.warn(`Cannot index post ${postId}: missing slug`);
+      return {
+        success: false,
+        error: 'Missing slug'
+      };
+    }
+
+    logger.info(`Submitting URL to Google Indexing API: ${postUrl}`);
+
+    // Submit URL to Google Indexing API
+    // Use URL_UPDATED for new posts or updated posts
+    const result = await submitUrlToIndexing(postUrl, 'URL_UPDATED');
+
+    if (result.success) {
+      logger.info(`Successfully submitted post to Google Indexing API: ${postId} (${postUrl})`);
+      
+      // Store indexing status in Firestore for tracking
+      try {
+        await db.collection(CollectionNames.POSTS).doc(postId).update({
+          googleIndexing: {
+            submitted: true,
+            submittedAt: new Date(),
+            url: postUrl,
+            type: 'URL_UPDATED'
+          }
+        });
+      } catch (firestoreError) {
+        // Don't fail if metadata update fails
+        logger.warn(`Failed to update Google indexing metadata for post ${postId}:`, firestoreError);
+      }
+    } else {
+      logger.warn(`Failed to submit post to Google Indexing API: ${postId}`, result.error);
+    }
+
+    return result;
 
   } catch (error) {
+    // Log error but don't throw - we don't want to fail the publishing process
     logger.error(`Error indexing with Google for ${postId}:`, error);
+    return {
+      success: false,
+      error: error.message
+    };
   }
 }
 

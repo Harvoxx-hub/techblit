@@ -1,185 +1,280 @@
 # TechBlit Cloud Functions
 
-This directory contains Cloud Functions for the TechBlit blog platform.
+This directory contains Cloud Functions for the TechBlit blog platform, built with Express.js and organized using RESTful API principles.
 
 ## 📁 Project Structure
 
 ```
 functions/
 ├── src/
-│   ├── config/          # Configuration files
-│   │   ├── firebase.js  # Firebase Admin SDK setup
-│   │   └── index.js     # General configuration
-│   ├── handlers/        # Request handlers
-│   │   ├── posts.js     # Blog post operations
-│   │   └── users.js     # User management
-│   ├── middleware/      # Middleware functions
-│   │   └── index.js     # CORS, auth, rate limiting
-│   ├── types/           # Type definitions and constants
-│   │   └── constants.js # Enums and constants
-│   └── utils/           # Utility functions
-│       └── helpers.js   # Helper functions
-├── tests/               # Test files
-├── index.js             # Main entry point
-└── package.json         # Dependencies
+│   ├── app.js              # Express app configuration
+│   ├── config/             # Configuration files
+│   │   ├── firebase.js     # Firebase Admin SDK setup
+│   │   └── index.js        # General configuration
+│   ├── handlers/           # Request handlers (business logic)
+│   │   ├── posts.js
+│   │   ├── users.js
+│   │   ├── media.js
+│   │   ├── settings.js
+│   │   ├── redirects.js
+│   │   ├── categories.js
+│   │   ├── newsletter.js
+│   │   ├── analytics.js
+│   │   ├── invitations.js
+│   │   ├── auditLogs.js
+│   │   ├── grokTrends.js
+│   │   ├── notifications.js
+│   │   └── previewTokens.js
+│   ├── routes/             # Express route modules
+│   │   ├── posts.js
+│   │   ├── users.js
+│   │   ├── media.js
+│   │   ├── settings.js
+│   │   ├── redirects.js
+│   │   ├── categories.js
+│   │   ├── newsletter.js
+│   │   ├── analytics.js
+│   │   ├── invitations.js
+│   │   ├── auditLogs.js
+│   │   ├── grokTrends.js
+│   │   ├── notifications.js
+│   │   ├── previewTokens.js
+│   │   └── sitemap.js
+│   ├── middleware/          # Express middleware
+│   │   └── index.js        # CORS, auth, rate limiting, logging
+│   ├── types/              # Type definitions and constants
+│   │   ├── constants.js    # Enums and constants
+│   │   └── admin.ts        # Admin types
+│   ├── utils/              # Utility functions
+│   │   ├── helpers.js
+│   │   ├── email.js
+│   │   ├── password.js
+│   │   ├── sitemapGenerator.js
+│   │   ├── googleIndexing.js
+│   │   └── searchConsole.js
+│   └── scripts/            # Utility scripts
+├── index.js                 # Main entry point (Firebase Functions wrapper)
+├── index.new.js            # New Express-based entry point
+└── package.json            # Dependencies
 ```
 
-## 🚀 Available Functions
+## 🚀 API Structure
 
-### HTTP Functions (API Endpoints)
+All API endpoints are organized under `/api/v1/` following RESTful conventions:
 
-#### Public APIs
-- `getPosts` - Get published posts with filtering
-- `getPost` - Get single post by slug
-- `incrementViewCount` - Increment post view count
-- `healthCheck` - Health check endpoint
-- `generateSitemap` - Generate XML sitemap
+### Base URL
+```
+https://us-central1-techblit.cloudfunctions.net/api/v1
+```
 
-#### Admin APIs (Require Authentication)
-- `createPost` - Create new blog post
-- `updatePost` - Update existing post
-- `getUsers` - Get all users
-- `updateUserRole` - Update user role
-- `deleteUser` - Delete user account
+### Available Endpoints
 
-#### User APIs (Require Authentication)
-- `getUserProfile` - Get user profile
-- `updateUserProfile` - Update user profile
+#### Posts (`/api/v1/posts`)
+- `GET /posts` - Get published posts
+- `GET /posts/:slug` - Get post by slug
+- `POST /posts` - Create post (admin)
+- `PUT /posts/:id` - Update post (admin)
+- `DELETE /posts/:id` - Delete post (admin)
+- `PATCH /posts/:slug/view` - Increment view count
 
-### Firestore Triggers (Background Functions)
+#### Users (`/api/v1/users`)
+- `GET /users` - Get all users (admin)
+- `GET /users/profile` - Get current user profile
+- `PUT /users/profile` - Update current user profile
+- `PUT /users/:id/role` - Update user role (admin)
+- `DELETE /users/:id` - Delete user (admin)
 
-- `onPostCreated` - Triggered when new post is created
-- `onPostUpdated` - Triggered when post is updated
-- `onUserCreated` - Triggered when new user is created
+#### Media (`/api/v1/media`)
+- `GET /media` - Get all media (admin)
+- `POST /media` - Upload media (admin)
+- `DELETE /media/:id` - Delete media (admin)
 
-## 🛠 Development
+#### Settings (`/api/v1/settings`)
+- `GET /settings` - Get site settings (public)
+- `PUT /settings` - Update settings (admin)
 
-### Local Development
+#### Redirects (`/api/v1/redirects`)
+- `GET /redirects` - Get all redirects (admin)
+- `POST /redirects` - Create redirect (admin)
+- `PUT /redirects/:id` - Update redirect (admin)
+- `DELETE /redirects/:id` - Delete redirect (admin)
+
+#### Categories (`/api/v1/categories`)
+- `GET /categories` - Get all categories (public)
+- `GET /categories/:slug/posts` - Get posts by category (public)
+
+#### Newsletter (`/api/v1/newsletter`)
+- `POST /newsletter/subscribe` - Subscribe (public)
+- `POST /newsletter/unsubscribe` - Unsubscribe (public)
+- `GET /newsletter/stats` - Get statistics (admin)
+
+#### Analytics (`/api/v1/analytics`)
+- `GET /analytics` - Get dashboard data (admin)
+
+#### Invitations (`/api/v1/invitations`)
+- `POST /invitations` - Invite user (admin)
+- `POST /invitations/:uid/resend` - Resend invitation (admin)
+- `GET /invitations/stats` - Get statistics (admin)
+
+#### Audit Logs (`/api/v1/audit-logs`)
+- `GET /audit-logs` - Get audit logs (admin)
+- `GET /audit-logs/stats` - Get statistics (admin)
+- `GET /audit-logs/filters` - Get available filters (admin)
+- `GET /audit-logs/:id` - Get audit log by ID (admin)
+
+#### Grok Trends (`/api/v1/grok-trends`)
+- `GET /grok-trends/stories` - Get Grok stories (admin)
+- `PATCH /grok-trends/stories/:id/status` - Update story status (admin)
+- `GET /grok-trends/stats` - Get statistics (admin)
+- `POST /grok-trends/fetch` - Manually fetch stories (admin)
+
+#### Notifications (`/api/v1/notifications`)
+- `GET /notifications` - Get user notifications
+- `PATCH /notifications/:id/read` - Mark notification as read
+
+#### Preview Tokens (`/api/v1/preview-tokens`)
+- `POST /preview-tokens` - Generate preview token (admin)
+- `GET /preview-tokens/validate` - Validate preview token (public)
+- `GET /preview-tokens/stats` - Get statistics (admin)
+
+#### Sitemap (`/api/v1/sitemap`)
+- `GET /sitemap` - Generate sitemap XML (public)
+
+## 🔧 Development
+
+### Prerequisites
+- Node.js 20+
+- Firebase CLI
+- Firebase project configured
+
+### Setup
+
 ```bash
 # Install dependencies
+cd functions
 npm install
 
+# Set up environment variables
+cp env.example.txt .env
+# Edit .env with your configuration
+```
+
+### Local Development
+
+```bash
 # Start Firebase emulators
 npm run serve
 
-# Run tests
-npm test
-
-# Lint code
-npm run lint
+# Or use Firebase CLI
+firebase emulators:start --only functions
 ```
 
 ### Deployment
+
 ```bash
-# Deploy to Firebase
+# Deploy all functions
 npm run deploy
 
-# Deploy to production
-npm run deploy:prod
+# Or use Firebase CLI
+firebase deploy --only functions
 ```
 
-## 📝 API Usage
+## 📚 Documentation
 
-### Authentication
-All admin and user APIs require authentication. Include the Firebase ID token in the Authorization header:
+- **[API_REDESIGN.md](./API_REDESIGN.md)** - Complete API documentation
+- **[API_QUICK_REFERENCE.md](./API_QUICK_REFERENCE.md)** - Quick reference guide
+- **[API_STRUCTURE_SUMMARY.md](./API_STRUCTURE_SUMMARY.md)** - API structure overview
+- **[API_MIGRATION_SUMMARY.md](./API_MIGRATION_SUMMARY.md)** - Migration summary
+- **[MIGRATION_CHECKLIST.md](./MIGRATION_CHECKLIST.md)** - Migration checklist
 
-```
-Authorization: Bearer <firebase-id-token>
-```
+## 🔐 Authentication
 
-### Example API Calls
+All admin endpoints require:
+1. **Authentication**: Bearer token in `Authorization` header
+   ```
+   Authorization: Bearer <firebase-id-token>
+   ```
+2. **Admin Role**: User must have `SUPER_ADMIN` or `EDITOR` role
 
-#### Get Published Posts
-```bash
-curl https://us-central1-techblit.cloudfunctions.net/getPosts
-```
+## 📦 Dependencies
 
-#### Get Single Post
-```bash
-curl https://us-central1-techblit.cloudfunctions.net/getPost?slug=my-post-slug
-```
+- `express` - Web framework
+- `firebase-admin` - Firebase Admin SDK
+- `firebase-functions` - Firebase Cloud Functions
+- `nodemailer` - Email sending
+- `googleapis` - Google APIs integration
 
-#### Create Post (Admin)
-```bash
-curl -X POST https://us-central1-techblit.cloudfunctions.net/createPost \
-  -H "Authorization: Bearer <token>" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "title": "My New Post",
-    "content": "Post content here...",
-    "excerpt": "Post excerpt",
-    "tags": ["tech", "blog"],
-    "categories": ["programming"],
-    "status": "draft"
-  }'
-```
+## 🏗️ Architecture
 
-## 🔧 Configuration
+### Express App
+The main Express application is defined in `src/app.js` and exported as a single Firebase Function (`api`). All routes are organized by resource and mounted under `/api/v1/`.
 
-### Environment Variables
-Set these in Firebase Console > Functions > Configuration:
+### Handlers
+Business logic is separated into handler files in `src/handlers/`. Each handler contains functions that process requests and interact with Firestore.
 
-- `NODE_ENV` - Environment (development/production)
-- `CORS_ORIGINS` - Allowed CORS origins
-- `RATE_LIMIT_MAX` - Rate limit per window
+### Routes
+Route files in `src/routes/` define the Express routes and apply middleware (authentication, authorization) before calling handlers.
 
-### Firebase Rules
-Ensure your Firestore rules allow the functions to access the required collections:
+### Middleware
+- **CORS** - Cross-origin resource sharing
+- **Authentication** - Firebase Auth token verification
+- **Authorization** - Role-based access control
+- **Logging** - Request logging
+- **Rate Limiting** - Basic rate limiting (can be enhanced)
 
-```javascript
-rules_version = '2';
-service cloud.firestore {
-  match /databases/{database}/documents {
-    // Allow Cloud Functions to access all documents
-    match /{document=**} {
-      allow read, write: if request.auth != null && 
-        request.auth.token.admin == true;
-    }
-  }
-}
-```
+## 🔄 Background Functions
+
+### Firestore Triggers
+- `onPostCreated` - Triggered when post is created
+- `onPostUpdated` - Triggered when post is updated
+- `onUserCreated` - Triggered when user is created
+
+### Scheduled Functions
+- `processScheduledPosts` - Process scheduled posts (hourly)
+- `cleanupExpiredPreviewTokens` - Clean up expired tokens (daily)
+- `scheduledGrokFetchTrending` - Fetch trending stories (hourly)
+- `scheduledGrokFetchBreaking` - Fetch breaking news (every 30 min)
+- `scheduledGrokFetchCompany` - Fetch company news (every 2 hours)
+- `scheduledGrokFetchFunding` - Fetch funding news (every 4 hours)
 
 ## 🧪 Testing
 
-Run the test suite:
 ```bash
+# Run tests (if available)
 npm test
+
+# Test specific function
+firebase functions:shell
 ```
 
-Run tests in watch mode:
-```bash
-npm run test:watch
-```
+## 📝 Scripts
 
-## 📊 Monitoring
+- `npm run serve` - Start emulators
+- `npm run deploy` - Deploy functions
+- `npm run logs` - View function logs
 
-### View Logs
+## 🔍 Monitoring
+
 ```bash
-# View recent logs
-npm run logs
+# View logs
+firebase functions:log
 
 # Follow logs in real-time
-npm run logs:follow
+firebase functions:log --follow
+
+# View specific function logs
+firebase functions:log --only api
 ```
 
-### Firebase Console
-Monitor function performance and errors in the Firebase Console:
-- Functions tab for performance metrics
-- Logs tab for detailed logs
-- Alerts tab for error notifications
+## 🚨 Troubleshooting
 
-## 🔒 Security
+### Common Issues
 
-- All admin functions require authentication
-- CORS is configured for allowed origins
-- Rate limiting is implemented
-- Input validation and sanitization
-- Audit logging for all operations
+1. **CORS Errors**: Check CORS configuration in `src/config/index.js`
+2. **Authentication Errors**: Verify Firebase Auth token is valid
+3. **Permission Errors**: Check user role in Firestore
+4. **Deployment Errors**: Check Firebase project configuration
 
-## 📈 Performance
+## 📄 License
 
-- Functions are deployed to `us-central1` region
-- Cold start optimization
-- Connection pooling for Firestore
-- Efficient query patterns
-- Proper error handling and logging
+Private project - TechBlit

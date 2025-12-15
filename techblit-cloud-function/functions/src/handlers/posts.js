@@ -199,10 +199,43 @@ async function incrementViewCount(req, res) {
   }
 }
 
+/**
+ * Delete post (Admin only)
+ * @param {object} req - Request object
+ * @param {object} res - Response object
+ */
+async function deletePost(req, res) {
+  try {
+    const { id } = req.params;
+    
+    const postRef = db.collection(CollectionNames.POSTS).doc(id);
+    const postDoc = await postRef.get();
+    
+    if (!postDoc.exists) {
+      res.status(404).json(formatErrorResponse('Post not found', 404));
+      return;
+    }
+    
+    await postRef.delete();
+    
+    // Create audit log
+    const auditLog = createAuditLog('post_deleted', req.user.uid, id, {
+      title: postDoc.data().title
+    });
+    
+    await db.collection(CollectionNames.AUDIT_LOGS).add(auditLog);
+    
+    res.json(formatSuccessResponse(null, 'Post deleted successfully'));
+  } catch (error) {
+    res.status(500).json(formatErrorResponse('Error deleting post', 500, { error: error.message }));
+  }
+}
+
 module.exports = {
   getPublishedPosts,
   getPostBySlug,
   createPost,
   updatePost,
-  incrementViewCount
+  incrementViewCount,
+  deletePost
 };

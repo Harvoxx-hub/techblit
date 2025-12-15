@@ -44,37 +44,20 @@ export async function generateSitemap(): Promise<SitemapUrl[]> {
     let posts: BlogPost[] = [];
 
     try {
-      // Try to fetch from publicPosts collection first (optimized)
-      const publicPostsRef = collection(db, 'publicPosts');
-      const publicPostsQuery = query(
-        publicPostsRef,
-        where('status', '==', 'published'),
-        orderBy('publishedAt', 'desc')
-      );
-      
-      const publicPostsSnapshot = await getDocs(publicPostsQuery);
-      if (!publicPostsSnapshot.empty) {
-        posts = publicPostsSnapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        })) as BlogPost[];
-      }
-    } catch (publicPostsError) {
-      console.warn('Failed to fetch from publicPosts, falling back to posts collection:', publicPostsError);
-      
-      // Fallback to posts collection
       const postsRef = collection(db, 'posts');
-      const fallbackQuery = query(
+      const postsQuery = query(
         postsRef,
         where('status', '==', 'published'),
         orderBy('publishedAt', 'desc')
       );
       
-      const postsSnapshot = await getDocs(fallbackQuery);
+      const postsSnapshot = await getDocs(postsQuery);
       posts = postsSnapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
       })) as BlogPost[];
+    } catch (error) {
+      console.error('Error fetching posts for sitemap:', error);
     }
 
     // Add blog post URLs with appropriate priority and lastmod
