@@ -226,7 +226,7 @@ export default function CategoryHighlights() {
                   
                   <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
                     <span>{formatAuthor(post.author)}</span>
-                    <span>{formatDate(post.publishedAt || post.createdAt)}</span>
+                    <span>{formatDate(post.publishedAt)}</span>
                   </div>
                   
                   {post.readTime && (

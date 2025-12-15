@@ -42,7 +42,37 @@ export default function SuggestedArticles({
       try {
         // Fetch recent posts from API
         const allPosts = await apiService.getPosts({ limit: 10 });
-        let posts = allPosts as BlogPost[];
+        // Map Post to BlogPost format
+        let posts: BlogPost[] = allPosts.map((post) => {
+          // Extract featured image URL
+          let featuredImage: { url: string; alt: string } | undefined;
+          if (post.featuredImage) {
+            if ('url' in post.featuredImage && typeof post.featuredImage.url === 'string') {
+              featuredImage = {
+                url: post.featuredImage.url,
+                alt: ('alt' in post.featuredImage ? post.featuredImage.alt : post.title) || post.title
+              };
+            } else if ('original' in post.featuredImage && post.featuredImage.original?.url) {
+              featuredImage = {
+                url: post.featuredImage.original.url,
+                alt: post.title
+              };
+            }
+          }
+          
+          return {
+            id: post.id || post.slug,
+            title: post.title,
+            slug: post.slug,
+            excerpt: post.excerpt,
+            featuredImage,
+            createdAt: post.publishedAt || post.updatedAt,
+            publishedAt: post.publishedAt,
+            author: post.author,
+            categories: post.category ? [post.category] : undefined,
+            tags: post.tags,
+          };
+        });
 
         // Filter out the current post
         posts = posts.filter(post => post.id !== currentPostId);

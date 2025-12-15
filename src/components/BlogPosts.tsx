@@ -30,7 +30,21 @@ export default function BlogPosts() {
     const fetchPosts = async () => {
       try {
         const postsData = await apiService.getPosts({ limit: 20 });
-        setPosts(postsData as BlogPost[]);
+        // Map Post to BlogPost format
+        const mappedPosts: BlogPost[] = postsData.map((post) => ({
+          id: post.id || post.slug,
+          title: post.title,
+          slug: post.slug,
+          content: post.contentHtml || '',
+          contentHtml: post.contentHtml,
+          createdAt: post.publishedAt || post.updatedAt,
+          author: post.author,
+          excerpt: post.excerpt,
+          category: post.category,
+          status: post.status,
+          publishedAt: post.publishedAt,
+        }));
+        setPosts(mappedPosts);
       } catch (error) {
         console.error('Error fetching posts:', error);
       } finally {

@@ -5,6 +5,8 @@
  * All Firebase operations should go through this service.
  */
 
+import { Post, Redirect, User, SiteSettings } from '@/types/admin';
+
 const FUNCTIONS_URL = process.env.NEXT_PUBLIC_FIREBASE_FUNCTIONS_URL || 
                       'https://us-central1-techblit.cloudfunctions.net';
 const API_BASE = `${FUNCTIONS_URL}/api/v1`;
@@ -197,7 +199,7 @@ class ApiService {
     offset?: number;
     category?: string;
     tag?: string;
-  }) {
+  }): Promise<Post[]> {
     const queryParams = new URLSearchParams();
     if (params?.limit) queryParams.append('limit', params.limit.toString());
     if (params?.offset) queryParams.append('offset', params.offset.toString());
@@ -205,11 +207,11 @@ class ApiService {
     if (params?.tag) queryParams.append('tag', params.tag);
     
     const query = queryParams.toString();
-    return this.request(`/posts${query ? `?${query}` : ''}`);
+    return this.request<Post[]>(`/posts${query ? `?${query}` : ''}`);
   }
 
-  async getPostBySlug(slug: string) {
-    return this.request(`/posts/${slug}`);
+  async getPostBySlug(slug: string): Promise<Post | null> {
+    return this.request<Post | null>(`/posts/${slug}`);
   }
 
   async createPost(data: {
@@ -221,8 +223,8 @@ class ApiService {
     status?: string;
     featuredImage?: any;
     scheduledAt?: Date;
-  }) {
-    return this.request('/posts', {
+  }): Promise<{ id: string }> {
+    return this.request<{ id: string }>('/posts', {
       method: 'POST',
       body: JSON.stringify(data),
     });
@@ -251,36 +253,36 @@ class ApiService {
   // USERS API
   // ============================================================================
 
-  async getUsers(params?: { limit?: number; offset?: number; role?: string }) {
+  async getUsers(params?: { limit?: number; offset?: number; role?: string }): Promise<User[]> {
     const queryParams = new URLSearchParams();
     if (params?.limit) queryParams.append('limit', params.limit.toString());
     if (params?.offset) queryParams.append('offset', params.offset.toString());
     if (params?.role) queryParams.append('role', params.role);
     
     const query = queryParams.toString();
-    return this.request(`/users${query ? `?${query}` : ''}`);
+    return this.request<User[]>(`/users${query ? `?${query}` : ''}`);
   }
 
-  async getUserProfile() {
-    return this.request('/users/profile');
+  async getUserProfile(): Promise<User> {
+    return this.request<User>('/users/profile');
   }
 
-  async updateUserProfile(data: { name?: string; bio?: string; avatar?: string }) {
-    return this.request('/users/profile', {
+  async updateUserProfile(data: { name?: string; bio?: string; avatar?: string }): Promise<User> {
+    return this.request<User>('/users/profile', {
       method: 'PUT',
       body: JSON.stringify(data),
     });
   }
 
-  async updateUserRole(userId: string, role: string) {
-    return this.request(`/users/${userId}/role`, {
+  async updateUserRole(userId: string, role: string): Promise<void> {
+    return this.request<void>(`/users/${userId}/role`, {
       method: 'PUT',
       body: JSON.stringify({ role }),
     });
   }
 
-  async deleteUser(userId: string) {
-    return this.request(`/users/${userId}`, {
+  async deleteUser(userId: string): Promise<void> {
+    return this.request<void>(`/users/${userId}`, {
       method: 'DELETE',
     });
   }
@@ -408,8 +410,8 @@ class ApiService {
   // SETTINGS API
   // ============================================================================
 
-  async getSettings() {
-    return this.request('/settings');
+  async getSettings(): Promise<SiteSettings> {
+    return this.request<SiteSettings>('/settings');
   }
 
   async updateSettings(data: any) {
@@ -423,26 +425,26 @@ class ApiService {
   // REDIRECTS API
   // ============================================================================
 
-  async getRedirects() {
-    return this.request('/redirects');
+  async getRedirects(): Promise<Redirect[]> {
+    return this.request<Redirect[]>('/redirects');
   }
 
-  async createRedirect(data: { from: string; to: string; type?: number; permanent?: boolean }) {
-    return this.request('/redirects', {
+  async createRedirect(data: { from: string; to: string; type?: number; permanent?: boolean }): Promise<{ id: string }> {
+    return this.request<{ id: string }>('/redirects', {
       method: 'POST',
       body: JSON.stringify(data),
     });
   }
 
-  async updateRedirect(id: string, data: { from?: string; to?: string; type?: number; permanent?: boolean }) {
-    return this.request(`/redirects/${id}`, {
+  async updateRedirect(id: string, data: { from?: string; to?: string; type?: number; permanent?: boolean; active?: boolean }): Promise<void> {
+    return this.request<void>(`/redirects/${id}`, {
       method: 'PUT',
       body: JSON.stringify(data),
     });
   }
 
-  async deleteRedirect(id: string) {
-    return this.request(`/redirects/${id}`, {
+  async deleteRedirect(id: string): Promise<void> {
+    return this.request<void>(`/redirects/${id}`, {
       method: 'DELETE',
     });
   }
@@ -482,8 +484,8 @@ class ApiService {
     });
   }
 
-  async getNewsletterStats() {
-    return this.request('/newsletter/stats');
+  async getNewsletterStats(): Promise<{ active?: number; recent?: number }> {
+    return this.request<{ active?: number; recent?: number }>('/newsletter/stats');
   }
 
   // ============================================================================

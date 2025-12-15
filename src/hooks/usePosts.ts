@@ -44,7 +44,41 @@ export function usePosts(options: UsePostsOptions = {}) {
           limit: options.limit
         });
         
-        setPosts(postsData as BlogPost[]);
+        // Map Post to BlogPost format
+        const mappedPosts: BlogPost[] = postsData.map((post) => {
+          // Extract featured image URL
+          let featuredImage: { url: string; alt: string } | undefined;
+          if (post.featuredImage) {
+            if ('url' in post.featuredImage && typeof post.featuredImage.url === 'string') {
+              featuredImage = {
+                url: post.featuredImage.url,
+                alt: ('alt' in post.featuredImage ? post.featuredImage.alt : post.title) || post.title
+              };
+            } else if ('original' in post.featuredImage && post.featuredImage.original?.url) {
+              featuredImage = {
+                url: post.featuredImage.original.url,
+                alt: post.title
+              };
+            }
+          }
+          
+          return {
+            id: post.id || post.slug,
+            title: post.title,
+            slug: post.slug,
+            content: post.contentHtml || '',
+            contentHtml: post.contentHtml,
+            createdAt: post.publishedAt || post.updatedAt,
+            author: post.author,
+            excerpt: post.excerpt,
+            category: post.category,
+            status: post.status,
+            publishedAt: post.publishedAt,
+            featuredImage,
+          };
+        });
+        
+        setPosts(mappedPosts);
       } catch (error) {
         console.error('Error fetching posts:', error);
         setError('Failed to load posts');
@@ -79,7 +113,41 @@ export function usePost(slug: string) {
         setError(null);
 
         const postData = await apiService.getPostBySlug(slug);
-        setPost(postData as BlogPost);
+        if (postData) {
+          // Map Post to BlogPost format
+          let featuredImage: { url: string; alt: string } | undefined;
+          if (postData.featuredImage) {
+            if ('url' in postData.featuredImage && typeof postData.featuredImage.url === 'string') {
+              featuredImage = {
+                url: postData.featuredImage.url,
+                alt: ('alt' in postData.featuredImage ? postData.featuredImage.alt : postData.title) || postData.title
+              };
+            } else if ('original' in postData.featuredImage && postData.featuredImage.original?.url) {
+              featuredImage = {
+                url: postData.featuredImage.original.url,
+                alt: postData.title
+              };
+            }
+          }
+          
+          const mappedPost: BlogPost = {
+            id: postData.id || postData.slug,
+            title: postData.title,
+            slug: postData.slug,
+            content: postData.contentHtml || '',
+            contentHtml: postData.contentHtml,
+            createdAt: postData.publishedAt || postData.updatedAt,
+            author: postData.author,
+            excerpt: postData.excerpt,
+            category: postData.category,
+            status: postData.status,
+            publishedAt: postData.publishedAt,
+            featuredImage,
+          };
+          setPost(mappedPost);
+        } else {
+          setPost(null);
+        }
       } catch (error) {
         console.error('Error fetching post:', error);
         setError('Failed to load post');

@@ -215,11 +215,12 @@ function NewPostEditor() {
       // Sanitize WordPress URLs from content before saving
       const sanitizedContentHtml = post.contentHtml ? sanitizeWordPressUrls(post.contentHtml) : '';
       
+      // After validation, we know these fields are defined
       const postData = {
-        title: post.title,
-        content: post.contentHtml || '',
+        title: post.title!,
+        content: post.contentHtml!,
         contentHtml: sanitizedContentHtml,
-        excerpt: post.excerpt,
+        excerpt: post.excerpt!,
         tags: post.tags || [],
         categories: post.category ? [post.category] : [],
         status: finalStatus,
@@ -227,7 +228,7 @@ function NewPostEditor() {
         metaTitle: post.metaTitle,
         metaDescription: post.metaDescription,
         canonical: post.canonical,
-        scheduledAt: post.scheduledAt ? post.scheduledAt.toISOString() : undefined,
+        scheduledAt: post.scheduledAt,
       };
 
       const result = await apiService.createPost(postData);

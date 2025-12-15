@@ -44,7 +44,7 @@ function AdminDashboard() {
     const fetchDashboardData = async () => {
       try {
         // Fetch posts via API
-        const posts = await apiService.getPosts({ limit: 100 });
+        const posts = (await apiService.getPosts({ limit: 100 })) as any[];
         
         const stats = {
           totalPosts: posts.length,
@@ -67,7 +67,7 @@ function AdminDashboard() {
         } as Post));
 
         // Fetch users via API
-        const users = await apiService.getUsers({ limit: 100 });
+        const users = (await apiService.getUsers({ limit: 100 })) as any[];
         stats.totalUsers = users.length;
 
         // Get recent users (first 5)

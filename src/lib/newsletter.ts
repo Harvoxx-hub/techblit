@@ -17,12 +17,12 @@ export async function subscribeToNewsletter(
   userAgent?: string
 ): Promise<{ success: boolean; message: string; id?: string }> {
   try {
-    const result = await apiService.subscribeToNewsletter({ email });
+    const result = await apiService.subscribeToNewsletter({ email }) as { id?: string };
     
     return {
       success: true,
       message: 'Successfully subscribed to Techblit newsletter!',
-      id: result.id
+      id: result?.id
     };
   } catch (error: any) {
     console.error('Error subscribing to newsletter:', error);

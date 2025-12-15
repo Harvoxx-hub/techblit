@@ -141,33 +141,6 @@ function EditPostEditor() {
 
       // Sanitize WordPress URLs from content before saving
       const sanitizedContentHtml = post.contentHtml ? sanitizeWordPressUrls(post.contentHtml) : '';
-      
-      const postData = {
-        ...post,
-        contentHtml: sanitizedContentHtml,
-        status: finalStatus,
-        author: {
-          name: user?.name || 'Unknown User',
-          uid: user?.uid || '',
-        },
-        updatedAt: serverTimestamp(),
-        publishedAt: finalStatus === 'published' ? serverTimestamp() : post.publishedAt,
-        scheduledAt: post.scheduledAt ? post.scheduledAt : null,
-        history: [
-          ...(post.history || []),
-          {
-            action: finalStatus === 'published' ? 'published' : 
-                    finalStatus === 'scheduled' ? 'scheduled' : 
-                    finalStatus === 'in_review' ? 'review_requested' : 'updated',
-            by: user?.uid || '',
-            at: now.toISOString(),
-            note: finalStatus === 'published' ? 'Post published' : 
-                  finalStatus === 'scheduled' ? `Post scheduled for ${post.scheduledAt?.toLocaleString()}` :
-                  finalStatus === 'in_review' ? 'Post submitted for review' :
-                  'Post updated',
-          }
-        ],
-      };
 
       // Filter out undefined values and prepare for API
       const updateData: any = {

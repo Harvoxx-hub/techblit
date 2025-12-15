@@ -174,12 +174,13 @@ function UserManager() {
       alert('Invitation sent successfully!');
       
       // Refresh users list
-      const usersSnapshot = await getDocs(collection(db, 'users'));
-      const usersData = usersSnapshot.docs.map(doc => ({ 
-        uid: doc.id, 
-        ...doc.data() 
+      const usersData = await apiService.getUsers({ limit: 100 });
+      const formattedUsers = usersData.map((user: any) => ({
+        uid: user.uid || user.id,
+        ...user
       } as User));
-      setUsers(usersData);
+      setUsers(formattedUsers);
+      setFilteredUsers(formattedUsers);
     } catch (error) {
       console.error('Error sending invitation:', error);
       const errorMessage = error instanceof Error ? error.message : 'Failed to send invitation';
