@@ -80,7 +80,7 @@ async function getPost(slug: string): Promise<BlogPost | null> {
     const API_BASE = `${FUNCTIONS_URL}/api/v1`;
     
     const response = await fetch(`${API_BASE}/posts/${slug}`, {
-      cache: 'no-store' // Ensure fresh data
+      next: { revalidate: 3600 } // Revalidate every hour (ISR)
     });
     
     if (!response.ok) {

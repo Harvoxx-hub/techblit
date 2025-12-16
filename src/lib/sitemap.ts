@@ -54,16 +54,34 @@ export async function generateSitemap(): Promise<SitemapUrl[]> {
                             'https://us-central1-techblit.cloudfunctions.net';
       const API_BASE = `${FUNCTIONS_URL}/api/v1`;
       
-      const response = await fetch(`${API_BASE}/posts?limit=1000`, {
-        cache: 'no-store'
-      });
+      // Use no-store for sitemap generation since response is >2MB and can't be cached by Next.js
+      // This is only called during sitemap generation, not during page rendering
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 20000); // 20 second timeout
       
-      if (response.ok) {
-        const result = await response.json();
-        posts = (result.data || result) as BlogPost[];
+      try {
+        const response = await fetch(`${API_BASE}/posts?limit=1000`, {
+          cache: 'no-store', // Skip cache - response too large (>2MB) for Next.js cache
+          signal: controller.signal,
+        });
+        
+        clearTimeout(timeoutId);
+        
+        if (response.ok) {
+          const result = await response.json();
+          posts = (result.data || result) as BlogPost[];
+        }
+      } catch (fetchError) {
+        clearTimeout(timeoutId);
+        if (fetchError instanceof Error && fetchError.name === 'AbortError') {
+          console.error('Timeout fetching posts for sitemap (20s)');
+        } else {
+          throw fetchError;
+        }
       }
     } catch (error) {
       console.error('Error fetching posts for sitemap:', error);
+      // Continue with empty posts array - will return static pages only
     }
 
     // Add blog post URLs with appropriate priority and lastmod
