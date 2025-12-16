@@ -7,6 +7,9 @@ export const ALGOLIA_INDEX_NAME = 'techblit_posts';
 // Admin API Key for server-side indexing (keep secret!)
 export const ALGOLIA_ADMIN_KEY = process.env.ALGOLIA_ADMIN_API_KEY || '';
 
+// Import image helper for Cloudinary URL conversion
+import { getImageUrlFromData } from './imageHelpers';
+
 const ALGOLIA_URL = `https://${ALGOLIA_APP_ID}-dsn.algolia.net`;
 
 // Helper function to strip HTML tags
@@ -62,7 +65,7 @@ export async function indexPost(post: {
       category: post.category || '',
       author: typeof post.author === 'string' ? post.author : (typeof post.author === 'object' && post.author && 'name' in post.author ? post.author.name : '') || '',
       publishedAt: post.publishedAt?.toMillis?.() || post.publishedAt?.getTime?.() || Date.now(),
-      featuredImage: post.featuredImage?.url || '',
+      featuredImage: getImageUrlFromData(post.featuredImage, { preset: 'cover' }) || '',
       tags: post.tags || [],
     };
 
@@ -127,7 +130,7 @@ export async function bulkIndexPosts(posts: Array<{
       category: post.category || '',
       author: typeof post.author === 'string' ? post.author : (typeof post.author === 'object' && post.author && 'name' in post.author ? post.author.name : '') || '',
       publishedAt: post.publishedAt?.toMillis?.() || post.publishedAt?.getTime?.() || Date.now(),
-      featuredImage: post.featuredImage?.url || '',
+      featuredImage: getImageUrlFromData(post.featuredImage, { preset: 'cover' }) || '',
       tags: post.tags || [],
     }));
 

@@ -85,6 +85,23 @@ export function getImageUrlFromData(
     return null;
   }
 
+  // Filter out Firebase Storage URLs if we don't have a Cloudinary public_id
+  // This ensures we only use Cloudinary URLs after migration
+  if (identifier.includes('firebasestorage.googleapis.com')) {
+    // Check if we can extract a public_id from the identifier
+    const publicId = normalizeToPublicId(identifier);
+    if (!publicId) {
+      // This is a Firebase Storage URL without a Cloudinary public_id
+      // Filter it out to prevent showing Firebase URLs after migration
+      if (process.env.NODE_ENV === 'development') {
+        console.warn(`⚠️ Filtered out Firebase Storage URL (no public_id found): ${identifier.substring(0, 100)}...`);
+      }
+      return null;
+    }
+    // If we have a public_id, use it instead
+    identifier = publicId;
+  }
+
   // Use Cloudinary utility to get the final URL
   // This handles both Cloudinary public_ids and legacy URLs
   if (options?.preset) {

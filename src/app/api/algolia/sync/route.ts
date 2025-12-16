@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import apiService from '@/lib/apiService';
 import { bulkIndexPosts } from '@/lib/algolia';
+import { getImageUrlFromData } from '@/lib/imageHelpers';
 
 interface BlogPost {
   id: string;
@@ -61,7 +62,7 @@ export async function GET(request: NextRequest) {
         category: post.category || '',
         author: authorName,
         publishedAt: timestamp,
-        featuredImage: post.featuredImage?.url || '',
+        featuredImage: getImageUrlFromData(post.featuredImage, { preset: 'cover' }) || '',
         tags: post.tags || [],
       };
     });

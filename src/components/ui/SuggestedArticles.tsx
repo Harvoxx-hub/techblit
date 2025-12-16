@@ -44,18 +44,16 @@ export default function SuggestedArticles({
         const allPosts = await apiService.getPosts({ limit: 10 });
         // Map Post to BlogPost format
         let posts: BlogPost[] = allPosts.map((post) => {
-          // Extract featured image URL
+          // Extract featured image URL using Cloudinary helper
           let featuredImage: { url: string; alt: string } | undefined;
           if (post.featuredImage) {
-            if ('url' in post.featuredImage && typeof post.featuredImage.url === 'string') {
+            const imageUrl = getImageUrlFromData(post.featuredImage, { preset: 'thumbnail' });
+            if (imageUrl) {
               featuredImage = {
-                url: post.featuredImage.url,
-                alt: ('alt' in post.featuredImage ? post.featuredImage.alt : post.title) || post.title
-              };
-            } else if ('original' in post.featuredImage && post.featuredImage.original?.url) {
-              featuredImage = {
-                url: post.featuredImage.original.url,
-                alt: post.title
+                url: imageUrl,
+                alt: ('alt' in post.featuredImage && post.featuredImage.alt) 
+                  ? post.featuredImage.alt 
+                  : post.title
               };
             }
           }

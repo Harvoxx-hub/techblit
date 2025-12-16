@@ -2,6 +2,7 @@ import Link from 'next/link';
 import Navigation from '@/components/ui/Navigation';
 import Footer from '@/components/ui/Footer';
 import { Metadata } from 'next';
+import { getImageUrlFromData } from '@/lib/imageHelpers';
 
 export const metadata: Metadata = {
   title: 'Page Not Found - TechBlit',
@@ -118,9 +119,7 @@ export default async function NotFound() {
                   {post.featuredImage && (
                     <div className="aspect-video bg-gray-100 relative overflow-hidden">
                       {(() => {
-                        const imageUrl = typeof post.featuredImage === 'string' 
-                          ? post.featuredImage 
-                          : post.featuredImage?.original?.url || post.featuredImage?.url;
+                        const imageUrl = getImageUrlFromData(post.featuredImage, { preset: 'cover' });
                         
                         if (imageUrl) {
                           return (
