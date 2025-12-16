@@ -9,7 +9,8 @@ const config = {
       'http://localhost:3000',
       'http://127.0.0.1:3000',
       'https://techblit.vercel.app',
-      'https://techblit.com'
+      'https://techblit.com',
+      'https://www.techblit.com'
     ],
     credentials: true,
     // Allow Vercel preview deployments (pattern matching handled in middleware)

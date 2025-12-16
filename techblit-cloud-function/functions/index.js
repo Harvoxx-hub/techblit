@@ -1,7 +1,15 @@
 // Load environment variables from .env file (for local development only)
 // In production, Firebase automatically injects environment variables
 if (process.env.NODE_ENV !== 'production' || process.env.FUNCTIONS_EMULATOR) {
-  require('dotenv').config();
+  try {
+    // Use dynamic require to avoid parse-time errors if dotenv is not installed
+    const dotenv = require('dotenv');
+    dotenv.config();
+  } catch (error) {
+    // dotenv is optional - only needed for local development
+    // In production, Firebase handles environment variables
+    // Silently continue if dotenv is not available
+  }
 }
 
 const { onRequest } = require("firebase-functions/v2/https");

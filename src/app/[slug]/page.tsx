@@ -5,7 +5,6 @@ import Footer from '@/components/ui/Footer';
 import SuggestedArticles from '@/components/ui/SuggestedArticles';
 import SocialShare from '@/components/ui/SocialShare';
 import NewsletterSection from '@/components/ui/NewsletterSection';
-import SideBanner from '@/components/ui/SideBanner';
 import { generatePostSEO, generateStructuredData } from '@/lib/seo';
 import { Metadata } from 'next';
 // Note: This is a server component, so we'll use direct API calls
@@ -186,24 +185,9 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
 
       <Navigation showBackButton={true} />
 
-      {/* Blog Post Content with Side Banners */}
+      {/* Blog Post Content */}
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
         <div className="relative flex flex-col xl:flex-row gap-4 xl:gap-8">
-          {/* Left Banner - Only visible on large screens */}
-          <div className="hidden xl:block xl:flex-shrink-0">
-            <div className="sticky top-24">
-              <SideBanner
-                title="iBUILD 2025"
-                description="The Builder's Evolution - Join Africa's premier tech builders conference"
-                imageUrl="/The Builders' Evolution.jpg"
-                linkUrl="https://ibuild.techblit.com"
-                linkText="Learn More"
-                position="left"
-                size="medium"
-              />
-            </div>
-          </div>
-
           {/* Article Content */}
           <article className="flex-1 max-w-4xl mx-auto w-full">
         <header className="mb-6 sm:mb-8">
@@ -267,21 +251,6 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
           />
         </div>
           </article>
-
-          {/* Right Banner - Only visible on large screens */}
-          <div className="hidden xl:block xl:flex-shrink-0">
-            <div className="sticky top-24">
-              <SideBanner
-                title="iBUILD 2025"
-                description="Register now for The Builder's Evolution conference"
-                imageUrl="/The Builders' Evolution.jpg"
-                linkUrl="https://ibuild.techblit.com"
-                linkText="Register"
-                position="right"
-                size="medium"
-              />
-            </div>
-          </div>
         </div>
       </div>
 

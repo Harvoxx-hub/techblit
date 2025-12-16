@@ -132,20 +132,6 @@ export default function Footer() {
                   partnership@techblit.com
                 </a>
               </div>
-              <div className="pt-4">
-                <h4 className="text-sm font-medium text-gray-400 mb-2">Flagship Event</h4>
-                <a 
-                  href="https://ibuild.techblit.com" 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="text-yellow-400 hover:text-yellow-300 transition-colors font-medium"
-                >
-                  ibuild
-                </a>
-                <p className="text-gray-400 text-xs mt-1">
-                  Port Harcourt's premier tech event
-                </p>
-              </div>
             </div>
           </div>
         </div>
