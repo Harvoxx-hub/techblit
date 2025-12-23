@@ -1,19 +1,8 @@
 # *
 User-agent: *
 Allow: /
-
-# Disallow admin and API routes
 Disallow: /admin/
 Disallow: /api/
-
-# Disallow legacy WordPress paths (prevent bot crawling)
-Disallow: /wp-admin
-Disallow: /wp-login.php
-Disallow: /wp-json
-Disallow: /xmlrpc.php
-Disallow: /wp-content
-Disallow: /wp-includes
-Disallow: /index.php
 
 # Host
 Host: https://techblit.com

@@ -2,6 +2,7 @@
 
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
+import Typography from '@tiptap/extension-typography';
 import Image from '@tiptap/extension-image';
 import Link from '@tiptap/extension-link';
 import Placeholder from '@tiptap/extension-placeholder';
@@ -11,6 +12,7 @@ import { TableRow } from '@tiptap/extension-table-row';
 import { TableCell } from '@tiptap/extension-table-cell';
 import { TableHeader } from '@tiptap/extension-table-header';
 import { useState, useCallback, useEffect, useRef } from 'react';
+import MarkdownIt from 'markdown-it';
 import { 
   BoldIcon, 
   ItalicIcon, 
@@ -29,6 +31,13 @@ import {
 } from '@heroicons/react/24/outline';
 import { Button } from '@/components/ui';
 import { sanitizeWordPressUrls } from '@/lib/imageUrlUtils';
+
+// Initialize Markdown parser
+const md = new MarkdownIt({
+  html: true,
+  linkify: true,
+  typographer: true,
+});
 
 interface RichTextEditorProps {
   content: string;
@@ -59,6 +68,7 @@ export default function RichTextEditor({
           levels: [1, 2, 3, 4, 5, 6],
         },
       }),
+      Typography,
       Image.configure({
         HTMLAttributes: {
           class: 'max-w-full h-auto rounded-lg my-4',
@@ -176,14 +186,48 @@ export default function RichTextEditor({
     }
   }, [editor]);
 
-  // Listen for paste events to detect WordPress URLs
+  const importMarkdown = useCallback(() => {
+    const markdown = window.prompt('Paste your Markdown content:');
+    if (markdown) {
+      const htmlContent = md.render(markdown);
+      editor?.commands.setContent(htmlContent);
+      console.log('✅ Markdown imported and converted to HTML');
+    }
+  }, [editor]);
+
+  // Listen for paste events to handle both WordPress URLs and Markdown
   useEffect(() => {
     if (!editor) return;
 
     const handlePaste = (event: ClipboardEvent) => {
+      const text = event.clipboardData?.getData('text/plain');
       const html = event.clipboardData?.getData('text/html');
+
+      // Check for Markdown patterns (headings, lists, bold, italic, links, code)
+      const hasMarkdown = text && (
+        /^#{1,6}\s/m.test(text) ||           // Headings: # Title
+        /\*\*[^*]+\*\*/g.test(text) ||       // Bold: **text**
+        /\*[^*]+\*/g.test(text) ||           // Italic: *text*
+        /__[^_]+__/g.test(text) ||           // Bold: __text__
+        /_[^_]+_/g.test(text) ||             // Italic: _text_
+        /\[.+?\]\(.+?\)/g.test(text) ||      // Links: [text](url)
+        /^[-*+]\s/m.test(text) ||            // Unordered lists: - item
+        /^\d+\.\s/m.test(text) ||            // Ordered lists: 1. item
+        /^```/m.test(text) ||                // Code blocks: ```
+        /^>\s/m.test(text)                   // Blockquotes: > quote
+      );
+
+      if (hasMarkdown && text && !html) {
+        // Convert Markdown to HTML
+        event.preventDefault();
+        const htmlContent = md.render(text);
+        editor.commands.insertContent(htmlContent);
+        console.log('✅ Markdown content detected and converted to HTML');
+        return;
+      }
+
+      // Check for WordPress URLs in HTML content
       if (html && sanitizeWordPressUrls(html) !== html) {
-        // WordPress URLs detected - they'll be sanitized in onUpdate
         setTimeout(() => {
           console.warn('⚠️ WordPress image URLs detected in pasted content. They will be automatically removed. Please use the image upload button to add images.');
         }, 100);
@@ -363,6 +407,15 @@ export default function RichTextEditor({
               title="Add Twitter Embed"
             >
               <span className="text-xs font-bold">🐦</span>
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={importMarkdown}
+              className="h-8 px-2 text-gray-600 hover:text-gray-900"
+              title="Import Markdown"
+            >
+              <span className="text-xs font-mono font-bold">MD</span>
             </Button>
           </div>
 
