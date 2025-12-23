@@ -17,17 +17,22 @@ interface BlogPost {
   id: string;
   title: string;
   slug: string;
+  content: string;
+  contentHtml?: string;
   excerpt: string;
   author: {
     uid: string;
     name: string;
   };
   category?: string;
+  createdAt: any;
   publishedAt: any;
   featuredImage?: {
     url?: string;
     original?: { url: string };
   };
+  readTime?: string;
+  status?: string;
 }
 
 // Helper to decode URL-encoded author name
@@ -40,23 +45,62 @@ export function encodeAuthorName(name: string): string {
   return encodeURIComponent(name.toLowerCase().replace(/\s+/g, '-'));
 }
 
-// Fetch author's articles
-async function getAuthorArticles(authorName: string): Promise<BlogPost[]> {
-  try {
-    const response = await apiService.getPosts({ limit: 1000 });
-    const allPosts = response.data || [];
+interface AuthorStats {
+  name?: string;
+  totalArticles?: number;
+  totalViews?: number;
+  categories?: string[];
+  firstPublished?: string;
+  lastPublished?: string;
+}
 
-    // Filter posts by author name (case-insensitive)
-    const authorPosts = allPosts.filter((post: BlogPost) =>
-      post.author?.name?.toLowerCase() === authorName.toLowerCase()
+// Fetch author statistics
+async function getAuthorStats(authorName: string): Promise<AuthorStats | null> {
+  try {
+    const FUNCTIONS_URL = process.env.NEXT_PUBLIC_FIREBASE_FUNCTIONS_URL ||
+                          'https://us-central1-techblit.cloudfunctions.net';
+
+    const response = await fetch(
+      `${FUNCTIONS_URL}/api/v1/authors/${encodeURIComponent(authorName)}/stats`,
+      {
+        next: { revalidate: 3600 } // Cache for 1 hour
+      }
     );
 
-    // Sort by published date (newest first)
-    return authorPosts.sort((a: BlogPost, b: BlogPost) => {
-      const dateA = a.publishedAt?.seconds || a.publishedAt?.toDate?.() || new Date(a.publishedAt);
-      const dateB = b.publishedAt?.seconds || b.publishedAt?.toDate?.() || new Date(b.publishedAt);
-      return new Date(dateB).getTime() - new Date(dateA).getTime();
-    });
+    if (!response.ok) {
+      return null;
+    }
+
+    const result = await response.json();
+    return result.data || null;
+  } catch (error) {
+    console.error('Error fetching author stats:', error);
+    return null;
+  }
+}
+
+// Fetch author's articles using optimized endpoint
+async function getAuthorArticles(authorName: string): Promise<BlogPost[]> {
+  try {
+    const FUNCTIONS_URL = process.env.NEXT_PUBLIC_FIREBASE_FUNCTIONS_URL ||
+                          'https://us-central1-techblit.cloudfunctions.net';
+
+    const response = await fetch(
+      `${FUNCTIONS_URL}/api/v1/authors/${encodeURIComponent(authorName)}/posts`,
+      {
+        next: { revalidate: 3600 } // Cache for 1 hour (ISR)
+      }
+    );
+
+    if (!response.ok) {
+      if (response.status === 404) {
+        return [];
+      }
+      throw new Error(`Failed to fetch author posts: ${response.status}`);
+    }
+
+    const result = await response.json();
+    return result.data || [];
   } catch (error) {
     console.error('Error fetching author articles:', error);
     return [];
@@ -97,7 +141,12 @@ export async function generateMetadata({ params }: AuthorPageProps): Promise<Met
 export default async function AuthorPage({ params }: AuthorPageProps) {
   const resolvedParams = await params;
   const authorName = decodeAuthorName(resolvedParams.name);
-  const articles = await getAuthorArticles(authorName);
+
+  // Fetch articles and stats in parallel for better performance
+  const [articles, stats] = await Promise.all([
+    getAuthorArticles(authorName),
+    getAuthorStats(authorName)
+  ]);
 
   // If author has no articles, show 404
   if (articles.length === 0) {
@@ -158,9 +207,21 @@ export default async function AuthorPage({ params }: AuthorPageProps) {
               </p>
               <div className="flex flex-wrap gap-4 justify-center md:justify-start">
                 <div className="bg-white/20 backdrop-blur-sm px-6 py-3 rounded-full border border-white/30">
-                  <span className="font-bold text-2xl">{articles.length}</span>
-                  <span className="ml-2 text-blue-100">Article{articles.length !== 1 ? 's' : ''}</span>
+                  <span className="font-bold text-2xl">{stats?.totalArticles || articles.length}</span>
+                  <span className="ml-2 text-blue-100">Article{(stats?.totalArticles || articles.length) !== 1 ? 's' : ''}</span>
                 </div>
+                {stats?.totalViews && (
+                  <div className="bg-white/20 backdrop-blur-sm px-6 py-3 rounded-full border border-white/30">
+                    <span className="font-bold text-2xl">{stats.totalViews.toLocaleString()}</span>
+                    <span className="ml-2 text-blue-100">Views</span>
+                  </div>
+                )}
+                {stats?.categories && stats.categories.length > 0 && (
+                  <div className="bg-white/20 backdrop-blur-sm px-6 py-3 rounded-full border border-white/30">
+                    <span className="font-bold text-2xl">{stats.categories.length}</span>
+                    <span className="ml-2 text-blue-100">Categories</span>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -179,13 +240,7 @@ export default async function AuthorPage({ params }: AuthorPageProps) {
             {articles.map((post) => (
               <BlogCard
                 key={post.id}
-                title={post.title}
-                excerpt={post.excerpt}
-                slug={post.slug}
-                author={post.author.name}
-                date={post.publishedAt}
-                category={post.category}
-                imageUrl={post.featuredImage?.url || post.featuredImage?.original?.url}
+                post={post}
               />
             ))}
           </div>
