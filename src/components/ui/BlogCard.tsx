@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { getAuthorUrl } from '@/lib/authorUtils';
 
 interface BlogPost {
   id: string;
@@ -77,9 +78,13 @@ export default function BlogCard({ post, featured = false }: BlogCardProps) {
           <div className="flex items-center justify-between text-sm text-gray-500">
             <div className="flex items-center space-x-4">
               {post.author && (
-                <span className="font-medium">
+                <Link
+                  href={getAuthorUrl(typeof post.author === 'string' ? post.author : post.author.name)}
+                  className="font-medium hover:text-blue-600 transition-colors"
+                  onClick={(e) => e.stopPropagation()}
+                >
                   {typeof post.author === 'string' ? post.author : post.author.name}
-                </span>
+                </Link>
               )}
               <time>{formatDate(post.createdAt)}</time>
               {post.readTime && (

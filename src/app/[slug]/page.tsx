@@ -6,6 +6,7 @@ import SuggestedArticles from '@/components/ui/SuggestedArticles';
 import SocialShare from '@/components/ui/SocialShare';
 import NewsletterSection from '@/components/ui/NewsletterSection';
 import { generatePostSEO, generateStructuredData } from '@/lib/seo';
+import { getAuthorUrl } from '@/lib/authorUtils';
 import { Metadata } from 'next';
 // Note: This is a server component, so we'll use direct API calls
 // For server-side, we can call the API directly
@@ -195,11 +196,19 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
           
           <div className="flex flex-col sm:flex-row sm:items-center text-xs sm:text-sm text-gray-500 gap-2 sm:gap-4 mb-4 sm:mb-6">
             {post.author && (
-              <span>By {typeof post.author === 'string' ? post.author : post.author.name}</span>
+              <span>
+                By{' '}
+                <Link
+                  href={getAuthorUrl(typeof post.author === 'string' ? post.author : post.author.name)}
+                  className="text-blue-600 hover:text-blue-800 font-medium hover:underline transition-colors"
+                >
+                  {typeof post.author === 'string' ? post.author : post.author.name}
+                </Link>
+              </span>
             )}
             <time>
-              {post.publishedAt?.toDate?.()?.toLocaleDateString() || 
-               post.createdAt?.toDate?.()?.toLocaleDateString() || 
+              {post.publishedAt?.toDate?.()?.toLocaleDateString() ||
+               post.createdAt?.toDate?.()?.toLocaleDateString() ||
                'Unknown date'}
             </time>
           </div>
