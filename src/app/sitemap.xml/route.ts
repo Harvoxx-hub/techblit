@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { generateSitemapXML, generateSitemap, SitemapUrl } from '@/lib/sitemap';
 
+// Force Node.js runtime for heavy operations (not Edge)
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
+
 const SITEMAP_GENERATOR_URL = 'https://generatesitemap-4alcog3g7q-uc.a.run.app/';
 const FETCH_TIMEOUT = 10000; // 10 seconds timeout
 

@@ -3,6 +3,9 @@ import apiService from '@/lib/apiService';
 import { bulkIndexPosts } from '@/lib/algolia';
 import { getImageUrlFromData } from '@/lib/imageHelpers';
 
+// Use Node.js runtime for external API calls and heavy processing
+export const runtime = 'nodejs';
+
 interface BlogPost {
   id: string;
   title: string;

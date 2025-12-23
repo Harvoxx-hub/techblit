@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { API_ENDPOINTS } from '@/lib/api';
 
+// Use Node.js runtime for external API calls
+export const runtime = 'nodejs';
+
 export async function GET(request: NextRequest) {
   try {
     const authHeader = request.headers.get('authorization');

@@ -45,11 +45,12 @@ export const metadata: Metadata = {
     site: '@techblit',
   },
   robots: {
-    index: true,
-    follow: true,
+    // Only index production environment (not preview/dev deployments)
+    index: process.env.VERCEL_ENV === 'production',
+    follow: process.env.VERCEL_ENV === 'production',
     googleBot: {
-      index: true,
-      follow: true,
+      index: process.env.VERCEL_ENV === 'production',
+      follow: process.env.VERCEL_ENV === 'production',
       'max-video-preview': -1,
       'max-image-preview': 'large',
       'max-snippet': -1,

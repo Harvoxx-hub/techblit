@@ -63,61 +63,18 @@ const LEGACY_URL_PATTERNS: Array<{
   },
 ];
 
-// In-memory cache for redirects
-let redirectsCache: { data: Array<{ from: string; to: string; type: number }> | null; expires: number } = {
-  data: null,
-  expires: 0,
-};
-
-const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
-
-async function getRedirects(): Promise<Array<{ from: string; to: string; type: number }>> {
-  const now = Date.now();
-  
-  // Return cached data if still valid
-  if (redirectsCache.data && redirectsCache.expires > now) {
-    return redirectsCache.data;
-  }
-  
-  try {
-    const FUNCTIONS_URL = process.env.NEXT_PUBLIC_FIREBASE_FUNCTIONS_URL || 
-                          'https://us-central1-techblit.cloudfunctions.net';
-    
-    const response = await fetch(`${FUNCTIONS_URL}/api/v1/redirects/lookup?path=__all__`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      // Don't cache fetch (we manage our own cache)
-    });
-    
-    if (!response.ok) {
-      console.error('Failed to fetch redirects:', response.status);
-      return [];
-    }
-    
-    const result = await response.json();
-    const redirects = result.data || [];
-    
-    // Update cache
-    redirectsCache = {
-      data: redirects,
-      expires: now + CACHE_TTL,
-    };
-    
-    return redirects;
-  } catch (error) {
-    console.error('Error fetching redirects:', error);
-    // Return cached data even if expired, as fallback
-    return redirectsCache.data || [];
-  }
-}
+// Note: In-memory caching removed - Edge runtime doesn't support module-level state reliably
+// If caching is needed, use Vercel KV or other edge-compatible store
 
 async function lookupRedirect(path: string): Promise<{ to: string; type: number } | null> {
   try {
-    const FUNCTIONS_URL = process.env.NEXT_PUBLIC_FIREBASE_FUNCTIONS_URL || 
+    const FUNCTIONS_URL = process.env.NEXT_PUBLIC_FIREBASE_FUNCTIONS_URL ||
                           'https://us-central1-techblit.cloudfunctions.net';
-    
+
+    // Add timeout to prevent slow API calls from blocking Edge
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 2000); // 2 second timeout
+
     const response = await fetch(
       `${FUNCTIONS_URL}/api/v1/redirects/lookup?path=${encodeURIComponent(path)}`,
       {
@@ -125,25 +82,31 @@ async function lookupRedirect(path: string): Promise<{ to: string; type: number 
         headers: {
           'Content-Type': 'application/json',
         },
+        signal: controller.signal,
       }
     );
-    
+
+    clearTimeout(timeoutId);
+
     if (!response.ok) {
       return null;
     }
-    
+
     const result = await response.json();
-    
+
     if (result.data?.found) {
       return {
         to: result.data.to,
         type: result.data.type || 301,
       };
     }
-    
+
     return null;
   } catch (error) {
-    console.error('Error looking up redirect:', error);
+    // Silently fail on timeout or error - don't block the request
+    if ((error as Error).name !== 'AbortError') {
+      console.error('Error looking up redirect:', error);
+    }
     return null;
   }
 }
@@ -160,7 +123,28 @@ function handleLegacyPatterns(pathname: string): string | null {
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  
+
+  // Prevent redirect loops - check if this is already a redirected request
+  const redirectCount = request.headers.get('x-middleware-redirect-count');
+  if (redirectCount && parseInt(redirectCount) > 3) {
+    console.error(`[Middleware] Redirect loop detected for: ${pathname}`);
+    return NextResponse.next();
+  }
+
+  // CRITICAL: Block legacy WordPress routes immediately (prevent bot spam)
+  const blockedPaths = [
+    '/wp-admin',
+    '/wp-login.php',
+    '/wp-json',
+    '/xmlrpc.php',
+    '/wp-content',
+    '/wp-includes',
+  ];
+
+  if (blockedPaths.some(p => pathname.startsWith(p))) {
+    return new Response('Not Found', { status: 404 });
+  }
+
   // Skip for API routes, static files, etc.
   if (
     pathname.startsWith('/api') ||
@@ -190,14 +174,18 @@ export async function middleware(request: NextRequest) {
     // legacyRedirect could be empty string (meaning proceed) or a redirect target
     if (legacyRedirect) {
       const redirectUrl = new URL(legacyRedirect, request.url);
-      return NextResponse.redirect(redirectUrl, { status: 301 });
+      const response = NextResponse.redirect(redirectUrl, { status: 301 });
+      // Track redirect count to prevent loops
+      const count = redirectCount ? parseInt(redirectCount) + 1 : 1;
+      response.headers.set('x-middleware-redirect-count', count.toString());
+      return response;
     }
     // If null handler returned, continue to let it 404
   }
 
   // 2. Check for custom redirects from the database
   const redirect = await lookupRedirect(normalizedPath);
-  
+
   if (redirect) {
     // Ensure the redirect URL is absolute
     let redirectUrl = redirect.to;
@@ -205,11 +193,15 @@ export async function middleware(request: NextRequest) {
       redirectUrl = new URL(redirect.to, request.url).toString();
     }
 
-    return NextResponse.redirect(redirectUrl, {
+    const response = NextResponse.redirect(redirectUrl, {
       status: redirect.type === 302 ? 302 : 301,
     });
+    // Track redirect count to prevent loops
+    const count = redirectCount ? parseInt(redirectCount) + 1 : 1;
+    response.headers.set('x-middleware-redirect-count', count.toString());
+    return response;
   }
-  
+
   return NextResponse.next();
 }
 
@@ -220,8 +212,12 @@ export const config = {
      * - api (API routes)
      * - _next/static (static files)
      * - _next/image (image optimization files)
-     * - favicon.png (favicon file)
+     * - favicon.ico, favicon.png (favicon files)
+     * - images, fonts (public static assets)
+     * - robots.txt, sitemap.xml (SEO files)
+     *
+     * This optimized matcher reduces Edge Request usage significantly
      */
-    '/((?!api|_next/static|_next/image|favicon.png).*)',
+    '/((?!_next/static|_next/image|favicon\\.ico|favicon\\.png|images|fonts|robots\\.txt|sitemap\\.xml|.*\\.jpg|.*\\.jpeg|.*\\.png|.*\\.gif|.*\\.svg|.*\\.webp|.*\\.ico|.*\\.css|.*\\.js).*)',
   ],
 };
