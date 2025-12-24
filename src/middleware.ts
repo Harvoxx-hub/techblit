@@ -63,6 +63,15 @@ const LEGACY_URL_PATTERNS: Array<{
   },
 ];
 
+// Bot user agents to skip redirect lookups (reduce API calls)
+const BOT_USER_AGENTS = [
+  'bot', 'crawler', 'spider', 'scraper', 'curl', 'wget',
+  'googlebot', 'bingbot', 'slurp', 'duckduckbot', 'baiduspider',
+  'yandexbot', 'facebookexternalhit', 'twitterbot', 'linkedinbot',
+  'whatsapp', 'telegram', 'slack', 'discord', 'petalbot',
+  'semrushbot', 'ahrefsbot', 'dotbot', 'mj12bot', 'serpstatbot'
+];
+
 // Note: In-memory caching removed - Edge runtime doesn't support module-level state reliably
 // If caching is needed, use Vercel KV or other edge-compatible store
 
@@ -131,6 +140,10 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
+  // Check if request is from a bot (skip expensive redirect lookups for bots)
+  const userAgent = request.headers.get('user-agent')?.toLowerCase() || '';
+  const isBot = BOT_USER_AGENTS.some(bot => userAgent.includes(bot));
+
   // CRITICAL: Block legacy WordPress routes immediately (prevent bot spam)
   const blockedPaths = [
     '/wp-admin',
@@ -145,21 +158,26 @@ export async function middleware(request: NextRequest) {
     return new Response('Not Found', { status: 404 });
   }
 
-  // Skip for API routes, static files, etc.
+  // Skip redirect lookups for known valid routes (major optimization)
+  // Only check redirects for potentially legacy/unknown URLs
   if (
     pathname.startsWith('/api') ||
     pathname.startsWith('/_next') ||
     pathname.startsWith('/favicon') ||
     pathname.startsWith('/sitemap') ||
     pathname.startsWith('/robots') ||
+    pathname.startsWith('/images') ||
+    pathname.startsWith('/fonts') ||
+    pathname.startsWith('/admin') ||
+    pathname.startsWith('/blog') ||
+    pathname.startsWith('/category') ||
+    pathname.startsWith('/authors') ||
+    pathname.startsWith('/writers') ||
+    pathname.startsWith('/about') ||
+    pathname.startsWith('/preview') ||
+    pathname === '/' ||
     pathname.includes('.')
   ) {
-    return NextResponse.next();
-  }
-
-  // Check if the path starts with /admin (but not /admin/login)
-  if (pathname.startsWith('/admin') && pathname !== '/admin/login') {
-    // This will be handled by the client-side authentication
     return NextResponse.next();
   }
 
@@ -184,7 +202,11 @@ export async function middleware(request: NextRequest) {
   }
 
   // 2. Check for custom redirects from the database
-  const redirect = await lookupRedirect(normalizedPath);
+  // OPTIMIZATION: Skip redirect lookup for bots to reduce API calls
+  let redirect = null;
+  if (!isBot) {
+    redirect = await lookupRedirect(normalizedPath);
+  }
 
   if (redirect) {
     // Ensure the redirect URL is absolute
