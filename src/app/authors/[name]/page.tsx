@@ -1,11 +1,12 @@
 import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
-import Image from 'next/image';
 import Navigation from '@/components/ui/Navigation';
 import Footer from '@/components/ui/Footer';
 import BlogCard from '@/components/ui/BlogCard';
-import apiService from '@/lib/apiService';
+import { slugToAuthorName } from '@/lib/authorUtils';
+import AuthorHero from '@/components/authors/AuthorHero';
+import AuthorArticlesList from '@/components/authors/AuthorArticlesList';
 
 interface AuthorPageProps {
   params: Promise<{
@@ -35,16 +36,6 @@ interface BlogPost {
   status?: string;
 }
 
-// Helper to decode URL-encoded author name
-function decodeAuthorName(encodedName: string): string {
-  return decodeURIComponent(encodedName.replace(/\+/g, ' '));
-}
-
-// Helper to encode author name for URLs
-export function encodeAuthorName(name: string): string {
-  return encodeURIComponent(name.toLowerCase().replace(/\s+/g, '-'));
-}
-
 interface AuthorStats {
   name?: string;
   totalArticles?: number;
@@ -54,32 +45,65 @@ interface AuthorStats {
   lastPublished?: string;
 }
 
-// Fetch author statistics
-async function getAuthorStats(authorName: string): Promise<AuthorStats | null> {
-  try {
-    const FUNCTIONS_URL = process.env.NEXT_PUBLIC_FIREBASE_FUNCTIONS_URL ||
-                          'https://us-central1-techblit.cloudfunctions.net';
+// Calculate author statistics from their articles
+function calculateAuthorStats(articles: BlogPost[], authorName: string): AuthorStats {
+  if (articles.length === 0) {
+    return {};
+  }
 
-    const response = await fetch(
-      `${FUNCTIONS_URL}/api/v1/authors/${encodeURIComponent(authorName)}/stats`,
-      {
-        next: { revalidate: 3600 } // Cache for 1 hour
+  // Get unique categories
+  const categories = Array.from(new Set(
+    articles
+      .map(post => post.category)
+      .filter((cat): cat is string => !!cat)
+  ));
+
+  // Helper to safely parse dates
+  const parseDate = (post: BlogPost): Date | null => {
+    try {
+      if (post.publishedAt?.toDate && typeof post.publishedAt.toDate === 'function') {
+        return post.publishedAt.toDate();
       }
-    );
-
-    if (!response.ok) {
+      if (post.publishedAt && typeof post.publishedAt === 'object' && '_seconds' in post.publishedAt) {
+        return new Date((post.publishedAt as any)._seconds * 1000);
+      }
+      if (post.publishedAt) {
+        const date = new Date(post.publishedAt);
+        return isNaN(date.getTime()) ? null : date;
+      }
+      if (post.createdAt) {
+        const date = new Date(post.createdAt);
+        return isNaN(date.getTime()) ? null : date;
+      }
+      return null;
+    } catch {
       return null;
     }
+  };
 
-    const result = await response.json();
-    return result.data || null;
-  } catch (error) {
-    console.error('Error fetching author stats:', error);
-    return null;
+  const sortedByDate = [...articles]
+    .map(post => ({ post, date: parseDate(post) }))
+    .filter(({ date }) => date !== null)
+    .sort((a, b) => a.date!.getTime() - b.date!.getTime());
+
+  if (sortedByDate.length === 0) {
+    return {
+      name: authorName,
+      totalArticles: articles.length,
+      categories,
+    };
   }
+
+  return {
+    name: authorName,
+    totalArticles: articles.length,
+    categories,
+    firstPublished: sortedByDate[0]?.date?.toISOString(),
+    lastPublished: sortedByDate[sortedByDate.length - 1]?.date?.toISOString(),
+  };
 }
 
-// Fetch author's articles using optimized endpoint
+// Fetch author's articles using dedicated author endpoint
 async function getAuthorArticles(authorName: string): Promise<BlogPost[]> {
   try {
     const FUNCTIONS_URL = process.env.NEXT_PUBLIC_FIREBASE_FUNCTIONS_URL ||
@@ -88,19 +112,38 @@ async function getAuthorArticles(authorName: string): Promise<BlogPost[]> {
     const response = await fetch(
       `${FUNCTIONS_URL}/api/v1/authors/${encodeURIComponent(authorName)}/posts`,
       {
-        next: { revalidate: 3600 } // Cache for 1 hour (ISR)
+        next: { revalidate: 3600 }
       }
     );
 
-    if (!response.ok) {
-      if (response.status === 404) {
-        return [];
-      }
-      throw new Error(`Failed to fetch author posts: ${response.status}`);
+    if (response.ok) {
+      const result = await response.json();
+      return result.data || [];
     }
 
-    const result = await response.json();
-    return result.data || [];
+    if (response.status === 404) {
+      console.warn('Author endpoint not deployed yet, falling back to client-side filtering');
+      const fallbackResponse = await fetch(
+        `${FUNCTIONS_URL}/getPosts`,
+        { next: { revalidate: 3600 } }
+      );
+
+      if (!fallbackResponse.ok) {
+        throw new Error(`Failed to fetch posts: ${fallbackResponse.status}`);
+      }
+
+      const result = await fallbackResponse.json();
+      const posts = result.posts || [];
+
+      return posts.filter((post: BlogPost) => {
+        const postAuthorName = typeof post.author === 'string'
+          ? post.author
+          : post.author?.name || '';
+        return postAuthorName.toLowerCase() === authorName.toLowerCase();
+      });
+    }
+
+    throw new Error(`Failed to fetch author posts: ${response.status}`);
   } catch (error) {
     console.error('Error fetching author articles:', error);
     return [];
@@ -110,7 +153,7 @@ async function getAuthorArticles(authorName: string): Promise<BlogPost[]> {
 // Generate metadata for SEO
 export async function generateMetadata({ params }: AuthorPageProps): Promise<Metadata> {
   const resolvedParams = await params;
-  const authorName = decodeAuthorName(resolvedParams.name);
+  const authorName = slugToAuthorName(resolvedParams.name);
   const articles = await getAuthorArticles(authorName);
 
   if (articles.length === 0) {
@@ -140,26 +183,18 @@ export async function generateMetadata({ params }: AuthorPageProps): Promise<Met
 
 export default async function AuthorPage({ params }: AuthorPageProps) {
   const resolvedParams = await params;
-  const authorName = decodeAuthorName(resolvedParams.name);
+  const authorName = slugToAuthorName(resolvedParams.name);
 
-  // Fetch articles and stats in parallel for better performance
-  const [articles, stats] = await Promise.all([
-    getAuthorArticles(authorName),
-    getAuthorStats(authorName)
-  ]);
+  const articles = await getAuthorArticles(authorName);
+  const stats = calculateAuthorStats(articles, authorName);
 
-  // If author has no articles, show 404
   if (articles.length === 0) {
     notFound();
   }
 
-  // Generate author bio (you can make this dynamic by storing bios in database)
   const authorBio = `${authorName} is a contributor at TechBlit, covering technology, startups, and innovation stories across Africa.`;
-
-  // Get first letter for avatar fallback
   const avatarLetter = authorName.charAt(0).toUpperCase();
 
-  // Structured data for SEO
   const structuredData = {
     '@context': 'https://schema.org',
     '@type': 'ProfilePage',
@@ -177,105 +212,83 @@ export default async function AuthorPage({ params }: AuthorPageProps) {
   };
 
   return (
-    <div className="min-h-screen bg-white dark:bg-gray-900">
+    <div className="min-h-screen bg-white dark:bg-[#0a0a0a]">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
       />
       <Navigation />
 
-      {/* Author Hero Section */}
-      <section className="bg-gradient-to-br from-blue-600 to-purple-700 text-white py-16 md:py-24">
-        <div className="max-w-4xl mx-auto px-6">
-          <div className="flex flex-col md:flex-row items-center gap-8">
-            {/* Author Avatar */}
-            <div className="flex-shrink-0">
-              <div className="w-32 h-32 md:w-40 md:h-40 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center border-4 border-white/30">
-                <span className="text-6xl md:text-7xl font-bold text-white">
-                  {avatarLetter}
-                </span>
-              </div>
-            </div>
+      {/* Hero Section */}
+      <AuthorHero
+        authorName={authorName}
+        authorBio={authorBio}
+        avatarLetter={avatarLetter}
+        stats={stats}
+        articleCount={articles.length}
+      />
 
-            {/* Author Info */}
-            <div className="flex-1 text-center md:text-left">
-              <h1 className="text-4xl md:text-5xl font-bold mb-4">
-                {authorName}
-              </h1>
-              <p className="text-xl text-blue-100 mb-6">
-                {authorBio}
-              </p>
-              <div className="flex flex-wrap gap-4 justify-center md:justify-start">
-                <div className="bg-white/20 backdrop-blur-sm px-6 py-3 rounded-full border border-white/30">
-                  <span className="font-bold text-2xl">{stats?.totalArticles || articles.length}</span>
-                  <span className="ml-2 text-blue-100">Article{(stats?.totalArticles || articles.length) !== 1 ? 's' : ''}</span>
-                </div>
-                {stats?.totalViews && (
-                  <div className="bg-white/20 backdrop-blur-sm px-6 py-3 rounded-full border border-white/30">
-                    <span className="font-bold text-2xl">{stats.totalViews.toLocaleString()}</span>
-                    <span className="ml-2 text-blue-100">Views</span>
-                  </div>
-                )}
-                {stats?.categories && stats.categories.length > 0 && (
-                  <div className="bg-white/20 backdrop-blur-sm px-6 py-3 rounded-full border border-white/30">
-                    <span className="font-bold text-2xl">{stats.categories.length}</span>
-                    <span className="ml-2 text-blue-100">Categories</span>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
+      {/* Articles Section */}
+      <section className="py-20 md:py-28 relative">
+        {/* Decorative elements */}
+        <div className="absolute top-20 left-10 w-40 h-40 bg-orange-500/5 dark:bg-orange-400/5 rounded-full blur-3xl"></div>
+        <div className="absolute bottom-40 right-20 w-60 h-60 bg-teal-500/5 dark:bg-teal-400/5 rounded-full blur-3xl"></div>
 
-      {/* Articles by Author */}
-      <section className="py-16">
         <div className="max-w-7xl mx-auto px-6">
-          <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-8">
-            Articles by {authorName}
-          </h2>
-
-          {/* Articles Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {articles.map((post) => (
-              <BlogCard
-                key={post.id}
-                post={post}
-              />
-            ))}
+          <div className="mb-12">
+            <h2 className="text-4xl md:text-5xl font-black text-gray-900 dark:text-white mb-4">
+              Published Works
+            </h2>
+            <div className="flex items-center gap-4">
+              <div className="w-20 h-1 bg-gradient-to-r from-orange-500 to-amber-500"></div>
+              <span className="text-lg font-bold text-gray-600 dark:text-gray-400">
+                {articles.length} article{articles.length !== 1 ? 's' : ''}
+              </span>
+            </div>
           </div>
 
-          {/* No articles message (shouldn't happen due to notFound check) */}
-          {articles.length === 0 && (
-            <div className="text-center py-12">
-              <p className="text-xl text-gray-600 dark:text-gray-400">
-                No articles found by this author.
-              </p>
-              <Link
-                href="/blog"
-                className="inline-block mt-6 text-blue-600 dark:text-blue-400 hover:underline"
-              >
-                Browse all articles →
-              </Link>
-            </div>
-          )}
+          <AuthorArticlesList articles={articles} />
         </div>
       </section>
 
       {/* CTA Section */}
-      <section className="bg-gray-50 dark:bg-gray-800 py-16">
-        <div className="max-w-4xl mx-auto px-6 text-center">
-          <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">
-            Want to Write for TechBlit?
+      <section className="relative py-20 md:py-28 overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-purple-600 to-pink-600 dark:from-purple-700 dark:to-pink-700"></div>
+
+        {/* Geometric decorations */}
+        <div className="absolute inset-0 opacity-10">
+          <div className="absolute top-0 left-0 w-64 h-64 border-8 border-white rounded-full -translate-x-32 -translate-y-32"></div>
+          <div className="absolute bottom-0 right-0 w-96 h-96 border-8 border-white rotate-45 translate-x-48 translate-y-48"></div>
+        </div>
+
+        <div className="relative max-w-4xl mx-auto px-6 text-center">
+          <div className="inline-block mb-6 px-4 py-2 bg-white/20 backdrop-blur-sm rounded-full">
+            <span className="text-sm font-bold tracking-widest uppercase text-white">
+              Join The Team
+            </span>
+          </div>
+
+          <h2 className="text-4xl md:text-6xl font-black text-white mb-6 leading-tight">
+            Want to Write<br />for TechBlit?
           </h2>
-          <p className="text-xl text-gray-600 dark:text-gray-300 mb-8">
-            Join our community of writers and contributors documenting Africa's tech ecosystem.
+
+          <p className="text-xl md:text-2xl text-white/90 mb-10 max-w-2xl mx-auto">
+            Join {authorName} and our community of writers documenting Africa's tech revolution.
           </p>
+
           <Link
             href="/writers"
-            className="inline-block bg-gradient-to-r from-blue-600 to-purple-700 text-white px-8 py-4 rounded-lg font-bold text-lg hover:shadow-xl transition-all duration-200 transform hover:-translate-y-0.5"
+            className="group inline-flex items-center gap-3 bg-white text-purple-900 px-10 py-5 rounded-full font-black text-lg hover:bg-amber-400 hover:text-black transition-all duration-300 transform hover:scale-105 hover:shadow-2xl"
           >
-            Become a Contributor
+            <span>Become a Contributor</span>
+            <svg
+              className="w-6 h-6 group-hover:translate-x-1 transition-transform"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+            </svg>
           </Link>
         </div>
       </section>
