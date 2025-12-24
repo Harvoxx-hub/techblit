@@ -23,7 +23,7 @@
   "rewrites": [
     {
       "source": "/api/:path*",
-      "destination": "https://us-central1-techblit.cloudfunctions.net/:path*"
+      "destination": "https://techblit-cloud-function-production.up.railway.app/api/:path*"
     }
   ]
 }
