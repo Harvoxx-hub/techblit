@@ -51,7 +51,7 @@ export async function generateSitemap(): Promise<SitemapUrl[]> {
 
     try {
       const FUNCTIONS_URL = process.env.NEXT_PUBLIC_FIREBASE_FUNCTIONS_URL || 
-                            'https://us-central1-techblit.cloudfunctions.net';
+                            'https://techblit-cloud-function-production.up.railway.app';
       const API_BASE = `${FUNCTIONS_URL}/api/v1`;
       
       // Use no-store for sitemap generation since response is >2MB and can't be cached by Next.js

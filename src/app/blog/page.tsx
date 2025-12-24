@@ -22,7 +22,7 @@ async function getBlogPosts(page: number = 1): Promise<{ posts: Post[]; total: n
   const pageSize = 25;
   try {
     const FUNCTIONS_URL = process.env.NEXT_PUBLIC_FIREBASE_FUNCTIONS_URL || 
-                          'https://us-central1-techblit.cloudfunctions.net';
+                          'https://techblit-cloud-function-production.up.railway.app';
     const API_BASE = `${FUNCTIONS_URL}/api/v1`;
     
     // Fetch all posts (API doesn't support pagination yet, so we fetch all and paginate client-side)

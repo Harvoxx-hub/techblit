@@ -69,7 +69,7 @@ const LEGACY_URL_PATTERNS: Array<{
 async function lookupRedirect(path: string): Promise<{ to: string; type: number } | null> {
   try {
     const FUNCTIONS_URL = process.env.NEXT_PUBLIC_FIREBASE_FUNCTIONS_URL ||
-                          'https://us-central1-techblit.cloudfunctions.net';
+                          'https://techblit-cloud-function-production.up.railway.app';
 
     // Add timeout to prevent slow API calls from blocking Edge
     const controller = new AbortController();

@@ -107,7 +107,7 @@ function calculateAuthorStats(articles: BlogPost[], authorName: string): AuthorS
 async function getAuthorArticles(authorName: string): Promise<BlogPost[]> {
   try {
     const FUNCTIONS_URL = process.env.NEXT_PUBLIC_FIREBASE_FUNCTIONS_URL ||
-                          'https://us-central1-techblit.cloudfunctions.net';
+                          'https://techblit-cloud-function-production.up.railway.app';
 
     const response = await fetch(
       `${FUNCTIONS_URL}/api/v1/authors/${encodeURIComponent(authorName)}/posts`,

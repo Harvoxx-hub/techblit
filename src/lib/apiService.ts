@@ -7,8 +7,8 @@
 
 import { Post, Redirect, User, SiteSettings } from '@/types/admin';
 
-const FUNCTIONS_URL = process.env.NEXT_PUBLIC_FIREBASE_FUNCTIONS_URL || 
-                      'https://us-central1-techblit.cloudfunctions.net';
+const FUNCTIONS_URL = process.env.NEXT_PUBLIC_FIREBASE_FUNCTIONS_URL ||
+                      'https://techblit-cloud-function-production.up.railway.app';
 const API_BASE = `${FUNCTIONS_URL}/api/v1`;
 
 class ApiService {

@@ -76,7 +76,7 @@ function getImageUrl(image: ProcessedImage | { url: string; alt: string; width?:
 async function getPost(slug: string): Promise<BlogPost | null> {
   try {
     const FUNCTIONS_URL = process.env.NEXT_PUBLIC_FIREBASE_FUNCTIONS_URL || 
-                          'https://us-central1-techblit.cloudfunctions.net';
+                          'https://techblit-cloud-function-production.up.railway.app';
     const API_BASE = `${FUNCTIONS_URL}/api/v1`;
     
     const response = await fetch(`${API_BASE}/posts/${slug}`, {
@@ -102,7 +102,7 @@ async function getPost(slug: string): Promise<BlogPost | null> {
 export async function generateStaticParams() {
   try {
     const FUNCTIONS_URL = process.env.NEXT_PUBLIC_FIREBASE_FUNCTIONS_URL || 
-                          'https://us-central1-techblit.cloudfunctions.net';
+                          'https://techblit-cloud-function-production.up.railway.app';
     const API_BASE = `${FUNCTIONS_URL}/api/v1`;
     
     const response = await fetch(`${API_BASE}/posts?limit=1000`, {

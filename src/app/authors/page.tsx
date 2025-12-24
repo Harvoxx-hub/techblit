@@ -18,7 +18,7 @@ interface Author {
 async function getAllAuthors(): Promise<Author[]> {
   try {
     const FUNCTIONS_URL = process.env.NEXT_PUBLIC_FIREBASE_FUNCTIONS_URL ||
-                          'https://us-central1-techblit.cloudfunctions.net';
+                          'https://techblit-cloud-function-production.up.railway.app';
 
     const response = await fetch(
       `${FUNCTIONS_URL}/api/v1/authors`,

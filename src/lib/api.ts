@@ -6,8 +6,8 @@
  */
 
 // Get the base URL for Cloud Functions
-const FUNCTIONS_URL = process.env.NEXT_PUBLIC_FIREBASE_FUNCTIONS_URL || 
-                      'https://us-central1-techblit.cloudfunctions.net';
+const FUNCTIONS_URL = process.env.NEXT_PUBLIC_FIREBASE_FUNCTIONS_URL ||
+                      'https://techblit-cloud-function-production.up.railway.app';
 
 /**
  * API Endpoints
