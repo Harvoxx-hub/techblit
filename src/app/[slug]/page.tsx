@@ -48,6 +48,7 @@ interface BlogPost {
 
 import { getCrawlableImageUrl, sanitizeWordPressUrls } from '@/lib/imageUrlUtils';
 import { getImageUrlFromData } from '@/lib/imageHelpers';
+import { renderContent } from '@/lib/markdown';
 
 // Helper function to get image URL from either format
 // Prioritizes Cloudinary public_id over legacy URLs for migrated images
@@ -239,16 +240,12 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
         </header>
 
         <div className="bg-white rounded-lg shadow-sm p-4 sm:p-6 md:p-8">
-          {post.contentHtml ? (
-            <div 
-              className="prose prose-sm sm:prose-base md:prose-lg max-w-none text-gray-900 prose-img:max-w-full prose-img:rounded-lg prose-img:my-4 prose-a:text-blue-600 prose-a:no-underline hover:prose-a:underline prose-strong:text-gray-900 prose-headings:text-gray-900 prose-p:text-gray-700 prose-li:text-gray-700"
-              dangerouslySetInnerHTML={{ __html: sanitizeWordPressUrls(post.contentHtml) }}
-            />
-          ) : (
-            <div className="whitespace-pre-wrap text-sm sm:text-base text-gray-700 leading-relaxed">
-              {sanitizeWordPressUrls(post.content)}
-            </div>
-          )}
+          <div
+            className="prose prose-sm sm:prose-base md:prose-lg max-w-none text-gray-900 prose-img:max-w-full prose-img:rounded-lg prose-img:my-4 prose-a:text-blue-600 prose-a:no-underline hover:prose-a:underline prose-strong:text-gray-900 prose-headings:text-gray-900 prose-p:text-gray-700 prose-li:text-gray-700"
+            dangerouslySetInnerHTML={{
+              __html: sanitizeWordPressUrls(renderContent(post.content, post.contentHtml))
+            }}
+          />
         </div>
 
         {/* Social Share */}
