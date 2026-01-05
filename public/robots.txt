@@ -1,8 +1,43 @@
-# *
+# Allow Google full access (critical for SEO)
+User-agent: Googlebot
+Allow: /
+Disallow: /admin/
+Disallow: /api/
+
+# Allow Bing with slight delay
+User-agent: Bingbot
+Allow: /
+Disallow: /admin/
+Disallow: /api/
+Crawl-delay: 2
+
+# Slow down aggressive SEO tool bots (these are killing your observability budget)
+User-agent: AhrefsBot
+Crawl-delay: 60
+Disallow: /admin/
+Disallow: /api/
+
+User-agent: SemrushBot
+Crawl-delay: 60
+Disallow: /admin/
+Disallow: /api/
+
+User-agent: MJ12bot
+Crawl-delay: 60
+Disallow: /admin/
+Disallow: /api/
+
+User-agent: DotBot
+Crawl-delay: 60
+Disallow: /admin/
+Disallow: /api/
+
+# Default for all other bots
 User-agent: *
 Allow: /
 Disallow: /admin/
 Disallow: /api/
+Crawl-delay: 10
 
 # Host
 Host: https://techblit.com

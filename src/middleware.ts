@@ -72,6 +72,18 @@ const BOT_USER_AGENTS = [
   'semrushbot', 'ahrefsbot', 'dotbot', 'mj12bot', 'serpstatbot'
 ];
 
+// AGGRESSIVE BOTS TO BLOCK COMPLETELY (saves observability costs)
+const BLOCKED_BOTS = [
+  'ahrefsbot',
+  'semrushbot',
+  'mj12bot',
+  'dotbot',
+  'blexbot',
+  'dataforseobot',
+  'serpstatbot',
+  'petalbot'
+];
+
 // Note: In-memory caching removed - Edge runtime doesn't support module-level state reliably
 // If caching is needed, use Vercel KV or other edge-compatible store
 
@@ -132,6 +144,20 @@ function handleLegacyPatterns(pathname: string): string | null {
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  const userAgent = request.headers.get('user-agent')?.toLowerCase() || '';
+
+  // =====================================================
+  // STEP 1: BLOCK AGGRESSIVE BOTS (highest priority)
+  // =====================================================
+  const isBlockedBot = BLOCKED_BOTS.some(bot => userAgent.includes(bot));
+  if (isBlockedBot) {
+    return new Response('Forbidden - Bot blocked', { 
+      status: 403,
+      headers: {
+        'X-Robots-Tag': 'noindex, nofollow'
+      }
+    });
+  }
 
   // Prevent redirect loops - check if this is already a redirected request
   const redirectCount = request.headers.get('x-middleware-redirect-count');
@@ -141,7 +167,6 @@ export async function middleware(request: NextRequest) {
   }
 
   // Check if request is from a bot (skip expensive redirect lookups for bots)
-  const userAgent = request.headers.get('user-agent')?.toLowerCase() || '';
   const isBot = BOT_USER_AGENTS.some(bot => userAgent.includes(bot));
 
   // CRITICAL: Block legacy WordPress routes immediately (prevent bot spam)
