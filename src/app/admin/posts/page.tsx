@@ -28,10 +28,8 @@ function PostsManager() {
   useEffect(() => {
     const fetchPosts = async () => {
       try {
-        // Note: API currently only returns published posts
-        // For admin, we need all posts - this may need a new endpoint
-        // For now, using the existing endpoint
-        const postsData = await apiService.getPosts({ limit: 100 });
+        // Use admin endpoint to get all posts with any status
+        const postsData = await apiService.getAllPosts({ limit: 1000 });
         
         const formattedPosts: Post[] = postsData.map((post: any) => ({
           id: post.id,
@@ -41,7 +39,7 @@ function PostsManager() {
           slug: post.slug || post.id,
           excerpt: post.excerpt || 'No excerpt available',
           status: post.status || 'draft',
-          updatedAt: post.updatedAt ? new Date(post.updatedAt) : new Date(),
+          updatedAt: post.updatedAt ? (post.updatedAt.toDate ? post.updatedAt.toDate() : new Date(post.updatedAt)) : new Date(),
         }));
         
         setPosts(formattedPosts);

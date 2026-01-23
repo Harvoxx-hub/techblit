@@ -89,8 +89,15 @@ function EditPostEditor() {
           return;
         }
 
-        // Fetch post by slug from API
-        const postData = await apiService.getPostBySlug(slug);
+        // Try to fetch by slug using admin endpoint (works for any status)
+        let postData;
+        try {
+          postData = await apiService.getPostBySlugAdmin(slug);
+        } catch (error) {
+          // If admin endpoint fails, try public endpoint as fallback
+          console.warn('Admin endpoint failed, trying public endpoint:', error);
+          postData = await apiService.getPostBySlug(slug);
+        }
         
         if (!postData) {
           setError('Post not found');

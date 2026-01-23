@@ -22,7 +22,7 @@ function AnalyticsDashboard() {
   useEffect(() => {
     const fetchAnalyticsData = async () => {
       try {
-        const postsData = await apiService.getPosts({ limit: 100 });
+        const postsData = await apiService.getAllPosts({ limit: 1000 });
         setPosts(postsData as Post[]);
       } catch (error) {
         console.error('Error fetching analytics data:', error);

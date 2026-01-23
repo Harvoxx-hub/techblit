@@ -43,8 +43,8 @@ function AdminDashboard() {
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
-        // Fetch posts via API
-        const posts = (await apiService.getPosts({ limit: 100 })) as any[];
+        // Fetch all posts via admin API
+        const posts = (await apiService.getAllPosts({ limit: 1000 })) as any[];
         
         const stats = {
           totalPosts: posts.length,

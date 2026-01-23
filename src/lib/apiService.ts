@@ -210,8 +210,34 @@ class ApiService {
     return this.request<Post[]>(`/posts${query ? `?${query}` : ''}`);
   }
 
+  async getAllPosts(params?: {
+    limit?: number;
+    offset?: number;
+    status?: string;
+    category?: string;
+    tag?: string;
+  }): Promise<Post[]> {
+    const queryParams = new URLSearchParams();
+    if (params?.limit) queryParams.append('limit', params.limit.toString());
+    if (params?.offset) queryParams.append('offset', params.offset.toString());
+    if (params?.status) queryParams.append('status', params.status);
+    if (params?.category) queryParams.append('category', params.category);
+    if (params?.tag) queryParams.append('tag', params.tag);
+    
+    const query = queryParams.toString();
+    return this.request<Post[]>(`/posts/admin/all${query ? `?${query}` : ''}`);
+  }
+
   async getPostBySlug(slug: string): Promise<Post | null> {
     return this.request<Post | null>(`/posts/${slug}`);
+  }
+
+  async getPostById(id: string): Promise<Post | null> {
+    return this.request<Post | null>(`/posts/admin/${id}`);
+  }
+
+  async getPostBySlugAdmin(slug: string): Promise<Post | null> {
+    return this.request<Post | null>(`/posts/admin/slug/${slug}`);
   }
 
   async createPost(data: {
