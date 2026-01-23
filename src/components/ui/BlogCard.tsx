@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { getAuthorUrl } from '@/lib/authorUtils';
+import { formatDateShort } from '@/lib/dateUtils';
 
 interface BlogPost {
   id: string;
@@ -23,28 +24,6 @@ interface BlogCardProps {
 }
 
 export default function BlogCard({ post, featured = false }: BlogCardProps) {
-  const formatDate = (date: any) => {
-    if (!date) return 'Unknown date';
-    try {
-      let dateObj: Date;
-      if (date.toDate) {
-        dateObj = date.toDate();
-      } else if (date instanceof Date) {
-        dateObj = date;
-      } else {
-        dateObj = new Date(date);
-      }
-      
-      // Check if date is valid
-      if (isNaN(dateObj.getTime())) {
-        return 'Unknown date';
-      }
-      
-      return dateObj.toLocaleDateString();
-    } catch {
-      return 'Unknown date';
-    }
-  };
 
   const getExcerpt = () => {
     if (post.excerpt) return post.excerpt;
@@ -88,7 +67,7 @@ export default function BlogCard({ post, featured = false }: BlogCardProps) {
                   {typeof post.author === 'string' ? post.author : post.author.name}
                 </Link>
               )}
-              <time>{formatDate(post.createdAt)}</time>
+              <time>{formatDateShort(post.createdAt)}</time>
               {post.readTime && (
                 <span>{post.readTime} read</span>
               )}

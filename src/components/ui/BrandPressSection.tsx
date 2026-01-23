@@ -2,9 +2,11 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import apiService from '@/lib/apiService';
 import { getCategoryGradient } from '@/lib/categories';
 import { getImageUrlFromData } from '@/lib/imageHelpers';
+import { formatDateShort } from '@/lib/dateUtils';
 
 interface Post {
   id: string;
@@ -26,35 +28,6 @@ const formatAuthor = (author: any): string => {
   if (typeof author === 'string') return author;
   if (author && author.name) return author.name;
   return 'Techblit Team';
-};
-
-const formatDate = (date: any): string => {
-  if (!date) return '';
-  
-  let dateObj: Date;
-  try {
-    if (date.toDate) {
-      dateObj = date.toDate();
-    } else if (date instanceof Date) {
-      dateObj = date;
-    } else {
-      dateObj = new Date(date);
-    }
-    
-    // Check if date is valid
-    if (isNaN(dateObj.getTime())) {
-      return '';
-    }
-    
-    return new Intl.DateTimeFormat('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric'
-    }).format(dateObj);
-  } catch (error) {
-    console.warn('Error formatting date:', error, date);
-    return '';
-  }
 };
 
 export default function BrandPressSection() {
@@ -161,10 +134,13 @@ export default function BrandPressSection() {
                 {/* Image */}
                 <div className={`aspect-video bg-gradient-to-br ${getCategoryGradient('brand-press')} relative overflow-hidden`}>
                   {getImageUrl(post.featuredImage) ? (
-                    <img
+                    <Image
                       src={getImageUrl(post.featuredImage)!}
                       alt={post.title}
-                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                      fill
+                      sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                      className="object-cover group-hover:scale-110 transition-transform duration-500"
+                      loading="lazy"
                     />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center">
@@ -196,7 +172,7 @@ export default function BrandPressSection() {
                   )}
                   <div className="flex items-center justify-between text-sm text-gray-500 dark:text-gray-400">
                     <span className="font-medium">{formatAuthor(post.author)}</span>
-                    <span>{formatDate(post.publishedAt)}</span>
+                    <span>{formatDateShort(post.publishedAt)}</span>
                   </div>
                   {post.readTime && (
                     <div className="mt-2 text-xs text-gray-400">

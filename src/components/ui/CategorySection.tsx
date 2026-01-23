@@ -2,8 +2,11 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import apiService from '@/lib/apiService';
 import { getCategoryGradient } from '@/lib/categories';
+import { formatDateShort } from '@/lib/dateUtils';
+import { getImageUrlFromData } from '@/lib/imageHelpers';
 
 interface Post {
   id: string;
@@ -25,8 +28,6 @@ interface CategorySectionProps {
   limit?: number;
 }
 
-import { getImageUrlFromData } from '@/lib/imageHelpers';
-
 const getImageUrl = (imageData: any): string | null => {
   return getImageUrlFromData(imageData, { preset: 'thumbnail' });
 };
@@ -35,46 +36,6 @@ const formatAuthor = (author: any): string => {
   if (typeof author === 'string') return author;
   if (author && author.name) return author.name;
   return 'Techblit Team';
-};
-
-const formatDate = (date: any): string => {
-  if (!date) return '';
-  
-  try {
-    let dateObj: Date | null = null;
-    
-    if (date.toDate && typeof date.toDate === 'function') {
-      try {
-        dateObj = date.toDate();
-      } catch {
-        dateObj = null;
-      }
-    } else if (date instanceof Date) {
-      dateObj = date;
-    } else if (typeof date === 'string' || typeof date === 'number') {
-      dateObj = new Date(date);
-    }
-    
-    // Check if date is valid
-    if (!dateObj || isNaN(dateObj.getTime())) {
-      return '';
-    }
-    
-    // Additional validation - ensure the date is reasonable
-    const timestamp = dateObj.getTime();
-    if (timestamp < 0 || timestamp > Date.now() + 100 * 365 * 24 * 60 * 60 * 1000) {
-      return '';
-    }
-    
-    return new Intl.DateTimeFormat('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric'
-    }).format(dateObj);
-  } catch (error) {
-    console.warn('Error formatting date:', error, date);
-    return '';
-  }
 };
 
 export default function CategorySection({ 
@@ -163,10 +124,13 @@ export default function CategorySection({
                 {/* Image */}
                 <div className={`aspect-video bg-gradient-to-br ${getCategoryGradient(categoryLabel || categorySlug)} relative overflow-hidden`}>
                   {getImageUrl(post.featuredImage) ? (
-                    <img
+                    <Image
                       src={getImageUrl(post.featuredImage)!}
                       alt={post.title}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      fill
+                      sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
+                      className="object-cover group-hover:scale-105 transition-transform duration-300"
+                      loading="lazy"
                     />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center">
@@ -201,7 +165,7 @@ export default function CategorySection({
                   
                   <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
                     <span>{formatAuthor(post.author)}</span>
-                    <span>{formatDate(post.publishedAt || post.createdAt)}</span>
+                    <span>{formatDateShort(post.publishedAt || post.createdAt)}</span>
                   </div>
                   
                   {post.readTime && (

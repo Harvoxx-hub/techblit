@@ -97,45 +97,7 @@ export default async function BlogPage({ searchParams }: { searchParams: Promise
     return 'Techblit Team';
   };
 
-  const formatDate = (date: any): string => {
-    if (!date) return '';
-    
-    try {
-      let dateObj: Date | null = null;
-      
-      if (date.toDate && typeof date.toDate === 'function') {
-        try {
-          dateObj = date.toDate();
-        } catch {
-          dateObj = null;
-        }
-      } else if (date instanceof Date) {
-        dateObj = date;
-      } else if (typeof date === 'string' || typeof date === 'number') {
-        dateObj = new Date(date);
-      }
-      
-      // Check if date is valid
-      if (!dateObj || isNaN(dateObj.getTime())) {
-        return '';
-      }
-      
-      // Additional validation - ensure the date is reasonable
-      const timestamp = dateObj.getTime();
-      if (timestamp < 0 || timestamp > Date.now() + 100 * 365 * 24 * 60 * 60 * 1000) {
-        return '';
-      }
-      
-      return new Intl.DateTimeFormat('en-US', {
-        month: 'short',
-        day: 'numeric',
-        year: 'numeric'
-      }).format(dateObj);
-    } catch (error) {
-      console.warn('Error formatting date:', error, date);
-      return '';
-    }
-  };
+  // formatDate is now imported from dateUtils
 
   const structuredData = {
     '@context': 'https://schema.org',
@@ -244,7 +206,7 @@ export default async function BlogPage({ searchParams }: { searchParams: Promise
                     
                     <div className="flex items-center justify-between text-sm text-gray-500 dark:text-gray-400">
                       <span>{formatAuthor(post.author)}</span>
-                      <span>{formatDate(post.publishedAt)}</span>
+                      <span>{formatDateShort(post.publishedAt)}</span>
                     </div>
                   </div>
                 </div>

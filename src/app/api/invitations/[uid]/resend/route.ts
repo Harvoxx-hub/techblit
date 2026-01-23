@@ -29,7 +29,7 @@ export async function POST(
     }
 
     // Call the cloud function
-    const response = await fetch(`${API_ENDPOINTS.resendInvitation}/${uid}`, {
+    const response = await fetch(`${API_ENDPOINTS.resendInvitation}/${uid}/resend`, {
       method: 'POST',
       headers: {
         'Authorization': authHeader,

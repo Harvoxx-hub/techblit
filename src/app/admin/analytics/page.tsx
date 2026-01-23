@@ -5,6 +5,7 @@ import apiService from '@/lib/apiService';
 import AdminLayout from '@/components/admin/AdminLayout';
 import { withAuth } from '@/contexts/AuthContext';
 import { Post } from '@/types/admin';
+import { formatDateShort } from '@/lib/dateUtils';
 import { 
   ChartBarIcon,
   EyeIcon,
@@ -293,7 +294,7 @@ function AnalyticsDashboard() {
                         <div className="text-sm text-gray-500">{post.slug}</div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {post.publishedAt ? new Date(post.publishedAt).toLocaleDateString() : 'N/A'}
+                        {formatDateShort(post.publishedAt) || 'N/A'}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         {Math.floor(Math.random() * 1000) + 100} {/* Mock data */}

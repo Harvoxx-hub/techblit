@@ -7,6 +7,7 @@ import SocialShare from '@/components/ui/SocialShare';
 import NewsletterSection from '@/components/ui/NewsletterSection';
 import { generatePostSEO, generateStructuredData } from '@/lib/seo';
 import { getAuthorUrl } from '@/lib/authorUtils';
+import { formatDateShort } from '@/lib/dateUtils';
 import { Metadata } from 'next';
 // Note: This is a server component, so we'll use direct API calls
 // For server-side, we can call the API directly
@@ -208,9 +209,7 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
               </span>
             )}
             <time>
-              {post.publishedAt?.toDate?.()?.toLocaleDateString() ||
-               post.createdAt?.toDate?.()?.toLocaleDateString() ||
-               'Unknown date'}
+              {formatDateShort(post.publishedAt || post.createdAt)}
             </time>
           </div>
           

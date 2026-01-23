@@ -16,6 +16,7 @@ import {
   TrashIcon
 } from '@heroicons/react/24/outline';
 import { Input, Dropdown, Button, Card, CardContent, Badge } from '@/components/ui';
+import { parseDate, formatDateShort } from '@/lib/dateUtils';
 
 function PostsManager() {
   const [posts, setPosts] = useState<Post[]>([]);
@@ -39,7 +40,7 @@ function PostsManager() {
           slug: post.slug || post.id,
           excerpt: post.excerpt || 'No excerpt available',
           status: post.status || 'draft',
-          updatedAt: post.updatedAt ? (post.updatedAt.toDate ? post.updatedAt.toDate() : new Date(post.updatedAt)) : new Date(),
+          updatedAt: parseDate(post.updatedAt) || new Date(),
         }));
         
         setPosts(formattedPosts);
@@ -201,17 +202,7 @@ function PostsManager() {
                         </div>
                         <div className="mt-1 flex items-center text-xs text-gray-400">
                           <p>
-                            by {post.author?.name || 'Unknown Author'} • {post.updatedAt ? (() => {
-                              const date = post.updatedAt;
-                              if (date && typeof date === 'object' && 'toDate' in date) {
-                                return new Date((date as any).toDate()).toLocaleDateString();
-                              } else if (date instanceof Date) {
-                                return date.toLocaleDateString();
-                              } else if (typeof date === 'string') {
-                                return new Date(date).toLocaleDateString();
-                              }
-                              return 'No date';
-                            })() : 'No date'}
+                            by {post.author?.name || 'Unknown Author'} • {formatDateShort(post.updatedAt)}
                           </p>
                         </div>
                       </div>

@@ -5,6 +5,7 @@ import Link from 'next/link';
 import apiService from '@/lib/apiService';
 import AdminLayout from '@/components/admin/AdminLayout';
 import { withAuth } from '@/contexts/AuthContext';
+import { parseDate, formatDateShort } from '@/lib/dateUtils';
 import { Post, User } from '@/types/admin';
 import { 
   Card, 
@@ -63,7 +64,7 @@ function AdminDashboard() {
           slug: data.slug || data.id,
           excerpt: data.excerpt || 'No excerpt available',
           status: data.status || 'draft',
-          updatedAt: data.updatedAt || new Date(),
+          updatedAt: parseDate(data.updatedAt) || new Date(),
         } as Post));
 
         // Fetch users via API
@@ -191,17 +192,7 @@ function AdminDashboard() {
                                 {post.status}
                               </Badge>
                               <span className="text-sm text-gray-500">
-                                {post.updatedAt ? (() => {
-                                  const date = post.updatedAt;
-                                  if (date && typeof date === 'object' && 'toDate' in date) {
-                                    return new Date((date as any).toDate()).toLocaleDateString();
-                                  } else if (date instanceof Date) {
-                                    return date.toLocaleDateString();
-                                  } else if (typeof date === 'string') {
-                                    return new Date(date).toLocaleDateString();
-                                  }
-                                  return 'No date';
-                                })() : 'No date'}
+                                {formatDateShort(post.updatedAt)}
                               </span>
                             </div>
                           </div>

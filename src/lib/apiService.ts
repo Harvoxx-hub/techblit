@@ -217,15 +217,29 @@ class ApiService {
     category?: string;
     tag?: string;
   }): Promise<Post[]> {
-    const queryParams = new URLSearchParams();
-    if (params?.limit) queryParams.append('limit', params.limit.toString());
-    if (params?.offset) queryParams.append('offset', params.offset.toString());
-    if (params?.status) queryParams.append('status', params.status);
-    if (params?.category) queryParams.append('category', params.category);
-    if (params?.tag) queryParams.append('tag', params.tag);
-    
-    const query = queryParams.toString();
-    return this.request<Post[]>(`/posts/admin/all${query ? `?${query}` : ''}`);
+    try {
+      const queryParams = new URLSearchParams();
+      if (params?.limit) queryParams.append('limit', params.limit.toString());
+      if (params?.offset) queryParams.append('offset', params.offset.toString());
+      if (params?.status) queryParams.append('status', params.status);
+      if (params?.category) queryParams.append('category', params.category);
+      if (params?.tag) queryParams.append('tag', params.tag);
+      
+      const query = queryParams.toString();
+      return await this.request<Post[]>(`/posts/admin/all${query ? `?${query}` : ''}`);
+    } catch (error: any) {
+      // Fallback to regular getPosts if admin endpoint doesn't exist yet (not deployed)
+      if (error?.message?.includes('not found') || error?.message?.includes('404')) {
+        console.warn('Admin endpoint not available, falling back to public endpoint (may only show published posts)');
+        return this.getPosts({
+          limit: params?.limit,
+          offset: params?.offset,
+          category: params?.category,
+          tag: params?.tag
+        });
+      }
+      throw error;
+    }
   }
 
   async getPostBySlug(slug: string): Promise<Post | null> {

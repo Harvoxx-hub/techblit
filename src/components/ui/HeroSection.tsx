@@ -3,8 +3,10 @@
 import { useState, useEffect } from 'react';
 import apiService from '@/lib/apiService';
 import Link from 'next/link';
+import Image from 'next/image';
 import { gradients } from '@/lib/colors';
 import { getImageUrlFromData } from '@/lib/imageHelpers';
+import { formatDateShort } from '@/lib/dateUtils';
 
 interface FeaturedPost {
   id: string;
@@ -44,15 +46,7 @@ export default function HeroSection({ mainPost, secondaryPosts }: HeroSectionPro
     fetchFeaturedPosts();
   }, []);
 
-  const formatDate = (timestamp: any) => {
-    if (!timestamp) return '';
-    const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
-    return date.toLocaleDateString('en-US', { 
-      month: 'short', 
-      day: 'numeric',
-      year: 'numeric'
-    });
-  };
+  // formatDate is now imported from dateUtils
 
   const getAuthorName = (author: any) => {
     if (typeof author === 'string') return author;
@@ -164,10 +158,13 @@ export default function HeroSection({ mainPost, secondaryPosts }: HeroSectionPro
                 {/* Featured Image */}
                 <div className={`aspect-video bg-gradient-to-br ${getCategoryGradient(mainPostData.category)} relative overflow-hidden`}>
                   {getImageUrl(mainPostData.featuredImage) ? (
-                    <img
+                    <Image
                       src={getImageUrl(mainPostData.featuredImage)!}
                       alt={mainPostData.title}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      fill
+                      sizes="(max-width: 1024px) 100vw, 66vw"
+                      className="object-cover group-hover:scale-105 transition-transform duration-300"
+                      priority
                     />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center">
@@ -216,7 +213,7 @@ export default function HeroSection({ mainPost, secondaryPosts }: HeroSectionPro
                     <div className="flex items-center space-x-4">
                       <span>{getAuthorName(mainPostData.author)}</span>
                       <span>•</span>
-                      <span>{formatDate(mainPostData.publishedAt)}</span>
+                      <span>{formatDateShort(mainPostData.publishedAt)}</span>
                     </div>
                     {mainPostData.readTime && (
                       <span>{mainPostData.readTime}</span>
@@ -235,10 +232,13 @@ export default function HeroSection({ mainPost, secondaryPosts }: HeroSectionPro
                   {/* Image */}
                   <div className={`aspect-video bg-gradient-to-br ${getCategoryGradient(post.category)} relative overflow-hidden`}>
                     {getImageUrl(post.featuredImage, true) ? (
-                      <img
+                      <Image
                         src={getImageUrl(post.featuredImage, true)!}
                         alt={post.title}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        fill
+                        sizes="(max-width: 1024px) 100vw, 33vw"
+                        className="object-cover group-hover:scale-105 transition-transform duration-300"
+                        loading="lazy"
                       />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center">
@@ -269,7 +269,7 @@ export default function HeroSection({ mainPost, secondaryPosts }: HeroSectionPro
                     
                     <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
                       <span>{getAuthorName(post.author)}</span>
-                      <span>{formatDate(post.publishedAt)}</span>
+                      <span>{formatDateShort(post.publishedAt)}</span>
                     </div>
                   </div>
                 </div>

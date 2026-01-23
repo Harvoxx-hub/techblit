@@ -29,9 +29,9 @@ export const API_ENDPOINTS = {
   updateUserProfile: `${FUNCTIONS_URL}/updateUserProfile`,
   
   // Admin API - Invitations
-  inviteUser: `${FUNCTIONS_URL}/inviteUser`,
-  resendInvitation: `${FUNCTIONS_URL}/resendInvitation`,
-  getInvitationStats: `${FUNCTIONS_URL}/getInvitationStats`,
+  inviteUser: `${FUNCTIONS_URL}/api/v1/invitations`,
+  resendInvitation: `${FUNCTIONS_URL}/api/v1/invitations`,
+  getInvitationStats: `${FUNCTIONS_URL}/api/v1/invitations/stats`,
   
   // Admin API - Preview Tokens
   generatePreviewToken: `${FUNCTIONS_URL}/generatePreviewToken`,
