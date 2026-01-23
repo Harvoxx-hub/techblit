@@ -4,6 +4,7 @@ import Navigation from '@/components/ui/Navigation';
 import Footer from '@/components/ui/Footer';
 import { Metadata } from 'next';
 import { getImageUrlFromData } from '@/lib/imageHelpers';
+import { formatDateShort } from '@/lib/dateUtils';
 
 interface Post {
   id: string;
