@@ -717,6 +717,53 @@ class ApiService {
   async getInvitationStats() {
     return this.request('/invitations/stats');
   }
+
+  // ============================================================================
+  // BULK EMAILS API
+  // ============================================================================
+
+  async createBulkEmailCampaign(data: {
+    subject: string;
+    htmlContent: string;
+    textContent?: string;
+    csvContent?: string;
+    recipients?: Array<{ email: string; name: string }>;
+  }) {
+    return this.request('/bulk-emails', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async getBulkEmailCampaign(campaignId: string) {
+    return this.request(`/bulk-emails/${campaignId}`);
+  }
+
+  async getBulkEmailCampaigns(params?: {
+    limit?: number;
+    offset?: number;
+    status?: 'queued' | 'sending' | 'completed' | 'failed';
+  }) {
+    const queryParams = new URLSearchParams();
+    if (params?.limit) queryParams.append('limit', params.limit.toString());
+    if (params?.offset) queryParams.append('offset', params.offset.toString());
+    if (params?.status) queryParams.append('status', params.status);
+    
+    const query = queryParams.toString();
+    return this.request(`/bulk-emails${query ? `?${query}` : ''}`);
+  }
+
+  async previewBulkEmail(data: {
+    subject: string;
+    htmlContent: string;
+    textContent?: string;
+    sampleName?: string;
+  }) {
+    return this.request('/bulk-emails/preview', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
 }
 
 // Export singleton instance

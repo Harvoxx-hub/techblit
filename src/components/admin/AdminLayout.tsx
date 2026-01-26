@@ -15,7 +15,8 @@ import {
   ClipboardDocumentListIcon,
   Bars3Icon,
   XMarkIcon,
-  SparklesIcon
+  SparklesIcon,
+  EnvelopeIcon
 } from '@heroicons/react/24/outline';
 
 interface AdminLayoutProps {
@@ -26,22 +27,38 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { user, logout } = useAuth();
 
-  const navigation = [
+  const navigation: Array<{
+    name: string;
+    href: string;
+    icon: React.ComponentType<React.SVGProps<SVGSVGElement>>;
+    permission: string | null;
+    superAdminOnly?: boolean;
+  }> = [
     { name: 'Dashboard', href: '/admin', icon: HomeIcon, permission: null },
     { name: 'Posts', href: '/admin/posts', icon: DocumentTextIcon, permission: 'create_post' },
     { name: 'Grok Trends', href: '/admin/grok-trends', icon: SparklesIcon, permission: 'create_post' },
     { name: 'Media', href: '/admin/media', icon: PhotoIcon, permission: 'upload_media' },
     { name: 'Redirects', href: '/admin/redirects', icon: ArrowPathIcon, permission: 'manage_redirects' },
     { name: 'Users', href: '/admin/users', icon: UsersIcon, permission: 'manage_users' },
+    { name: 'Bulk Emails', href: '/admin/bulk-emails', icon: EnvelopeIcon, permission: null, superAdminOnly: true },
     { name: 'Settings', href: '/admin/settings', icon: CogIcon, permission: 'manage_settings' },
     { name: 'Analytics', href: '/admin/analytics', icon: ChartBarIcon, permission: 'view_analytics' },
     { name: 'Audit Logs', href: '/admin/audit', icon: ClipboardDocumentListIcon, permission: 'view_audit_logs' },
   ];
 
   // Filter navigation based on user permissions
-  const filteredNavigation = navigation.filter(item => 
-    !item.permission || user?.role === 'super_admin' || (user?.role && hasPermission(user.role, item.permission))
-  );
+  const filteredNavigation = navigation.filter(item => {
+    // Super admin only items
+    if (item.superAdminOnly) {
+      return user?.role === 'super_admin';
+    }
+    // Items with permission requirements
+    if (item.permission) {
+      return user?.role === 'super_admin' || (user?.role && hasPermission(user.role, item.permission));
+    }
+    // Items without permission requirements (accessible to all authenticated users)
+    return true;
+  });
 
   const handleLogout = async () => {
     try {
