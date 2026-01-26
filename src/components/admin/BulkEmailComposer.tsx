@@ -148,7 +148,7 @@ export default function BulkEmailComposer() {
     setError(null);
 
     try {
-      const result = await apiService.previewBulkEmail({
+      const result: any = await apiService.previewBulkEmail({
         subject,
         htmlContent,
         textContent: textContent || undefined,
@@ -207,7 +207,7 @@ export default function BulkEmailComposer() {
         payload.recipients = recipients;
       }
 
-      const result = await apiService.createBulkEmailCampaign(payload);
+      const result: any = await apiService.createBulkEmailCampaign(payload);
       const campaignId = result.data?.campaignId || result.campaignId;
 
       setSuccess(

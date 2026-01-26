@@ -76,7 +76,7 @@ export default function BulkEmailCampaigns() {
       if (statusFilter !== 'all') {
         params.status = statusFilter;
       }
-      const result = await apiService.getBulkEmailCampaigns(params);
+      const result: any = await apiService.getBulkEmailCampaigns(params);
       const campaignsData = result.data?.campaigns || result.campaigns || result;
       setCampaigns(Array.isArray(campaignsData) ? campaignsData : []);
     } catch (err: any) {
@@ -89,7 +89,7 @@ export default function BulkEmailCampaigns() {
 
   const fetchCampaignStatus = async (campaignId: string) => {
     try {
-      const result = await apiService.getBulkEmailCampaign(campaignId);
+      const result: any = await apiService.getBulkEmailCampaign(campaignId);
       const campaignData = result.data || result;
       
       setCampaigns((prev) =>
