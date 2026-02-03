@@ -18,6 +18,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { Input, Dropdown, Button, Card, CardContent, Badge } from '@/components/ui';
 import { parseDate, formatDateShort } from '@/lib/dateUtils';
+import { generateSocialMediaImageFromPost } from '@/lib/socialImageGenerator';
 
 function PostsManager() {
   const [posts, setPosts] = useState<Post[]>([]);
@@ -26,6 +27,7 @@ function PostsManager() {
   const [statusFilter, setStatusFilter] = useState<PostStatus | 'all'>('all');
   const [filteredPosts, setFilteredPosts] = useState<Post[]>([]);
   const [deleting, setDeleting] = useState<string | null>(null);
+  const [generatingImage, setGeneratingImage] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchPosts = async () => {
@@ -113,16 +115,19 @@ function PostsManager() {
   };
 
   const handleDownloadSocialImage = async (post: Post) => {
-    if (!post.socialMediaImage?.url) {
-      alert('No social media image available for this post.');
+    if (!post.id) {
+      alert('Post ID is required.');
       return;
     }
 
+    console.log('Generating social media image for post:', post.id, post.title);
+    setGeneratingImage(post.id);
     try {
-      // Fetch the image
-      const response = await fetch(post.socialMediaImage.url);
-      const blob = await response.blob();
-      
+      // Generate image client-side
+      console.log('Generating image client-side...');
+      const blob = await generateSocialMediaImageFromPost(post);
+      console.log('Image generated successfully, size:', blob.size, 'bytes');
+       
       // Create a temporary URL and trigger download
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
@@ -139,9 +144,21 @@ function PostsManager() {
       // Cleanup
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
-    } catch (error) {
-      console.error('Error downloading social media image:', error);
-      alert('Failed to download image. Please try again.');
+      console.log('Download triggered successfully');
+    } catch (error: any) {
+      console.error('Error generating/downloading social media image:', error);
+      console.error('Error details:', {
+        message: error.message,
+        status: error.status,
+        details: error.details,
+        stack: error.stack
+      });
+      
+      // Show user-friendly error message
+      const errorMessage = error.message || 'Failed to generate image. Please try again.';
+      alert(errorMessage);
+    } finally {
+      setGeneratingImage(null);
     }
   };
 
@@ -276,12 +293,12 @@ function PostsManager() {
                       </Link>
                       {post.status === 'published' && (
                         <button
-                          className={`text-gray-400 hover:text-blue-600 ${generatingImage === post.id ? 'opacity-50 cursor-not-allowed' : ''}`}
+                          className={`text-gray-400 hover:text-blue-600 ${generatingImage === (post.id || 'generating') ? 'opacity-50 cursor-not-allowed' : ''}`}
                           title="Generate & Download Social Media Image"
                           onClick={() => handleDownloadSocialImage(post)}
-                          disabled={generatingImage === post.id}
+                          disabled={generatingImage === (post.id || 'generating')}
                         >
-                          {generatingImage === post.id ? (
+                          {generatingImage === (post.id || 'generating') ? (
                             <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
                           ) : (
                             <ArrowDownTrayIcon className="h-5 w-5" />

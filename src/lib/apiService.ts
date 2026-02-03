@@ -283,22 +283,8 @@ class ApiService {
     });
   }
 
-  async generateSocialMediaImage(postId: string): Promise<Blob> {
-    const token = await this.getAuthToken();
-    const response = await fetch(`${this.baseUrl}/posts/${postId}/social-image`, {
-      method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-      },
-    });
-
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({ message: 'Failed to generate social media image' }));
-      throw new Error(error.message || 'Failed to generate social media image');
-    }
-
-    return await response.blob();
-  }
+  // Note: Social media image generation moved to client-side
+  // See src/lib/socialImageGenerator.ts
 
   async incrementViewCount(slug: string) {
     return this.request(`/posts/${slug}/view`, {
