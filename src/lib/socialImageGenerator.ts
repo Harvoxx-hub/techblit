@@ -70,7 +70,8 @@ function extractBackgroundImageUrl(featuredImage: any): string | null {
 export async function generateSocialMediaImage(
   headline: string,
   backgroundImageUrl: string | null = null,
-  logoUrl?: string
+  logoUrl?: string,
+  category: string = 'TECH NEWS'
 ): Promise<Blob> {
   // Canvas setup
   const canvas = document.createElement('canvas');
@@ -107,12 +108,21 @@ export async function generateSocialMediaImage(
     ctx.fillRect(0, 0, width, height);
   }
 
-  // 2. Add dark overlay
-  const gradient = ctx.createLinearGradient(0, 0, 0, height);
-  gradient.addColorStop(0, 'rgba(0, 0, 0, 0.3)');
-  gradient.addColorStop(1, 'rgba(0, 0, 0, 0.5)');
+  // 2. Add dark overlay (bottom half only)
+  // Gradient from y=540 (middle) to y=1080 (bottom)
+  const overlayStartY = 540;
+  const overlayEndY = height;
+  const gradient = ctx.createLinearGradient(0, overlayStartY, 0, overlayEndY);
+  
+  // Color stops as specified: transparent at start, gradually darker towards bottom
+  gradient.addColorStop(0, 'rgba(0, 0, 0, 0)');        // Transparent at start (y=540)
+  gradient.addColorStop(0.3, 'rgba(0, 0, 0, 0.4)');    // 30% opacity
+  gradient.addColorStop(0.6, 'rgba(0, 0, 0, 0.7)');    // 60% opacity
+  gradient.addColorStop(1, 'rgba(0, 0, 0, 0.85)');     // 85% opacity at bottom
+  
   ctx.fillStyle = gradient;
-  ctx.fillRect(0, 0, width, height);
+  // Only fill the bottom half of the canvas
+  ctx.fillRect(0, overlayStartY, width, overlayEndY - overlayStartY);
 
   // 3. Draw logo
   const finalLogoUrl = logoUrl || getLogoUrl();
@@ -126,20 +136,20 @@ export async function generateSocialMediaImage(
     throw new Error(`Failed to load logo from ${finalLogoUrl}`);
   }
 
-  // 4. Draw "TECH NEWS" text
+  // 4. Draw category text (e.g., "TECH NEWS")
   ctx.fillStyle = '#FFFFFF';
   ctx.font = 'bold 48px Arial';
   ctx.textAlign = 'center';
   
   // HTML5 Canvas doesn't support letterSpacing directly, so we implement it manually
-  const techNewsText = 'TECH NEWS';
+  const categoryText = category.toUpperCase();
   const letterSpacing = 8;
   
   // Calculate total width with letter spacing
   let totalWidth = 0;
-  for (let i = 0; i < techNewsText.length; i++) {
-    totalWidth += ctx.measureText(techNewsText[i]).width;
-    if (i < techNewsText.length - 1) {
+  for (let i = 0; i < categoryText.length; i++) {
+    totalWidth += ctx.measureText(categoryText[i]).width;
+    if (i < categoryText.length - 1) {
       totalWidth += letterSpacing;
     }
   }
@@ -149,9 +159,9 @@ export async function generateSocialMediaImage(
   ctx.textAlign = 'left';
   
   // Draw each character with spacing
-  for (let i = 0; i < techNewsText.length; i++) {
-    ctx.fillText(techNewsText[i], xPos, 680);
-    xPos += ctx.measureText(techNewsText[i]).width + letterSpacing;
+  for (let i = 0; i < categoryText.length; i++) {
+    ctx.fillText(categoryText[i], xPos, 680);
+    xPos += ctx.measureText(categoryText[i]).width + letterSpacing;
   }
 
   // 5. Draw divider line
@@ -241,10 +251,12 @@ export async function generateSocialMediaImage(
  */
 export async function generateSocialMediaImageFromPost(post: {
   title: string;
+  category?: string;
   featuredImage?: any;
 }): Promise<Blob> {
   const headline = post.title || 'Tech News';
+  const category = post.category || 'TECH NEWS';
   const backgroundImageUrl = extractBackgroundImageUrl(post.featuredImage);
   
-  return generateSocialMediaImage(headline, backgroundImageUrl);
+  return generateSocialMediaImage(headline, backgroundImageUrl, undefined, category);
 }
