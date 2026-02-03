@@ -12,6 +12,8 @@ import {
   FunnelIcon,
   XMarkIcon,
   InformationCircleIcon,
+  ArrowUturnLeftIcon,
+  ExclamationTriangleIcon,
 } from '@heroicons/react/24/outline';
 import { formatDateShort } from '@/lib/dateUtils';
 
@@ -41,6 +43,8 @@ export default function BulkEmailCampaigns() {
   const [statusFilter, setStatusFilter] = useState<'all' | 'queued' | 'sending' | 'completed' | 'failed'>('all');
   const [selectedCampaign, setSelectedCampaign] = useState<Campaign | null>(null);
   const [pollingCampaigns, setPollingCampaigns] = useState<Set<string>>(new Set());
+  const [resending, setResending] = useState<string | null>(null);
+  const [retrying, setRetrying] = useState<string | null>(null);
 
   useEffect(() => {
     fetchCampaigns();
@@ -126,6 +130,44 @@ export default function BulkEmailCampaigns() {
     setSelectedCampaign(campaign);
     // Fetch latest status
     await fetchCampaignStatus(campaign.campaignId);
+  };
+
+  const handleResendCampaign = async (campaignId: string) => {
+    if (!confirm('Are you sure you want to re-send this entire campaign? All recipients will receive the email again.')) {
+      return;
+    }
+
+    setResending(campaignId);
+    try {
+      const result: any = await apiService.resendBulkEmailCampaign(campaignId);
+      const newCampaignId = result.data?.campaignId || result.campaignId;
+      
+      alert(`Campaign re-send initiated! New campaign ID: ${newCampaignId}. Refreshing campaigns list...`);
+      await fetchCampaigns();
+    } catch (err: any) {
+      alert(`Failed to re-send campaign: ${err.message || 'Unknown error'}`);
+    } finally {
+      setResending(null);
+    }
+  };
+
+  const handleRetryFailed = async (campaignId: string) => {
+    if (!confirm('Are you sure you want to retry sending emails to failed recipients only?')) {
+      return;
+    }
+
+    setRetrying(campaignId);
+    try {
+      const result: any = await apiService.retryFailedBulkEmails(campaignId);
+      const newCampaignId = result.data?.campaignId || result.campaignId;
+      
+      alert(`Failed emails retry initiated! New campaign ID: ${newCampaignId}. Refreshing campaigns list...`);
+      await fetchCampaigns();
+    } catch (err: any) {
+      alert(`Failed to retry emails: ${err.message || 'Unknown error'}`);
+    } finally {
+      setRetrying(null);
+    }
   };
 
   if (loading && campaigns.length === 0) {
@@ -271,7 +313,7 @@ export default function BulkEmailCampaigns() {
                     )}
                   </div>
 
-                  <div className="ml-4">
+                  <div className="ml-4 flex flex-col space-y-2">
                     <Button
                       variant="outline"
                       size="sm"
@@ -280,6 +322,37 @@ export default function BulkEmailCampaigns() {
                     >
                       Details
                     </Button>
+                    
+                    {/* Action buttons - only show for completed/failed campaigns */}
+                    {(campaign.status === 'completed' || campaign.status === 'failed') && (
+                      <>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleResendCampaign(campaign.campaignId)}
+                          disabled={resending === campaign.campaignId}
+                          loading={resending === campaign.campaignId}
+                          leftIcon={<ArrowUturnLeftIcon className="h-4 w-4" />}
+                          className="text-blue-600 hover:text-blue-700"
+                        >
+                          Re-send All
+                        </Button>
+                        
+                        {campaign.failed > 0 && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleRetryFailed(campaign.campaignId)}
+                            disabled={retrying === campaign.campaignId}
+                            loading={retrying === campaign.campaignId}
+                            leftIcon={<ExclamationTriangleIcon className="h-4 w-4" />}
+                            className="text-orange-600 hover:text-orange-700"
+                          >
+                            Retry Failed ({campaign.failed})
+                          </Button>
+                        )}
+                      </>
+                    )}
                   </div>
                 </div>
               </CardContent>
@@ -379,6 +452,44 @@ export default function BulkEmailCampaigns() {
                         className="bg-blue-600 h-3 rounded-full transition-all duration-300"
                         style={{ width: `${selectedCampaign.progress || 0}%` }}
                       />
+                    </div>
+                  </div>
+                )}
+
+                {/* Action Buttons */}
+                {(selectedCampaign.status === 'completed' || selectedCampaign.status === 'failed') && (
+                  <div className="pt-4 border-t border-gray-200 space-y-2">
+                    <p className="text-sm font-medium text-gray-700 mb-2">Actions</p>
+                    <div className="flex flex-col space-y-2">
+                      <Button
+                        variant="outline"
+                        onClick={() => {
+                          handleResendCampaign(selectedCampaign.campaignId);
+                          setSelectedCampaign(null);
+                        }}
+                        disabled={resending === selectedCampaign.campaignId}
+                        loading={resending === selectedCampaign.campaignId}
+                        leftIcon={<ArrowUturnLeftIcon className="h-4 w-4" />}
+                        className="w-full justify-start text-blue-600 hover:text-blue-700"
+                      >
+                        Re-send Entire Campaign
+                      </Button>
+                      
+                      {selectedCampaign.failed > 0 && (
+                        <Button
+                          variant="outline"
+                          onClick={() => {
+                            handleRetryFailed(selectedCampaign.campaignId);
+                            setSelectedCampaign(null);
+                          }}
+                          disabled={retrying === selectedCampaign.campaignId}
+                          loading={retrying === selectedCampaign.campaignId}
+                          leftIcon={<ExclamationTriangleIcon className="h-4 w-4" />}
+                          className="w-full justify-start text-orange-600 hover:text-orange-700"
+                        >
+                          Retry Failed Emails Only ({selectedCampaign.failed} failed)
+                        </Button>
+                      )}
                     </div>
                   </div>
                 )}

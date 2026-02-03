@@ -764,6 +764,18 @@ class ApiService {
       body: JSON.stringify(data),
     });
   }
+
+  async resendBulkEmailCampaign(campaignId: string) {
+    return this.request(`/bulk-emails/${campaignId}/resend`, {
+      method: 'POST',
+    });
+  }
+
+  async retryFailedBulkEmails(campaignId: string) {
+    return this.request(`/bulk-emails/${campaignId}/retry-failed`, {
+      method: 'POST',
+    });
+  }
 }
 
 // Export singleton instance
