@@ -10,6 +10,8 @@ import {
   PaperAirplaneIcon,
   XMarkIcon,
   CheckCircleIcon,
+  InformationCircleIcon,
+  ClockIcon,
 } from '@heroicons/react/24/outline';
 
 interface Recipient {
@@ -462,10 +464,32 @@ export default function BulkEmailComposer() {
                 )}
 
                 {recipients.length > 0 && (
-                  <div className="mt-4 pt-4 border-t border-gray-200">
-                    <p className="text-sm font-medium text-gray-700">
-                      Total Recipients: <span className="text-blue-600">{recipients.length}</span>
-                    </p>
+                  <div className="mt-4 pt-4 border-t border-gray-200 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm font-medium text-gray-700">
+                        Total Recipients: <span className="text-blue-600">{recipients.length}</span>
+                      </p>
+                    </div>
+                    
+                    {/* Rate Limit Info */}
+                    <div className="bg-blue-50 border border-blue-200 rounded-md p-3">
+                      <div className="flex items-start space-x-2">
+                        <InformationCircleIcon className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                        <div className="flex-1">
+                          <p className="text-xs font-medium text-blue-900 mb-1">
+                            Rate Limit: 2 emails/second (Resend Free Plan)
+                          </p>
+                          <div className="flex items-center space-x-2 text-xs text-blue-700">
+                            <ClockIcon className="h-4 w-4" />
+                            <span>
+                              Estimated time: ~{Math.ceil(recipients.length / 2)} seconds
+                              {recipients.length > 100 && ` (${Math.ceil(recipients.length / 2 / 60)} minutes)`}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    
                     {recipients.length >= 10000 && (
                       <p className="text-xs text-yellow-600 mt-1">
                         Maximum limit reached (10,000)

@@ -11,6 +11,7 @@ import {
   EyeIcon,
   FunnelIcon,
   XMarkIcon,
+  InformationCircleIcon,
 } from '@heroicons/react/24/outline';
 import { formatDateShort } from '@/lib/dateUtils';
 
@@ -137,6 +138,17 @@ export default function BulkEmailCampaigns() {
 
   return (
     <div className="space-y-6">
+      {/* Rate Limit Info Banner */}
+      <Alert variant="info" className="flex items-start space-x-2">
+        <InformationCircleIcon className="h-5 w-5 flex-shrink-0 mt-0.5" />
+        <div className="flex-1">
+          <p className="text-sm font-medium mb-1">Email Rate Limit</p>
+          <p className="text-xs">
+            Emails are sent at 2 emails/second (Resend Free Plan limit). Large campaigns may take several minutes to complete.
+          </p>
+        </div>
+      </Alert>
+
       {/* Filters */}
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-4">
@@ -221,13 +233,22 @@ export default function BulkEmailCampaigns() {
 
                     {/* Progress Bar */}
                     {(campaign.status === 'sending' || campaign.status === 'queued') && (
-                      <div className="mt-4">
+                      <div className="mt-4 space-y-2">
                         <div className="w-full bg-gray-200 rounded-full h-2">
                           <div
                             className="bg-blue-600 h-2 rounded-full transition-all duration-300"
                             style={{ width: `${campaign.progress || 0}%` }}
                           />
                         </div>
+                        {/* Estimated Time Remaining */}
+                        {campaign.status === 'sending' && campaign.progress > 0 && campaign.progress < 100 && (
+                          <div className="flex items-center space-x-1 text-xs text-gray-500">
+                            <ClockIcon className="h-3 w-3" />
+                            <span>
+                              Estimated time remaining: ~{Math.ceil((campaign.recipientCount - (campaign.sent || 0)) / 2)} seconds
+                            </span>
+                          </div>
+                        )}
                       </div>
                     )}
 
