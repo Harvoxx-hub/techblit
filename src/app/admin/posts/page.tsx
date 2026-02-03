@@ -33,17 +33,33 @@ function PostsManager() {
         // Use admin endpoint to get all posts with any status
         const postsData = await apiService.getAllPosts({ limit: 1000 });
         
-        const formattedPosts: Post[] = postsData.map((post: any) => ({
-          id: post.id,
-          ...post,
-          author: post.author || { name: 'Unknown Author', uid: 'unknown' },
-          title: post.title || 'Untitled Post',
-          slug: post.slug || post.id,
-          excerpt: post.excerpt || 'No excerpt available',
-          status: post.status || 'draft',
-          updatedAt: parseDate(post.updatedAt) || new Date(),
-          socialMediaImage: post.socialMediaImage || undefined,
-        }));
+        const formattedPosts: Post[] = postsData.map((post: any) => {
+          // Parse socialMediaImage if it exists
+          let socialMediaImage = undefined;
+          if (post.socialMediaImage) {
+            socialMediaImage = {
+              url: post.socialMediaImage.url,
+              public_id: post.socialMediaImage.public_id,
+              width: post.socialMediaImage.width,
+              height: post.socialMediaImage.height,
+              generatedAt: post.socialMediaImage.generatedAt 
+                ? (post.socialMediaImage.generatedAt.toDate ? post.socialMediaImage.generatedAt.toDate() : new Date(post.socialMediaImage.generatedAt))
+                : undefined
+            };
+          }
+          
+          return {
+            id: post.id,
+            ...post,
+            author: post.author || { name: 'Unknown Author', uid: 'unknown' },
+            title: post.title || 'Untitled Post',
+            slug: post.slug || post.id,
+            excerpt: post.excerpt || 'No excerpt available',
+            status: post.status || 'draft',
+            updatedAt: parseDate(post.updatedAt) || new Date(),
+            socialMediaImage: socialMediaImage,
+          };
+        });
         
         setPosts(formattedPosts);
         setFilteredPosts(formattedPosts);
@@ -258,13 +274,18 @@ function PostsManager() {
                       >
                         <PencilIcon className="h-5 w-5" />
                       </Link>
-                      {post.socialMediaImage?.url && (
+                      {post.status === 'published' && (
                         <button
-                          className="text-gray-400 hover:text-blue-600"
-                          title="Download Social Media Image"
+                          className={`text-gray-400 hover:text-blue-600 ${generatingImage === post.id ? 'opacity-50 cursor-not-allowed' : ''}`}
+                          title="Generate & Download Social Media Image"
                           onClick={() => handleDownloadSocialImage(post)}
+                          disabled={generatingImage === post.id}
                         >
-                          <ArrowDownTrayIcon className="h-5 w-5" />
+                          {generatingImage === post.id ? (
+                            <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
+                          ) : (
+                            <ArrowDownTrayIcon className="h-5 w-5" />
+                          )}
                         </button>
                       )}
                       <button
