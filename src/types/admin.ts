@@ -145,6 +145,15 @@ export interface Post {
     twitterCard?: 'summary' | 'summary_large_image';
   };
   
+  // Social Media Image (auto-generated)
+  socialMediaImage?: {
+    url: string;
+    public_id?: string;
+    width?: number;
+    height?: number;
+    generatedAt?: Date;
+  };
+  
   // Visibility
   visibility: PostVisibility;
   

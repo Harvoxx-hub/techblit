@@ -13,7 +13,8 @@ import {
   FunnelIcon,
   EyeIcon,
   PencilIcon,
-  TrashIcon
+  TrashIcon,
+  ArrowDownTrayIcon
 } from '@heroicons/react/24/outline';
 import { Input, Dropdown, Button, Card, CardContent, Badge } from '@/components/ui';
 import { parseDate, formatDateShort } from '@/lib/dateUtils';
@@ -41,6 +42,7 @@ function PostsManager() {
           excerpt: post.excerpt || 'No excerpt available',
           status: post.status || 'draft',
           updatedAt: parseDate(post.updatedAt) || new Date(),
+          socialMediaImage: post.socialMediaImage || undefined,
         }));
         
         setPosts(formattedPosts);
@@ -91,6 +93,39 @@ function PostsManager() {
       alert('Failed to delete post. Please try again.');
     } finally {
       setDeleting(null);
+    }
+  };
+
+  const handleDownloadSocialImage = async (post: Post) => {
+    if (!post.socialMediaImage?.url) {
+      alert('No social media image available for this post.');
+      return;
+    }
+
+    try {
+      // Fetch the image
+      const response = await fetch(post.socialMediaImage.url);
+      const blob = await response.blob();
+      
+      // Create a temporary URL and trigger download
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      
+      // Generate filename from post title
+      const filename = `${post.slug || post.id}-social-media.jpg`;
+      link.download = filename;
+      
+      // Trigger download
+      document.body.appendChild(link);
+      link.click();
+      
+      // Cleanup
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Error downloading social media image:', error);
+      alert('Failed to download image. Please try again.');
     }
   };
 
@@ -223,6 +258,15 @@ function PostsManager() {
                       >
                         <PencilIcon className="h-5 w-5" />
                       </Link>
+                      {post.socialMediaImage?.url && (
+                        <button
+                          className="text-gray-400 hover:text-blue-600"
+                          title="Download Social Media Image"
+                          onClick={() => handleDownloadSocialImage(post)}
+                        >
+                          <ArrowDownTrayIcon className="h-5 w-5" />
+                        </button>
+                      )}
                       <button
                         className={`text-gray-400 hover:text-red-600 ${deleting === post.id ? 'opacity-50 cursor-not-allowed' : ''}`}
                         title="Delete Post"
