@@ -19,8 +19,10 @@ export interface BlogPost {
 /**
  * Generate sitemap data with lastmod and priority for all published posts
  */
+const DEFAULT_SITE_URL = 'https://www.techblit.com';
+
 export async function generateSitemap(): Promise<SitemapUrl[]> {
-  const siteUrl = process.env.SITE_URL || 'https://techblit.com';
+  const siteUrl = process.env.SITE_URL || DEFAULT_SITE_URL;
   const urls: SitemapUrl[] = [];
 
   try {
@@ -130,21 +132,22 @@ export async function generateSitemap(): Promise<SitemapUrl[]> {
   } catch (error) {
     console.error('Error generating sitemap:', error);
     // Return basic sitemap with static pages if there's an error
+    const fallbackUrl = process.env.SITE_URL || DEFAULT_SITE_URL;
     return [
       {
-        loc: siteUrl,
+        loc: fallbackUrl,
         lastmod: new Date().toISOString(),
         changefreq: 'daily',
         priority: 1.0,
       },
       {
-        loc: `${siteUrl}/about`,
+        loc: `${fallbackUrl}/about`,
         lastmod: new Date().toISOString(),
         changefreq: 'monthly',
         priority: 0.8,
       },
       {
-        loc: `${siteUrl}/blog`,
+        loc: `${fallbackUrl}/blog`,
         lastmod: new Date().toISOString(),
         changefreq: 'daily',
         priority: 0.9,

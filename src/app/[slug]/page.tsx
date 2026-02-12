@@ -250,7 +250,7 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
         {/* Social Share */}
         <div className="mt-8 sm:mt-12 mb-6 sm:mb-8">
           <SocialShare 
-            url={`https://techblit.com/${post.slug}`}
+            url={`https://www.techblit.com/${post.slug}`}
             title={post.title}
             description={post.excerpt || ''}
           />

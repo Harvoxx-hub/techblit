@@ -15,7 +15,10 @@ const inter = Inter({
   preload: true,
 });
 
+const SITE_URL = 'https://www.techblit.com';
+
 export const metadata: Metadata = {
+  metadataBase: new URL(SITE_URL),
   title: "TechBlit - Igniting Africa's Tech Conversation",
   description: "Discover the latest tech news, startup insights, funding rounds, and innovation stories from across Africa. Your destination for African tech ecosystem coverage.",
   keywords: ['African tech', 'startups', 'technology news', 'innovation', 'funding', 'FinTech', 'AI', 'Nigeria tech', 'African technology', 'tech ecosystem'],
@@ -34,12 +37,12 @@ export const metadata: Metadata = {
   openGraph: {
     type: 'website',
     locale: 'en_US',
-    url: 'https://techblit.com',
+    url: SITE_URL,
     siteName: 'TechBlit',
     title: "TechBlit - Igniting Africa's Tech Conversation",
     description: "Discover the latest tech news, startup insights, funding rounds, and innovation stories from across Africa.",
     images: [{
-      url: 'https://techblit.com/og-image.svg',
+      url: '/og-image.svg',
       width: 1200,
       height: 630,
       alt: "TechBlit - Igniting Africa's Tech Conversation",
@@ -49,7 +52,7 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: "TechBlit - Igniting Africa's Tech Conversation",
     description: "Discover the latest tech news, startup insights, funding rounds, and innovation stories from across Africa.",
-    images: ['https://techblit.com/og-image.svg'],
+    images: ['/og-image.svg'],
     creator: '@techblit',
     site: '@techblit',
   },
@@ -76,8 +79,8 @@ export default function RootLayout({
     '@context': 'https://schema.org',
     '@type': 'Organization',
     name: 'TechBlit',
-    url: 'https://techblit.com',
-    logo: 'https://techblit.com/logo.png',
+    url: SITE_URL,
+    logo: `${SITE_URL}/logo.png`,
     description: "Igniting Africa's Tech Conversation",
     sameAs: [
       'https://twitter.com/techblit',

@@ -13,21 +13,24 @@ function getISODateString(date: Date | { toDate: () => Date } | undefined): stri
   }
   return undefined;
 }
+
+const SITE_URL = 'https://www.techblit.com';
+
 export const defaultSEO = {
   title: "TechBlit - Igniting Africa's Tech Conversation",
   description: 'Discover the latest tech news, startup insights, funding rounds, and innovation stories from across Africa. Your destination for African tech ecosystem coverage.',
-  canonical: 'https://techblit.com',
+  canonical: SITE_URL,
   keywords: ['African tech', 'startups', 'technology news', 'innovation', 'funding', 'FinTech', 'AI', 'Nigeria tech', 'African technology', 'tech ecosystem'],
   openGraph: {
     type: 'website',
     locale: 'en_US',
-    url: 'https://techblit.com',
+    url: SITE_URL,
     siteName: 'TechBlit',
     title: "TechBlit - Igniting Africa's Tech Conversation",
     description: 'Discover the latest tech news, startup insights, funding rounds, and innovation stories from across Africa.',
     images: [
       {
-        url: 'https://techblit.com/og-image.svg',
+        url: `${SITE_URL}/og-image.svg`,
         width: 1200,
         height: 630,
         alt: "TechBlit - Igniting Africa's Tech Conversation",
@@ -85,7 +88,7 @@ const isLegacyImage = (image: any): image is { url: string; alt: string; width?:
 
 // Generate dynamic SEO metadata for blog posts
 export function generatePostSEO(post: BlogPostSEO): Metadata {
-  const siteUrl = 'https://techblit.com';
+  const siteUrl = SITE_URL;
   const postUrl = `${siteUrl}/${post.slug}`;
   
   // Use custom meta title/description or fallback to post title/excerpt
@@ -97,7 +100,7 @@ export function generatePostSEO(post: BlogPostSEO): Metadata {
   const ogDescription = post.social?.ogDescription || description;
   
   // Determine Open Graph image - prefer OG optimized version if available
-  let ogImage = `${siteUrl}/og-image.svg`;
+  let ogImage = `${SITE_URL}/og-image.svg`;
   let ogImageAlt = post.title;
   
   if (post.featuredImage) {
@@ -230,7 +233,7 @@ export function generatePostSEO(post: BlogPostSEO): Metadata {
 
 // Generate category page SEO
 export function generateCategorySEO(category: string, description?: string): Metadata {
-  const siteUrl = 'https://techblit.com';
+  const siteUrl = SITE_URL;
   const categoryUrl = `${siteUrl}/category/${category}`;
   const title = `${category} - TechBlit | African Tech News`;
   const desc = description || `Latest ${category} news, insights, and analysis from Africa's tech ecosystem`;
@@ -255,7 +258,7 @@ export function generateCategorySEO(category: string, description?: string): Met
       description: desc,
       images: [
         {
-          url: `${siteUrl}/og-image.svg`,
+          url: `${SITE_URL}/og-image.svg`,
           width: 1200,
           height: 630,
           alt: `${category} Articles - TechBlit`,
@@ -266,7 +269,7 @@ export function generateCategorySEO(category: string, description?: string): Met
       card: 'summary_large_image',
       title: title,
       description: desc,
-      images: [`${siteUrl}/og-image.svg`],
+      images: [`${SITE_URL}/og-image.svg`],
       creator: '@techblit',
       site: '@techblit',
     },
@@ -304,7 +307,7 @@ export function extractTextFromHTML(html: string, maxLength: number = 160): stri
 // Generate structured data for blog posts (JSON-LD)
 // Returns an array with Article/NewsArticle and BreadcrumbList schemas
 export function generateStructuredData(post: BlogPostSEO) {
-  const siteUrl = 'https://techblit.com';
+  const siteUrl = SITE_URL;
   const postUrl = `${siteUrl}/${post.slug}`;
   
   // Helper function to get author name
@@ -327,7 +330,7 @@ export function generateStructuredData(post: BlogPostSEO) {
   
   const featuredImageUrl = rawFeaturedImageUrl 
     ? getCrawlableImageUrl(rawFeaturedImageUrl)
-    : `${siteUrl}/og-image.svg`;
+    : `${SITE_URL}/og-image.svg`;
   
   // Get dates with proper fallbacks - same logic as metadata generation
   const publishedTime = getISODateString(post.publishedAt) || getISODateString(post.createdAt);
@@ -384,12 +387,12 @@ export function generateStructuredData(post: BlogPostSEO) {
       name: 'TechBlit',
       logo: {
         '@type': 'ImageObject',
-        url: `${siteUrl}/logo.png`,
+        url: `${SITE_URL}/logo.png`,
         width: 600,
         height: 60,
       },
       sameAs: [
-        'https://techblit.com',
+        SITE_URL,
         'https://twitter.com/techblit',
         'https://www.linkedin.com/company/techblit',
       ],

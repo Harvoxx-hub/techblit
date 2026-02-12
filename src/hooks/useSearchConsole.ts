@@ -81,7 +81,7 @@ export function useSearchConsole(propertyUrl?: string) {
         lastChecked: new Date(),
         crawlErrorsDetails: [
           {
-            url: 'https://techblit.com/example-page',
+            url: 'https://www.techblit.com/example-page',
             error: '404 Not Found',
             lastCrawled: new Date(Date.now() - 86400000), // 1 day ago
           },

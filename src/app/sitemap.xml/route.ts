@@ -86,7 +86,7 @@ export async function GET(request: NextRequest) {
     console.error('Error generating local sitemap:', localError);
     
     // Ultimate fallback - basic static pages only
-    const siteUrl = process.env.SITE_URL || 'https://techblit.com';
+    const siteUrl = process.env.SITE_URL || 'https://www.techblit.com';
     const basicSitemap = generateSitemapXML([
       {
         loc: siteUrl,

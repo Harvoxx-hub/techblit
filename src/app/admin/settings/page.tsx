@@ -270,7 +270,7 @@ function SettingsManager() {
               <Input
                 label="Search Console Property"
                 type="text"
-                placeholder="https://techblit.com"
+                placeholder="https://www.techblit.com"
                 value={settings.searchConsoleProperty || ''}
                 onChange={(e) => handleInputChange('searchConsoleProperty', e.target.value)}
                 variant="filled"
@@ -378,7 +378,7 @@ function SettingsManager() {
                 <Button
                   onClick={() => {
                     // Reset to default robots.txt
-                    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://techblit.com';
+                    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.techblit.com';
                     const defaultRobots = `User-agent: *
 Allow: /
 Disallow: /admin/
@@ -404,7 +404,7 @@ Sitemap: ${siteUrl}/sitemap.xml`;
                 variant="filled"
                 rows={8}
                 helperText="Enter your custom robots.txt content. Leave empty to use default."
-                placeholder="User-agent: *&#10;Allow: /&#10;Disallow: /admin/&#10;&#10;Sitemap: https://techblit.com/sitemap.xml"
+                placeholder="User-agent: *&#10;Allow: /&#10;Disallow: /admin/&#10;&#10;Sitemap: https://www.techblit.com/sitemap.xml"
               />
               
               <div className="flex space-x-4">

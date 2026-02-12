@@ -59,10 +59,10 @@ export const metadata: Metadata = {
     title: 'Blog - TechBlit | African Tech News',
     description: 'Explore all published articles covering African tech news, startups, innovation, and technology ecosystem developments.',
     type: 'website',
-    url: 'https://techblit.com/blog',
+    url: 'https://www.techblit.com/blog',
   },
   alternates: {
-    canonical: 'https://techblit.com/blog',
+    canonical: 'https://www.techblit.com/blog',
   },
 };
 
@@ -105,13 +105,13 @@ export default async function BlogPage({ searchParams }: { searchParams: Promise
     '@type': 'CollectionPage',
     name: 'TechBlit Blog',
     description: 'African tech news, startups, innovation, and technology articles',
-    url: 'https://techblit.com/blog',
+    url: 'https://www.techblit.com/blog',
     publisher: {
       '@type': 'Organization',
       name: 'TechBlit',
       logo: {
         '@type': 'ImageObject',
-        url: 'https://techblit.com/logo.png',
+        url: 'https://www.techblit.com/logo.png',
       },
     },
     mainEntity: {
@@ -124,7 +124,7 @@ export default async function BlogPage({ searchParams }: { searchParams: Promise
           '@type': 'BlogPosting',
           headline: post.title,
           description: post.excerpt,
-          url: `https://techblit.com/${post.slug}`,
+          url: `https://www.techblit.com/${post.slug}`,
         },
       })),
     },

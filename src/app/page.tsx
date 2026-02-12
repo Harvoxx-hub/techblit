@@ -16,10 +16,10 @@ export const metadata: Metadata = {
     title: "TechBlit - Igniting Africa's Tech Conversation",
     description: "Discover the latest African tech news, startup insights, funding rounds, and innovation stories.",
     type: 'website',
-    url: 'https://techblit.com',
+    url: 'https://www.techblit.com',
   },
   alternates: {
-    canonical: 'https://techblit.com',
+    canonical: 'https://www.techblit.com',
   },
 };
 
@@ -29,20 +29,20 @@ export default function Home() {
     '@type': 'WebSite',
     name: 'TechBlit',
     description: "Igniting Africa's Tech Conversation",
-    url: 'https://techblit.com',
+    url: 'https://www.techblit.com',
     publisher: {
       '@type': 'Organization',
       name: 'TechBlit',
       logo: {
         '@type': 'ImageObject',
-        url: 'https://techblit.com/logo.png',
+        url: 'https://www.techblit.com/logo.png',
       },
     },
     potentialAction: {
       '@type': 'SearchAction',
       target: {
         '@type': 'EntryPoint',
-        urlTemplate: 'https://techblit.com/search?q={search_term_string}',
+        urlTemplate: 'https://www.techblit.com/search?q={search_term_string}',
       },
       'query-input': 'required name=search_term_string',
     },

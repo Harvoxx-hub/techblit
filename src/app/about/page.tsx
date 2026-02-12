@@ -11,10 +11,10 @@ export const metadata: Metadata = {
     title: 'About Us - TechBlit',
     description: 'TechBlit is Africa\'s leading tech news platform, covering startups, innovation, funding, and technology developments.',
     type: 'website',
-    url: 'https://techblit.com/about',
+    url: 'https://www.techblit.com/about',
   },
   alternates: {
-    canonical: 'https://techblit.com/about',
+    canonical: 'https://www.techblit.com/about',
   },
 };
 

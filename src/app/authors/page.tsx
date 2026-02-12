@@ -52,10 +52,10 @@ export async function generateMetadata(): Promise<Metadata> {
       title: 'Our Authors | TechBlit',
       description: `Meet the ${authors.length} talented writers documenting Africa's tech ecosystem`,
       type: 'website',
-      url: 'https://techblit.com/authors',
+      url: 'https://www.techblit.com/authors',
     },
     alternates: {
-      canonical: 'https://techblit.com/authors',
+      canonical: 'https://www.techblit.com/authors',
     },
   };
 }

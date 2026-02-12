@@ -279,7 +279,7 @@ export default function Preview({
               </div>
               <div className="flex-1 mx-4">
                 <div className="bg-white rounded px-3 py-1 text-sm text-gray-600">
-                  https://techblit.com/{slug}
+                  https://www.techblit.com/{slug}
                 </div>
               </div>
             </div>
@@ -324,7 +324,7 @@ export default function Preview({
                       {title || 'Untitled Post'}
                     </div>
                     <div className="text-green-600 text-xs">
-                      https://techblit.com/{slug}
+                      https://www.techblit.com/{slug}
                     </div>
                     <div className="text-gray-600 mt-1">
                       {metaDescription}

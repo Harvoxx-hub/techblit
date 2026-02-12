@@ -15,7 +15,7 @@ export default function CanonicalUrlManager({
   value = '',
   onChange,
   slug,
-  siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://techblit.com'
+  siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.techblit.com'
 }: CanonicalUrlManagerProps) {
   const [isValidating, setIsValidating] = useState(false);
   const [validationResult, setValidationResult] = useState<{

@@ -250,7 +250,7 @@ export default function SEOSuggestions({
     if (canonical) {
       try {
         const canonicalUrl = new URL(canonical);
-        const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://techblit.com';
+        const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.techblit.com';
         
         if (canonicalUrl.hostname === new URL(siteUrl).hostname) {
           newSuggestions.push({

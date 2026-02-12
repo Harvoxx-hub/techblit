@@ -12,10 +12,10 @@ export const metadata: Metadata = {
     title: 'Become a TechBlit Contributor - Write, Learn, Grow',
     description: 'Join TechBlit as a writer and build your portfolio while documenting the tech ecosystem in Nigeria.',
     type: 'website',
-    url: 'https://techblit.com/writers',
+    url: 'https://www.techblit.com/writers',
   },
   alternates: {
-    canonical: 'https://techblit.com/writers',
+    canonical: 'https://www.techblit.com/writers',
   },
 };
 
@@ -37,8 +37,8 @@ export default function WritersPage() {
     hiringOrganization: {
       '@type': 'Organization',
       name: 'TechBlit',
-      sameAs: 'https://techblit.com',
-      logo: 'https://techblit.com/logo.png',
+      sameAs: 'https://www.techblit.com',
+      logo: 'https://www.techblit.com/logo.png',
     },
     jobLocation: {
       '@type': 'Place',

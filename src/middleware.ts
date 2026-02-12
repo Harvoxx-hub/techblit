@@ -1,6 +1,16 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
+// Known spam URL patterns (410 Gone so search engines drop them)
+const SPAM_URL_PATTERNS = [
+  '/shop/sv888',
+  '/shop/kubet',
+  '/shop/binh888',
+  '/article/binh-888',
+  '/article/binh888',
+];
+const SPAM_PATH_PATTERN = /^\/(shop|article)\/(sv888|kubet|binh888|binh-888)/i;
+
 // Common patterns for WordPress to Next.js migration
 const LEGACY_URL_PATTERNS: Array<{
   pattern: RegExp;
@@ -145,6 +155,13 @@ function handleLegacyPatterns(pathname: string): string | null {
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const userAgent = request.headers.get('user-agent')?.toLowerCase() || '';
+
+  // =====================================================
+  // STEP 0: Return 410 Gone for known spam URLs (SEO cleanup)
+  // =====================================================
+  if (SPAM_URL_PATTERNS.some(pattern => pathname.includes(pattern)) || SPAM_PATH_PATTERN.test(pathname)) {
+    return new NextResponse(null, { status: 410, statusText: 'Gone' });
+  }
 
   // =====================================================
   // STEP 1: BLOCK AGGRESSIVE BOTS (highest priority)

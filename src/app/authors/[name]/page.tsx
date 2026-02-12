@@ -173,10 +173,10 @@ export async function generateMetadata({ params }: AuthorPageProps): Promise<Met
       title: `${authorName} - TechBlit Author`,
       description: `${articleCount} article${articleCount !== 1 ? 's' : ''} written by ${authorName}`,
       type: 'profile',
-      url: `https://techblit.com/authors/${resolvedParams.name}`,
+      url: `https://www.techblit.com/authors/${resolvedParams.name}`,
     },
     alternates: {
-      canonical: `https://techblit.com/authors/${resolvedParams.name}`,
+      canonical: `https://www.techblit.com/authors/${resolvedParams.name}`,
     },
   };
 }
@@ -202,11 +202,11 @@ export default async function AuthorPage({ params }: AuthorPageProps) {
       '@type': 'Person',
       name: authorName,
       description: authorBio,
-      url: `https://techblit.com/authors/${resolvedParams.name}`,
+      url: `https://www.techblit.com/authors/${resolvedParams.name}`,
       worksFor: {
         '@type': 'Organization',
         name: 'TechBlit',
-        url: 'https://techblit.com',
+        url: 'https://www.techblit.com',
       },
     },
   };

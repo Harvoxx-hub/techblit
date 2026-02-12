@@ -1,6 +1,9 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // Canonical URL consistency (no trailing slash)
+  trailingSlash: false,
+
   // Performance optimizations
   compress: true,
   
@@ -59,12 +62,28 @@ const nextConfig: NextConfig = {
     optimizePackageImports: ['@heroicons/react', 'framer-motion'],
   },
   
+  // Redirect non-www to www (canonical host)
+  async redirects() {
+    return [
+      {
+        source: '/:path*',
+        has: [{ type: 'host', value: 'techblit.com' }],
+        destination: 'https://www.techblit.com/:path*',
+        permanent: true,
+      },
+    ];
+  },
+
   // Headers for better caching
   async headers() {
     return [
       {
         source: '/:path*',
         headers: [
+          {
+            key: 'X-Robots-Tag',
+            value: 'index, follow',
+          },
           {
             key: 'X-DNS-Prefetch-Control',
             value: 'on'

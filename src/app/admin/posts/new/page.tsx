@@ -448,7 +448,7 @@ function NewPostEditor() {
                   <Input
                     label="Canonical URL"
                     type="url"
-                    placeholder="https://techblit.com/..."
+                    placeholder="https://www.techblit.com/..."
                     value={post.canonical}
                     onChange={(e) => setPost(prev => ({ ...prev, canonical: e.target.value }))}
                     leftIcon={<LinkIcon />}
