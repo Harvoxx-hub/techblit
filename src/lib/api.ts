@@ -1,8 +1,8 @@
 /**
- * API Configuration for Cloud Functions
+ * API Configuration
  * 
- * This file centralizes all Cloud Functions API endpoints.
- * Update FUNCTIONS_URL with your deployed Cloud Functions URL.
+ * Backend API endpoints. Hosted on Railway.
+ * Set NEXT_PUBLIC_FIREBASE_FUNCTIONS_URL for custom API URL.
  */
 
 // Get the base URL for Cloud Functions

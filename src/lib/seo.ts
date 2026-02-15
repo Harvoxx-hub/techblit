@@ -30,7 +30,7 @@ export const defaultSEO = {
     description: 'Discover the latest tech news, startup insights, funding rounds, and innovation stories from across Africa.',
     images: [
       {
-        url: `${SITE_URL}/og-image.svg`,
+        url: `${SITE_URL}/api/og`,
         width: 1200,
         height: 630,
         alt: "TechBlit - Igniting Africa's Tech Conversation",
@@ -99,8 +99,8 @@ export function generatePostSEO(post: BlogPostSEO): Metadata {
   const ogTitle = post.social?.ogTitle || title;
   const ogDescription = post.social?.ogDescription || description;
   
-  // Determine Open Graph image - prefer OG optimized version if available
-  let ogImage = `${SITE_URL}/og-image.svg`;
+  // Determine Open Graph image - use PNG API (WhatsApp/Facebook don't support SVG)
+  let ogImage = `${SITE_URL}/api/og`;
   let ogImageAlt = post.title;
   
   if (post.featuredImage) {
@@ -120,7 +120,7 @@ export function generatePostSEO(post: BlogPostSEO): Metadata {
         isProcessedImage(post.featuredImage) ? post.featuredImage.ogImage?.url : 
         isLegacyImage(post.featuredImage) ? post.featuredImage.url : 
         typeof post.featuredImage === 'string' ? post.featuredImage : null,
-        { width: 1200, height: 630, crop: 'fill' }
+        { width: 1200, height: 630, crop: 'fill', format: 'jpg' }
       );
       if (crawlableUrl) {
         ogImage = crawlableUrl;
@@ -258,7 +258,7 @@ export function generateCategorySEO(category: string, description?: string): Met
       description: desc,
       images: [
         {
-          url: `${SITE_URL}/og-image.svg`,
+          url: `${SITE_URL}/api/og`,
           width: 1200,
           height: 630,
           alt: `${category} Articles - TechBlit`,
@@ -269,7 +269,7 @@ export function generateCategorySEO(category: string, description?: string): Met
       card: 'summary_large_image',
       title: title,
       description: desc,
-      images: [`${SITE_URL}/og-image.svg`],
+      images: [`${SITE_URL}/api/og`],
       creator: '@techblit',
       site: '@techblit',
     },
@@ -330,7 +330,7 @@ export function generateStructuredData(post: BlogPostSEO) {
   
   const featuredImageUrl = rawFeaturedImageUrl 
     ? getCrawlableImageUrl(rawFeaturedImageUrl)
-    : `${SITE_URL}/og-image.svg`;
+    : `${SITE_URL}/api/og`;
   
   // Get dates with proper fallbacks - same logic as metadata generation
   const publishedTime = getISODateString(post.publishedAt) || getISODateString(post.createdAt);

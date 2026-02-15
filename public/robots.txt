@@ -3,10 +3,9 @@ User-agent: *
 Allow: /
 Disallow: /admin/
 Disallow: /api/
-Disallow: /preview/
 
-# Host (canonical)
-Host: https://www.techblit.com
+# Host
+Host: https://techblit.com
 
 # Sitemaps
-Sitemap: https://www.techblit.com/sitemap.xml
+Sitemap: https://techblit.com/sitemap.xml

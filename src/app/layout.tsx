@@ -42,7 +42,7 @@ export const metadata: Metadata = {
     title: "TechBlit - Igniting Africa's Tech Conversation",
     description: "Discover the latest tech news, startup insights, funding rounds, and innovation stories from across Africa.",
     images: [{
-      url: '/og-image.svg',
+      url: '/api/og',
       width: 1200,
       height: 630,
       alt: "TechBlit - Igniting Africa's Tech Conversation",
@@ -52,7 +52,7 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: "TechBlit - Igniting Africa's Tech Conversation",
     description: "Discover the latest tech news, startup insights, funding rounds, and innovation stories from across Africa.",
-    images: ['/og-image.svg'],
+    images: ['/api/og'],
     creator: '@techblit',
     site: '@techblit',
   },

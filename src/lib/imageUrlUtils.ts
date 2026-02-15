@@ -111,7 +111,7 @@ export function convertToPublicUrl(tokenUrl: string): string | null {
  */
 export function getCrawlableImageUrl(
   url: string | null | undefined,
-  options?: { width?: number; height?: number; crop?: string }
+  options?: { width?: number; height?: number; crop?: string; format?: string }
 ): string | null {
   if (!url) return null;
   
