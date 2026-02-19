@@ -49,6 +49,7 @@ interface BlogPost {
 
 import { getCrawlableImageUrl, sanitizeWordPressUrls } from '@/lib/imageUrlUtils';
 import { getImageUrlFromData } from '@/lib/imageHelpers';
+import { getPostsApiUrl } from '@/lib/apiConfig';
 import { renderContent } from '@/lib/markdown';
 
 // Helper function to get image URL from either format
@@ -77,10 +78,7 @@ function getImageUrl(image: ProcessedImage | { url: string; alt: string; width?:
 // Server-side function to fetch post data from API
 async function getPost(slug: string): Promise<BlogPost | null> {
   try {
-    const FUNCTIONS_URL = process.env.NEXT_PUBLIC_FIREBASE_FUNCTIONS_URL || 
-                          'https://techblit-cloud-function-production.up.railway.app';
-    const API_BASE = `${FUNCTIONS_URL}/api/v1`;
-    
+    const API_BASE = getPostsApiUrl();
     const response = await fetch(`${API_BASE}/posts/${slug}`, {
       next: { revalidate: 3600 } // Revalidate every hour (ISR)
     });
@@ -103,10 +101,7 @@ async function getPost(slug: string): Promise<BlogPost | null> {
 // Generate static params for SSG - fetch all published post slugs at build time
 export async function generateStaticParams() {
   try {
-    const FUNCTIONS_URL = process.env.NEXT_PUBLIC_FIREBASE_FUNCTIONS_URL || 
-                          'https://techblit-cloud-function-production.up.railway.app';
-    const API_BASE = `${FUNCTIONS_URL}/api/v1`;
-    
+    const API_BASE = getPostsApiUrl();
     const response = await fetch(`${API_BASE}/posts?limit=1000`, {
       next: { revalidate: 3600 } // Revalidate every hour
     });
@@ -151,25 +146,10 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
   const { slug } = await params;
   const post = await getPost(slug);
 
+  // Post not found: API returned 404 (no published post with this slug in Firestore).
+  // Triggers the global 404 page (app/not-found.tsx) with proper 404 status.
   if (!post) {
-    return (
-      <div className="min-h-screen bg-gray-50">
-        <Navigation showBackButton={true} />
-        <div className="max-w-4xl mx-auto px-6 py-8">
-          <div className="text-center">
-            <h1 className="text-2xl font-bold text-gray-900 mb-4">Post Not Found</h1>
-            <p className="text-gray-600 mb-6">The post you're looking for doesn't exist or has been removed.</p>
-            <Link 
-              href="/" 
-              className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              ← Back to Home
-            </Link>
-          </div>
-        </div>
-        <Footer />
-      </div>
-    );
+    notFound();
   }
 
   // Generate structured data for SEO (returns array of schemas)

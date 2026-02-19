@@ -46,22 +46,32 @@ export function isMarkdown(content: string): boolean {
 }
 
 /**
+ * Add loading="lazy" to img tags in HTML that don't have it.
+ * Reduces "preloaded but not used" console warnings for below-the-fold images.
+ */
+export function addLazyLoadingToImages(html: string): string {
+  if (!html) return html;
+  return html.replace(/<img(\s[^>]*)>/gi, (match, attrs) => {
+    if (/\sloading\s*=/i.test(attrs)) return match;
+    return `<img loading="lazy"${attrs}>`;
+  });
+}
+
+/**
  * Render content as HTML, auto-detecting if it's Markdown
  * @param content - Content to render (can be HTML or Markdown)
  * @param contentHtml - Optional pre-rendered HTML content
  * @returns HTML string
  */
 export function renderContent(content: string, contentHtml?: string): string {
+  let html: string;
   // If we have pre-rendered HTML, use that
   if (contentHtml) {
-    return contentHtml;
+    html = contentHtml;
+  } else if (isMarkdown(content)) {
+    html = renderMarkdown(content);
+  } else {
+    return content;
   }
-
-  // If content looks like Markdown, convert it
-  if (isMarkdown(content)) {
-    return renderMarkdown(content);
-  }
-
-  // Otherwise return as-is (might be HTML or plain text)
-  return content;
+  return addLazyLoadingToImages(html);
 }
