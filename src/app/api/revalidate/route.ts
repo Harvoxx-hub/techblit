@@ -43,6 +43,7 @@ export async function POST(request: NextRequest) {
       );
     }
     paths.push(`/${slugParam}`);
+    paths.push('/'); // Homepage (feature section) so new/updated post shows there
   }
 
   if (paths.length === 0 && hasValidSecret) {

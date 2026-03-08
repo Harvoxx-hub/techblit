@@ -38,6 +38,7 @@ import Preview from '@/components/editor/Preview';
 import FeaturedImageUpload from '@/components/editor/FeaturedImageUpload';
 import { uploadFeaturedImage } from '@/lib/imageUpload';
 import { sanitizeWordPressUrls } from '@/lib/imageUrlUtils';
+import { revalidatePost } from '@/app/actions/revalidate';
 
 function EditPostEditor() {
   const router = useRouter();
@@ -172,7 +173,15 @@ function EditPostEditor() {
         }
       });
 
-      await apiService.updatePost(post.id!, updateData);
+      const result = await apiService.updatePost(post.id!, updateData) as { slug?: string; previousSlug?: string } | undefined;
+      // Clear ISR cache so the live article (and feature section) show immediately; use API slug(s) when available
+      const slugToRevalidate = result?.slug ?? post.slug;
+      if (slugToRevalidate) {
+        await revalidatePost(slugToRevalidate);
+      }
+      if (result?.previousSlug && result.previousSlug !== slugToRevalidate) {
+        await revalidatePost(result.previousSlug);
+      }
       router.push('/admin/posts');
     } catch (error) {
       console.error('Error saving post:', error);
