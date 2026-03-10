@@ -193,7 +193,7 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
             </time>
           </div>
           
-          {/* Featured Image */}
+          {/* Featured Image - full image visible (no cropping) */}
           {post.featuredImage && (
             <div className="mb-4 sm:mb-6 -mx-4 sm:mx-0">
               <img
@@ -203,7 +203,7 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
                     ? post.featuredImage.alt 
                     : `${post.title} - TechBlit${post.categories?.[0] ? ` coverage of ${post.categories[0]}` : ''}`
                 }
-                className="w-full h-48 sm:h-64 md:h-80 object-cover rounded-lg sm:rounded-lg"
+                className="w-full h-auto max-h-[85vh] object-contain rounded-lg sm:rounded-lg"
                 width={'original' in post.featuredImage ? post.featuredImage.original.width : post.featuredImage.width || 800}
                 height={'original' in post.featuredImage ? post.featuredImage.original.height : post.featuredImage.height || 400}
               />

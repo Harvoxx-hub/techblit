@@ -83,44 +83,44 @@ export async function generateSocialMediaImage(
     throw new Error('Failed to get canvas context');
   }
 
-  // 1. Draw background image
+  // Fill canvas with gradient first (shows in letterbox/pillarbox when image is fitted)
+  const gradient = ctx.createLinearGradient(0, 0, width, height);
+  gradient.addColorStop(0, '#1a1a2e');
+  gradient.addColorStop(0.5, '#16213e');
+  gradient.addColorStop(1, '#0f3460');
+  ctx.fillStyle = gradient;
+  ctx.fillRect(0, 0, width, height);
+
+  // 1. Draw background image fitted (no stretch) – like object-fit: contain
   if (backgroundImageUrl) {
     try {
       const background = await loadImage(backgroundImageUrl);
-      ctx.drawImage(background, 0, 0, width, height);
+      const imgW = background.naturalWidth;
+      const imgH = background.naturalHeight;
+      const scale = Math.min(width / imgW, height / imgH);
+      const drawW = imgW * scale;
+      const drawH = imgH * scale;
+      const x = (width - drawW) / 2;
+      const y = (height - drawH) / 2;
+      ctx.drawImage(background, 0, 0, imgW, imgH, x, y, drawW, drawH);
     } catch (error) {
-      console.warn('Failed to load background image, using gradient:', error);
-      // Fallback to gradient background
-      const gradient = ctx.createLinearGradient(0, 0, width, height);
-      gradient.addColorStop(0, '#1a1a2e');
-      gradient.addColorStop(0.5, '#16213e');
-      gradient.addColorStop(1, '#0f3460');
-      ctx.fillStyle = gradient;
-      ctx.fillRect(0, 0, width, height);
+      console.warn('Failed to load background image, gradient only:', error);
     }
-  } else {
-    // Create gradient background
-    const gradient = ctx.createLinearGradient(0, 0, width, height);
-    gradient.addColorStop(0, '#1a1a2e');
-    gradient.addColorStop(0.5, '#16213e');
-    gradient.addColorStop(1, '#0f3460');
-    ctx.fillStyle = gradient;
-    ctx.fillRect(0, 0, width, height);
   }
 
   // 2. Add dark overlay (bottom half only)
   // Gradient from y=540 (middle) to y=1080 (bottom)
   const overlayStartY = 540;
   const overlayEndY = height;
-  const gradient = ctx.createLinearGradient(0, overlayStartY, 0, overlayEndY);
+  const overlayGradient = ctx.createLinearGradient(0, overlayStartY, 0, overlayEndY);
   
   // Color stops as specified: transparent at start, gradually darker towards bottom
-  gradient.addColorStop(0, 'rgba(0, 0, 0, 0)');        // Transparent at start (y=540)
-  gradient.addColorStop(0.3, 'rgba(0, 0, 0, 0.4)');    // 30% opacity
-  gradient.addColorStop(0.6, 'rgba(0, 0, 0, 0.7)');    // 60% opacity
-  gradient.addColorStop(1, 'rgba(0, 0, 0, 0.85)');     // 85% opacity at bottom
+  overlayGradient.addColorStop(0, 'rgba(0, 0, 0, 0)');        // Transparent at start (y=540)
+  overlayGradient.addColorStop(0.3, 'rgba(0, 0, 0, 0.4)');    // 30% opacity
+  overlayGradient.addColorStop(0.6, 'rgba(0, 0, 0, 0.7)');    // 60% opacity
+  overlayGradient.addColorStop(1, 'rgba(0, 0, 0, 0.85)');     // 85% opacity at bottom
   
-  ctx.fillStyle = gradient;
+  ctx.fillStyle = overlayGradient;
   // Only fill the bottom half of the canvas
   ctx.fillRect(0, overlayStartY, width, overlayEndY - overlayStartY);
 
