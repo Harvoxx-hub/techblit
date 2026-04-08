@@ -882,6 +882,12 @@ class ApiService {
       body: JSON.stringify(data),
     });
   }
+
+  async deleteFounderApplication(id: string) {
+    return this.request(`/founders/applications/${encodeURIComponent(id)}`, {
+      method: 'DELETE',
+    });
+  }
 }
 
 // Export singleton instance

@@ -3,13 +3,14 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import apiService from '@/lib/apiService';
 import AdminLayout from '@/components/admin/AdminLayout';
 import { withAuth } from '@/contexts/AuthContext';
 import { Button, Alert, Modal, Textarea, Input } from '@/components/ui';
 
 function FounderDetailPage() {
+  const router = useRouter();
   const params = useParams();
   const id = params.id as string;
   const [data, setData] = useState<Record<string, unknown> | null>(null);
@@ -17,6 +18,7 @@ function FounderDetailPage() {
   const [error, setError] = useState('');
   const [rejectOpen, setRejectOpen] = useState(false);
   const [rejectReason, setRejectReason] = useState('');
+  const [deleteOpen, setDeleteOpen] = useState(false);
   const [busy, setBusy] = useState(false);
 
   const load = async () => {
@@ -61,6 +63,19 @@ function FounderDetailPage() {
       await load();
     } catch (e: unknown) {
       alert(e instanceof Error ? e.message : 'Reject failed');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const remove = async () => {
+    setBusy(true);
+    try {
+      await apiService.deleteFounderApplication(id);
+      setDeleteOpen(false);
+      router.push('/admin/founders');
+    } catch (e: unknown) {
+      alert(e instanceof Error ? e.message : 'Delete failed');
     } finally {
       setBusy(false);
     }
@@ -114,6 +129,14 @@ function FounderDetailPage() {
                 View live profile
               </Button>
             )}
+            <Button
+              variant="outline"
+              className="border-red-300 text-red-700 hover:bg-red-50"
+              onClick={() => setDeleteOpen(true)}
+              disabled={busy}
+            >
+              Delete
+            </Button>
           </div>
         </div>
 
@@ -259,6 +282,34 @@ function FounderDetailPage() {
             </Button>
             <Button variant="danger" onClick={reject} loading={busy} disabled={!rejectReason.trim()}>
               Reject
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      <Modal
+        isOpen={deleteOpen}
+        onClose={() => !busy && setDeleteOpen(false)}
+        title="Delete founder record"
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-gray-700">
+            This permanently removes this application from the database and deletes its images from storage.
+            {status === 'approved' && slug ? (
+              <>
+                {' '}
+                The public profile at <span className="font-mono text-xs">/founders/{slug}</span> will return
+                404.
+              </>
+            ) : null}{' '}
+            This cannot be undone.
+          </p>
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setDeleteOpen(false)} disabled={busy}>
+              Cancel
+            </Button>
+            <Button variant="danger" onClick={remove} loading={busy}>
+              Delete permanently
             </Button>
           </div>
         </div>
