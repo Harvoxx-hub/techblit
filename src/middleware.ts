@@ -216,6 +216,7 @@ export async function middleware(request: NextRequest) {
     pathname.startsWith('/authors') ||
     pathname.startsWith('/writers') ||
     pathname.startsWith('/about') ||
+    pathname.startsWith('/founders') ||
     pathname.startsWith('/preview') ||
     pathname === '/' ||
     pathname.includes('.')

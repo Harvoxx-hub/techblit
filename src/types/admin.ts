@@ -259,6 +259,9 @@ export const PERMISSIONS = {
   // Analytics permissions
   VIEW_ANALYTICS: 'view_analytics',
   EXPORT_DATA: 'export_data',
+
+  // Founder's Repository
+  MANAGE_FOUNDERS: 'manage_founders',
 } as const;
 
 // Role-based permission mapping
@@ -271,6 +274,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, string[]> = {
     PERMISSIONS.UPLOAD_MEDIA,
     PERMISSIONS.MANAGE_MEDIA,
     PERMISSIONS.VIEW_ANALYTICS,
+    PERMISSIONS.MANAGE_FOUNDERS,
   ],
   author: [
     PERMISSIONS.CREATE_POST,

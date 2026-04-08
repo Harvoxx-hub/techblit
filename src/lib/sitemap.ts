@@ -1,5 +1,7 @@
 // Server-side API calls for sitemap generation
 
+import { fetchFoundersForSitemap } from '@/lib/foundersApi';
+
 export interface SitemapUrl {
   loc: string;
   lastmod: string;
@@ -46,6 +48,20 @@ export async function generateSitemap(): Promise<SitemapUrl[]> {
       lastmod: new Date().toISOString(),
       changefreq: 'daily',
       priority: 0.9,
+    });
+
+    urls.push({
+      loc: `${siteUrl}/founders`,
+      lastmod: new Date().toISOString(),
+      changefreq: 'daily',
+      priority: 0.85,
+    });
+
+    urls.push({
+      loc: `${siteUrl}/founders/apply`,
+      lastmod: new Date().toISOString(),
+      changefreq: 'monthly',
+      priority: 0.75,
     });
 
     // Fetch published blog posts via API
@@ -127,6 +143,20 @@ export async function generateSitemap(): Promise<SitemapUrl[]> {
         priority,
       });
     });
+
+    try {
+      const founderSlugs = await fetchFoundersForSitemap();
+      founderSlugs.forEach((f) => {
+        urls.push({
+          loc: `${siteUrl}/founders/${f.slug}`,
+          lastmod: f.approved_at || new Date().toISOString(),
+          changefreq: 'weekly',
+          priority: 0.75,
+        });
+      });
+    } catch (e) {
+      console.error('Error fetching founders for sitemap:', e);
+    }
 
     return urls;
   } catch (error) {

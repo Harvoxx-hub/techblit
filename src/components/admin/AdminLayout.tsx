@@ -16,7 +16,8 @@ import {
   Bars3Icon,
   XMarkIcon,
   SparklesIcon,
-  EnvelopeIcon
+  EnvelopeIcon,
+  UserGroupIcon
 } from '@heroicons/react/24/outline';
 
 interface AdminLayoutProps {
@@ -41,6 +42,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     { name: 'Redirects', href: '/admin/redirects', icon: ArrowPathIcon, permission: 'manage_redirects' },
     { name: 'Users', href: '/admin/users', icon: UsersIcon, permission: 'manage_users' },
     { name: 'Bulk Emails', href: '/admin/bulk-emails', icon: EnvelopeIcon, permission: null, superAdminOnly: true },
+    { name: 'Founders', href: '/admin/founders', icon: UserGroupIcon, permission: 'manage_founders' },
     { name: 'Settings', href: '/admin/settings', icon: CogIcon, permission: 'manage_settings' },
     { name: 'Analytics', href: '/admin/analytics', icon: ChartBarIcon, permission: 'view_analytics' },
     { name: 'Audit Logs', href: '/admin/audit', icon: ClipboardDocumentListIcon, permission: 'view_audit_logs' },

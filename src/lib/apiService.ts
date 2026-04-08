@@ -779,6 +779,109 @@ class ApiService {
       method: 'POST',
     });
   }
+
+  // ============================================================================
+  // FOUNDER'S REPOSITORY
+  // ============================================================================
+
+  /** Public multipart application — do not set JSON Content-Type */
+  async submitFounderApplication(formData: FormData) {
+    const url = `${this.baseUrl}/founders/applications`;
+    const response = await fetch(url, {
+      method: 'POST',
+      body: formData,
+    });
+    const json = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      const msg =
+        (json as { error?: { message?: string } })?.error?.message ||
+        (json as { message?: string })?.message ||
+        `HTTP ${response.status}`;
+      throw new Error(msg);
+    }
+    return (json as { data?: unknown }).data ?? json;
+  }
+
+  async getFoundersDirectory(params?: {
+    limit?: number;
+    offset?: number;
+    sort?: 'newest' | 'oldest' | 'alphabetical';
+    q?: string;
+    region?: string;
+    industry?: string;
+    stage?: string;
+    funding?: string;
+    yearMin?: number;
+    yearMax?: number;
+  }) {
+    const queryParams = new URLSearchParams();
+    if (params?.limit != null) queryParams.append('limit', String(params.limit));
+    if (params?.offset != null) queryParams.append('offset', String(params.offset));
+    if (params?.sort) queryParams.append('sort', params.sort);
+    if (params?.q) queryParams.append('q', params.q);
+    if (params?.region) queryParams.append('region', params.region);
+    if (params?.industry) queryParams.append('industry', params.industry);
+    if (params?.stage) queryParams.append('stage', params.stage);
+    if (params?.funding) queryParams.append('funding', params.funding);
+    if (params?.yearMin != null) queryParams.append('yearMin', String(params.yearMin));
+    if (params?.yearMax != null) queryParams.append('yearMax', String(params.yearMax));
+    const q = queryParams.toString();
+    return this.request<{
+      items: unknown[];
+      total: number;
+      limit: number;
+      offset: number;
+    }>(`/founders${q ? `?${q}` : ''}`);
+  }
+
+  async getFounderBySlugPublic(slug: string) {
+    return this.request<Record<string, unknown>>(`/founders/${encodeURIComponent(slug)}`);
+  }
+
+  async requestFounderProfileUpdate(slug: string, body: { email: string; message: string }) {
+    return this.request(`/founders/${encodeURIComponent(slug)}/update-request`, {
+      method: 'POST',
+      body: JSON.stringify(body),
+    });
+  }
+
+  async listFounderApplications(params?: {
+    status?: 'pending' | 'approved' | 'rejected' | 'all';
+    search?: string;
+    limit?: number;
+  }) {
+    const queryParams = new URLSearchParams();
+    if (params?.status) queryParams.append('status', params.status);
+    if (params?.search) queryParams.append('search', params.search);
+    if (params?.limit != null) queryParams.append('limit', String(params.limit));
+    const q = queryParams.toString();
+    return this.request<unknown[]>(`/founders/applications${q ? `?${q}` : ''}`);
+  }
+
+  async getFounderApplicationById(id: string) {
+    return this.request<Record<string, unknown>>(`/founders/applications/${encodeURIComponent(id)}`);
+  }
+
+  async approveFounderApplication(id: string) {
+    return this.request<{ slug?: string; profileUrl?: string }>(
+      `/founders/applications/${encodeURIComponent(id)}/approve`,
+      { method: 'POST' }
+    );
+  }
+
+  async rejectFounderApplication(id: string, rejection_reason: string) {
+    return this.request(`/founders/applications/${encodeURIComponent(id)}/reject`, {
+      method: 'POST',
+      body: JSON.stringify({ rejection_reason }),
+    });
+  }
+
+  async updateFounderApplication(id: string, data: Record<string, unknown>) {
+    return this.request(`/founders/applications/${encodeURIComponent(id)}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  }
 }
 
 // Export singleton instance
