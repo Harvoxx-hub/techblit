@@ -6,15 +6,16 @@ import apiService from '@/lib/apiService';
 import AdminLayout from '@/components/admin/AdminLayout';
 import { withAuth } from '@/contexts/AuthContext';
 import { Post, PostStatus, getStatusColor, getStatusLabel, getStatusBadgeClasses, getStatusIconClasses } from '@/types/admin';
-import { 
-  DocumentTextIcon, 
+import {
+  DocumentTextIcon,
   PlusIcon,
   MagnifyingGlassIcon,
   FunnelIcon,
   EyeIcon,
   PencilIcon,
   TrashIcon,
-  ArrowDownTrayIcon
+  ArrowDownTrayIcon,
+  NewspaperIcon,
 } from '@heroicons/react/24/outline';
 import { Input, Dropdown, Button, Card, CardContent, Badge } from '@/components/ui';
 import { parseDate, formatDateShort } from '@/lib/dateUtils';
@@ -28,6 +29,7 @@ function PostsManager() {
   const [filteredPosts, setFilteredPosts] = useState<Post[]>([]);
   const [deleting, setDeleting] = useState<string | null>(null);
   const [generatingImage, setGeneratingImage] = useState<string | null>(null);
+  const [generatingBreakingNews, setGeneratingBreakingNews] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchPosts = async () => {
@@ -159,6 +161,74 @@ function PostsManager() {
       alert(errorMessage);
     } finally {
       setGeneratingImage(null);
+    }
+  };
+
+  const getFeaturedImageUrl = (post: Post): string | null => {
+    const fi = post.featuredImage as any;
+    if (!fi) return null;
+    if (typeof fi === 'string') return fi;
+    if (fi.url) return fi.url;
+    if (fi.original?.url) return fi.original.url;
+    if (fi.ogImage?.url) return fi.ogImage.url;
+    return null;
+  };
+
+  const handleBreakingNews = async (post: Post) => {
+    const featuredImageUrl = getFeaturedImageUrl(post);
+    if (!featuredImageUrl) {
+      alert('This post has no featured image. A featured image is required for the Breaking News card.');
+      return;
+    }
+
+    setGeneratingBreakingNews(post.id!);
+    try {
+      const functionsUrl =
+        process.env.NEXT_PUBLIC_FIREBASE_FUNCTIONS_URL ||
+        'https://techblit-cloud-function-production.up.railway.app'
+
+      // Normalize because some environments may already include `/api/v1`
+      const backendBaseUrl = functionsUrl.replace(/\/api\/v1\/?$/, '')
+
+      const { getAuth } = await import('firebase/auth');
+      const token = await getAuth().currentUser?.getIdToken();
+
+      const res = await fetch(`${backendBaseUrl}/api/v1/canva/breaking-news`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({
+          title: post.title,
+          excerpt: post.excerpt || '',
+          featuredImageUrl,
+          slug: post.slug,
+          category: post.category || '',
+        }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        const apiError = (data as any)?.error
+        const apiPath = (data as any)?.path
+        throw new Error(apiError || (apiPath ? `API endpoint not found: ${apiPath}` : 'Failed to generate image'));
+      }
+
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `${post.slug || 'breaking-news'}-breaking-news.jpg`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch (err: any) {
+      console.error('Breaking news image error:', err);
+      alert(err.message || 'Failed to generate Breaking News image. Please try again.');
+    } finally {
+      setGeneratingBreakingNews(null);
     }
   };
 
@@ -302,6 +372,20 @@ function PostsManager() {
                             <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
                           ) : (
                             <ArrowDownTrayIcon className="h-5 w-5" />
+                          )}
+                        </button>
+                      )}
+                      {post.status === 'published' && (
+                        <button
+                          className={`text-gray-400 hover:text-red-600 ${generatingBreakingNews === post.id ? 'opacity-50 cursor-not-allowed' : ''}`}
+                          title="Generate & Download Breaking News Image (Canva)"
+                          onClick={() => handleBreakingNews(post)}
+                          disabled={generatingBreakingNews === post.id}
+                        >
+                          {generatingBreakingNews === post.id ? (
+                            <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-red-600"></div>
+                          ) : (
+                            <NewspaperIcon className="h-5 w-5" />
                           )}
                         </button>
                       )}
