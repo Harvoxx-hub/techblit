@@ -59,6 +59,7 @@ export default function RichTextEditor({
   onImageUpload,
 }: RichTextEditorProps) {
   const [isPreviewMode, setIsPreviewMode] = useState(false);
+  const [isImageUploading, setIsImageUploading] = useState(false);
   const editorRef = useRef<HTMLDivElement>(null);
 
   const editor = useEditor({
@@ -137,24 +138,29 @@ export default function RichTextEditor({
 
   const addImage = useCallback(async () => {
     if (!onImageUpload) return;
+    if (isImageUploading) return;
     
     const input = document.createElement('input');
     input.type = 'file';
-    input.accept = 'image/*';
+    // Match backend allowed types (jpg/jpeg/png/webp)
+    input.accept = 'image/jpeg,image/png,image/webp';
     input.onchange = async (e) => {
       const file = (e.target as HTMLInputElement).files?.[0];
       if (file) {
         try {
+          setIsImageUploading(true);
           const url = await onImageUpload(file);
           editor?.chain().focus().setImage({ src: url }).run();
         } catch (error) {
           console.error('Error uploading image:', error);
           alert('Failed to upload image. Please try again.');
+        } finally {
+          setIsImageUploading(false);
         }
       }
     };
     input.click();
-  }, [editor, onImageUpload]);
+  }, [editor, isImageUploading, onImageUpload]);
 
   const addLink = useCallback(() => {
     const url = window.prompt('Enter URL:');
@@ -367,10 +373,17 @@ export default function RichTextEditor({
               variant="ghost"
               size="sm"
               onClick={addImage}
-              className="h-8 w-8 p-0 text-gray-600 hover:text-gray-900"
+              disabled={isImageUploading}
+              className="h-8 w-8 p-0 text-gray-600 hover:text-gray-900 disabled:opacity-60 disabled:hover:text-gray-600"
               title="Add Image"
+              aria-label={isImageUploading ? 'Uploading image' : 'Add image'}
+              aria-busy={isImageUploading}
             >
-              <PhotoIcon className="h-4 w-4" />
+              {isImageUploading ? (
+                <div className="h-4 w-4 animate-spin rounded-full border-2 border-gray-300 border-t-gray-700" />
+              ) : (
+                <PhotoIcon className="h-4 w-4" />
+              )}
             </Button>
             <Button
               variant="ghost"
@@ -418,6 +431,13 @@ export default function RichTextEditor({
               <span className="text-xs font-mono font-bold">MD</span>
             </Button>
           </div>
+
+          {isImageUploading && (
+            <div className="text-xs text-gray-600 flex items-center gap-2">
+              <div className="h-3 w-3 animate-spin rounded-full border-2 border-gray-300 border-t-gray-700" />
+              <span>Uploading image…</span>
+            </div>
+          )}
 
           {/* Block Elements */}
           <div className="flex gap-1 border-r border-gray-300 pr-2 mr-2">

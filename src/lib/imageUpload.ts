@@ -19,6 +19,78 @@ export interface UploadResult {
   type: string;
 }
 
+const ALLOWED_UPLOAD_MIME_TYPES = new Set([
+  'image/jpeg',
+  'image/jpg',
+  'image/png',
+  'image/webp',
+])
+
+const mimeTypeToExtension = (mimeType: string) => {
+  if (mimeType === 'image/png') return 'png'
+  if (mimeType === 'image/webp') return 'webp'
+  return 'jpg'
+}
+
+const withExtension = (fileName: string, extension: string) => {
+  const base = fileName.replace(/\.[^/.]+$/, '')
+  return `${base}.${extension}`
+}
+
+const convertImageViaCanvas = async (file: File, targetMimeType: string): Promise<File> => {
+  const objectUrl = URL.createObjectURL(file)
+
+  try {
+    const img = new Image()
+    img.decoding = 'async'
+
+    await new Promise<void>((resolve, reject) => {
+      img.onload = () => resolve()
+      img.onerror = () => reject(new Error('Failed to load image for conversion'))
+      img.src = objectUrl
+    })
+
+    const canvas = document.createElement('canvas')
+    canvas.width = img.naturalWidth || img.width
+    canvas.height = img.naturalHeight || img.height
+
+    const ctx = canvas.getContext('2d')
+    if (!ctx) throw new Error('Failed to get canvas context')
+
+    ctx.drawImage(img, 0, 0)
+
+    const blob = await new Promise<Blob>((resolve, reject) => {
+      canvas.toBlob(
+        (b) => {
+          if (!b) return reject(new Error('Failed to convert image'))
+          resolve(b)
+        },
+        targetMimeType,
+        0.92
+      )
+    })
+
+    const extension = mimeTypeToExtension(targetMimeType)
+    const nextName = withExtension(file.name || `image.${extension}`, extension)
+
+    return new File([blob], nextName, {
+      type: targetMimeType,
+      lastModified: Date.now(),
+    })
+  } finally {
+    URL.revokeObjectURL(objectUrl)
+  }
+}
+
+export const normalizeUploadImageFile = async (file: File): Promise<File> => {
+  if (ALLOWED_UPLOAD_MIME_TYPES.has(file.type)) {
+    return file
+  }
+
+  // Backend only accepts jpg/jpeg/png/webp. Convert anything else to webp.
+  return convertImageViaCanvas(file, 'image/webp')
+}
+
 /**
  * Upload image to Cloudinary via backend API
  * @param file - Image file to upload
@@ -39,7 +111,8 @@ export const uploadImageToCloudinary = async (
   size: number;
 }> => {
   try {
-    const result = await apiService.uploadMedia(file, { folder });
+    const normalizedFile = await normalizeUploadImageFile(file)
+    const result = await apiService.uploadMedia(normalizedFile, { folder });
     return result;
   } catch (error) {
     console.error('Error uploading image to Cloudinary:', error);

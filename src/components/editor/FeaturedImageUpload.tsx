@@ -341,7 +341,7 @@ export default function FeaturedImageUpload({
             <input
               ref={fileInputRef}
               type="file"
-              accept="image/*"
+              accept="image/jpeg,image/png,image/webp"
               onChange={handleFileSelect}
               className="hidden"
             />
@@ -369,7 +369,7 @@ export default function FeaturedImageUpload({
                     </button>
                   </div>
                   <div className="text-xs text-gray-400">
-                    PNG, JPG, GIF up to 10MB
+                    PNG, JPG, WEBP up to 10MB
                   </div>
                 </div>
               </div>

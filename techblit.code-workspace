@@ -1,0 +1,13 @@
+{
+	"folders": [
+		{
+			"path": "."
+		},
+		{
+			"path": "../techblit-cloud-function"
+		},
+		{
+			"path": "../techblit-terminal"
+		}
+	]
+}

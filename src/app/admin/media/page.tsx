@@ -5,6 +5,7 @@ import apiService from '@/lib/apiService';
 import AdminLayout from '@/components/admin/AdminLayout';
 import { withAuth, useAuth } from '@/contexts/AuthContext';
 import { Media } from '@/types/admin';
+import { normalizeUploadImageFile } from '@/lib/imageUpload';
 import { 
   PhotoIcon,
   PlusIcon,
@@ -74,7 +75,8 @@ function MediaLibrary() {
         const file = files[i];
         
         // Upload via API
-        await apiService.uploadMedia(file);
+        const normalizedFile = await normalizeUploadImageFile(file)
+        await apiService.uploadMedia(normalizedFile);
       }
       
       // Refresh media list
@@ -141,7 +143,7 @@ function MediaLibrary() {
               ref={fileInputRef}
               type="file"
               multiple
-              accept="image/*"
+              accept="image/jpeg,image/png,image/webp"
               onChange={(e) => handleFileUpload(e.target.files)}
               className="hidden"
             />
