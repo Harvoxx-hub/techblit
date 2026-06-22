@@ -251,7 +251,7 @@ export const uploadImageToCloudinary = async (
     return result;
   } catch (error) {
     console.error('Error uploading image to Cloudinary:', error);
-    rethrowUploadError(error, 'Failed to upload image to Cloudinary');
+    return rethrowUploadError(error, 'Failed to upload image to Cloudinary');
   }
 };
 
@@ -340,7 +340,7 @@ export const uploadProcessedImage = async (
     return result;
   } catch (error) {
     console.error('Error processing and uploading image:', error);
-    rethrowUploadError(error, 'Failed to process and upload image');
+    return rethrowUploadError(error, 'Failed to process and upload image');
   }
 };
 
@@ -364,6 +364,6 @@ export const uploadImageToMediaLibrary = async (
     return result.public_id;
   } catch (error) {
     console.error('Error uploading image to media library:', error);
-    rethrowUploadError(error, 'Failed to upload image to media library');
+    return rethrowUploadError(error, 'Failed to upload image to media library');
   }
 };
