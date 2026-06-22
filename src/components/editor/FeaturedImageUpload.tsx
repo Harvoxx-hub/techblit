@@ -4,6 +4,7 @@ import { useState, useRef, useCallback } from 'react';
 import { PhotoIcon, XMarkIcon, CloudArrowUpIcon } from '@heroicons/react/24/outline';
 import { Button } from '@/components/ui';
 import { ProcessedImage } from '@/lib/imageProcessing';
+import { isAllowedFeaturedImageFile } from '@/lib/imageUpload';
 
 interface RecommendedImage {
   url: string;
@@ -72,8 +73,8 @@ export default function FeaturedImageUpload({
   };
 
   const handleFileUpload = useCallback(async (file: File) => {
-    if (!file.type.startsWith('image/')) {
-      alert('Please select an image file');
+    if (!isAllowedFeaturedImageFile(file)) {
+      alert('Please use a JPG, PNG, or WebP image (max 5MB). SVG and GIF are not supported.');
       return;
     }
 
@@ -116,7 +117,8 @@ export default function FeaturedImageUpload({
       img.src = url;
     } catch (error) {
       console.error('Error uploading image:', error);
-      alert('Failed to upload image. Please try again.');
+      const message = error instanceof Error ? error.message : 'Failed to upload image. Please try again.';
+      alert(message);
       setIsUploading(false);
     }
   }, [onUpload, onChange]);
@@ -136,10 +138,15 @@ export default function FeaturedImageUpload({
     setIsDragging(false);
     
     const files = Array.from(e.dataTransfer.files);
-    const imageFile = files.find(file => file.type.startsWith('image/'));
+    const imageFile = files.find((file) => isAllowedFeaturedImageFile(file));
     
     if (imageFile) {
       handleFileUpload(imageFile);
+      return;
+    }
+
+    if (files.some((file) => file.type.startsWith('image/'))) {
+      alert('Please use a JPG, PNG, or WebP image (max 5MB). SVG and GIF are not supported.');
     }
   }, [handleFileUpload]);
 
@@ -369,7 +376,7 @@ export default function FeaturedImageUpload({
                     </button>
                   </div>
                   <div className="text-xs text-gray-400">
-                    PNG, JPG, WEBP up to 10MB
+                    JPG, PNG, or WebP up to 5MB
                   </div>
                 </div>
               </div>

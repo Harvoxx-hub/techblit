@@ -1,10 +1,7 @@
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { storage } from '@/lib/firebase';
-import { Media } from '@/types/admin';
 import apiService from '@/lib/apiService';
 import { 
-  compressImage, 
-  createOGImage, 
   getImageDimensions, 
   generateUniqueFileName,
   ProcessedImage 
@@ -26,6 +23,12 @@ const ALLOWED_UPLOAD_MIME_TYPES = new Set([
   'image/webp',
 ])
 
+const ALLOWED_UPLOAD_EXTENSIONS = new Set(['jpg', 'jpeg', 'png', 'webp'])
+
+// Backend multer limit is 5MB — stay safely below it after client processing
+const MAX_UPLOAD_BYTES = 4.5 * 1024 * 1024
+const MAX_IMAGE_DIMENSION = 2400
+
 const mimeTypeToExtension = (mimeType: string) => {
   if (mimeType === 'image/png') return 'png'
   if (mimeType === 'image/webp') return 'webp'
@@ -37,65 +40,197 @@ const withExtension = (fileName: string, extension: string) => {
   return `${base}.${extension}`
 }
 
-const convertImageViaCanvas = async (file: File, targetMimeType: string): Promise<File> => {
+const getFileExtension = (fileName: string) =>
+  fileName.split('.').pop()?.toLowerCase() || ''
+
+export const resolveUploadMimeType = (file: File): string => {
+  if (file.type && ALLOWED_UPLOAD_MIME_TYPES.has(file.type)) {
+    return file.type
+  }
+
+  const extension = getFileExtension(file.name)
+  if (extension === 'jpg' || extension === 'jpeg') return 'image/jpeg'
+  if (extension === 'png') return 'image/png'
+  if (extension === 'webp') return 'image/webp'
+
+  return file.type || ''
+}
+
+export const isAllowedFeaturedImageFile = (file: File): boolean => {
+  if (file.type === 'image/svg+xml') return false
+
+  const mimeType = resolveUploadMimeType(file)
+  if (ALLOWED_UPLOAD_MIME_TYPES.has(mimeType)) return true
+
+  const extension = getFileExtension(file.name)
+  return ALLOWED_UPLOAD_EXTENSIONS.has(extension)
+}
+
+const loadImageElement = (objectUrl: string): Promise<HTMLImageElement> =>
+  new Promise((resolve, reject) => {
+    const img = new Image()
+    img.decoding = 'async'
+    img.onload = () => resolve(img)
+    img.onerror = () => reject(new Error('Failed to load image'))
+    img.src = objectUrl
+  })
+
+const scaleToFit = (width: number, height: number, maxDimension: number) => {
+  if (width <= maxDimension && height <= maxDimension) {
+    return { width, height }
+  }
+
+  if (width >= height) {
+    return {
+      width: maxDimension,
+      height: Math.round(height * (maxDimension / width)),
+    }
+  }
+
+  return {
+    width: Math.round(width * (maxDimension / height)),
+    height: maxDimension,
+  }
+}
+
+const canvasToFile = async (
+  canvas: HTMLCanvasElement,
+  fileName: string,
+  mimeType: string,
+  quality: number
+): Promise<File> => {
+  const blob = await new Promise<Blob>((resolve, reject) => {
+    canvas.toBlob(
+      (result) => {
+        if (!result) return reject(new Error('Failed to encode image'))
+        resolve(result)
+      },
+      mimeType,
+      quality
+    )
+  })
+
+  const extension = mimeTypeToExtension(mimeType)
+  return new File([blob], withExtension(fileName, extension), {
+    type: mimeType,
+    lastModified: Date.now(),
+  })
+}
+
+const drawImageToCanvas = (
+  img: HTMLImageElement,
+  width: number,
+  height: number
+): HTMLCanvasElement => {
+  const canvas = document.createElement('canvas')
+  canvas.width = width
+  canvas.height = height
+
+  const ctx = canvas.getContext('2d')
+  if (!ctx) throw new Error('Failed to process image')
+
+  ctx.drawImage(img, 0, 0, width, height)
+  return canvas
+}
+
+const encodeCanvasUnderLimit = async (
+  canvas: HTMLCanvasElement,
+  fileName: string
+): Promise<File> => {
+  const outputMime = 'image/jpeg'
+  let quality = 0.9
+  let prepared = await canvasToFile(canvas, fileName, outputMime, quality)
+
+  while (prepared.size > MAX_UPLOAD_BYTES && quality > 0.45) {
+    quality -= 0.08
+    prepared = await canvasToFile(canvas, fileName, outputMime, quality)
+  }
+
+  if (prepared.size <= MAX_UPLOAD_BYTES) {
+    return prepared
+  }
+
+  throw new Error('Image is too large after compression. Try a smaller image (max 5MB).')
+}
+
+/**
+ * Resize and compress images before upload so they stay under the backend 5MB limit.
+ * Also prevents tiny files (e.g. SVG) from being rasterized into multi-megabyte uploads.
+ */
+export const prepareImageForUpload = async (file: File): Promise<File> => {
+  if (file.type === 'image/svg+xml') {
+    throw new Error('SVG images are not supported. Please use JPG, PNG, or WebP.')
+  }
+
+  if (!isAllowedFeaturedImageFile(file) && !file.type.startsWith('image/')) {
+    throw new Error('Unsupported file type. Please use JPG, PNG, or WebP.')
+  }
+
+  // Already within limits — skip re-encoding to avoid quality loss
+  if (
+    isAllowedFeaturedImageFile(file) &&
+    file.size > 0 &&
+    file.size <= MAX_UPLOAD_BYTES
+  ) {
+    const dimensions = await getImageDimensions(file)
+    if (
+      dimensions.width > 0 &&
+      dimensions.height > 0 &&
+      dimensions.width <= MAX_IMAGE_DIMENSION &&
+      dimensions.height <= MAX_IMAGE_DIMENSION
+    ) {
+      return file
+    }
+  }
+
   const objectUrl = URL.createObjectURL(file)
 
   try {
-    const img = new Image()
-    img.decoding = 'async'
+    const img = await loadImageElement(objectUrl)
+    const sourceWidth = img.naturalWidth || img.width
+    const sourceHeight = img.naturalHeight || img.height
 
-    await new Promise<void>((resolve, reject) => {
-      img.onload = () => resolve()
-      img.onerror = () => reject(new Error('Failed to load image for conversion'))
-      img.src = objectUrl
-    })
+    if (!sourceWidth || !sourceHeight) {
+      throw new Error('Could not read image dimensions')
+    }
 
-    const canvas = document.createElement('canvas')
-    canvas.width = img.naturalWidth || img.width
-    canvas.height = img.naturalHeight || img.height
+    let targetMaxDimension = MAX_IMAGE_DIMENSION
+    let prepared: File | null = null
 
-    const ctx = canvas.getContext('2d')
-    if (!ctx) throw new Error('Failed to get canvas context')
+    while (targetMaxDimension >= 800) {
+      const { width, height } = scaleToFit(sourceWidth, sourceHeight, targetMaxDimension)
+      const canvas = drawImageToCanvas(img, width, height)
 
-    ctx.drawImage(img, 0, 0)
+      try {
+        prepared = await encodeCanvasUnderLimit(canvas, file.name)
+        break
+      } catch {
+        targetMaxDimension = Math.round(targetMaxDimension * 0.8)
+      }
+    }
 
-    const blob = await new Promise<Blob>((resolve, reject) => {
-      canvas.toBlob(
-        (b) => {
-          if (!b) return reject(new Error('Failed to convert image'))
-          resolve(b)
-        },
-        targetMimeType,
-        0.92
-      )
-    })
+    if (!prepared) {
+      throw new Error('Image is too large. Please use a smaller image (max 5MB).')
+    }
 
-    const extension = mimeTypeToExtension(targetMimeType)
-    const nextName = withExtension(file.name || `image.${extension}`, extension)
-
-    return new File([blob], nextName, {
-      type: targetMimeType,
-      lastModified: Date.now(),
-    })
+    return prepared
   } finally {
     URL.revokeObjectURL(objectUrl)
   }
 }
 
-export const normalizeUploadImageFile = async (file: File): Promise<File> => {
-  if (ALLOWED_UPLOAD_MIME_TYPES.has(file.type)) {
-    return file
-  }
+/** @deprecated Use prepareImageForUpload */
+export const normalizeUploadImageFile = prepareImageForUpload
 
-  // Backend only accepts jpg/jpeg/png/webp. Convert anything else to webp.
-  return convertImageViaCanvas(file, 'image/webp')
+const rethrowUploadError = (error: unknown, fallback: string): never => {
+  if (error instanceof Error && error.message) {
+    throw error
+  }
+  throw new Error(fallback)
 }
 
 /**
  * Upload image to Cloudinary via backend API
- * @param file - Image file to upload
- * @param folder - Folder type ('posts', 'authors', 'categories', 'ui', 'media')
- * @returns Upload result with public_id and metadata
  */
 export const uploadImageToCloudinary = async (
   file: File,
@@ -111,12 +246,12 @@ export const uploadImageToCloudinary = async (
   size: number;
 }> => {
   try {
-    const normalizedFile = await normalizeUploadImageFile(file)
-    const result = await apiService.uploadMedia(normalizedFile, { folder });
+    const preparedFile = await prepareImageForUpload(file)
+    const result = await apiService.uploadMedia(preparedFile, { folder });
     return result;
   } catch (error) {
     console.error('Error uploading image to Cloudinary:', error);
-    throw new Error('Failed to upload image to Cloudinary');
+    rethrowUploadError(error, 'Failed to upload image to Cloudinary');
   }
 };
 
@@ -129,19 +264,13 @@ export const uploadImageToFirebase = async (
   path: string = 'images'
 ): Promise<UploadResult> => {
   try {
-    // Generate unique filename
     const timestamp = Date.now();
     const randomString = Math.random().toString(36).substring(2, 15);
     const fileExtension = file.name.split('.').pop();
     const fileName = `${timestamp}-${randomString}.${fileExtension}`;
     
-    // Create reference
     const imageRef = ref(storage, `${path}/${fileName}`);
-    
-    // Upload file
     const snapshot = await uploadBytes(imageRef, file);
-    
-    // Get download URL
     const downloadURL = await getDownloadURL(snapshot.ref);
     
     return {
@@ -157,32 +286,17 @@ export const uploadImageToFirebase = async (
   }
 };
 
-/**
- * Upload post image to Cloudinary
- * Returns Cloudinary public_id (use getCloudinaryUrl to construct URLs)
- */
 export const uploadPostImage = async (file: File): Promise<string> => {
   const result = await uploadImageToCloudinary(file, 'posts');
-  // Return public_id - frontend will construct Cloudinary URLs as needed
   return result.public_id;
 };
 
-/**
- * Upload a single file to Firebase Storage
- */
 const uploadSingleFile = async (file: File, path: string): Promise<{ url: string; path: string; size: number }> => {
   const fileName = generateUniqueFileName(file.name);
   const storageRef = ref(storage, `${path}/${fileName}`);
   
   const snapshot = await uploadBytes(storageRef, file);
   const downloadURL = await getDownloadURL(snapshot.ref);
-  
-  console.log('Uploaded file:', {
-    fileName,
-    path: snapshot.ref.fullPath,
-    url: downloadURL,
-    size: file.size
-  });
   
   return {
     url: downloadURL,
@@ -191,29 +305,18 @@ const uploadSingleFile = async (file: File, path: string): Promise<{ url: string
   };
 };
 
-/**
- * Upload image to Cloudinary (single upload, transformations handled by Cloudinary)
- * Cloudinary handles transformations on-the-fly, so we only need one upload
- */
 export const uploadProcessedImage = async (
   file: File,
   folder: 'posts' | 'authors' | 'categories' | 'ui' | 'media' = 'media'
 ): Promise<ProcessedImage> => {
   try {
-    // Get original image dimensions
-    const originalDimensions = await getImageDimensions(file);
-    
-    // Upload single image to Cloudinary
     const uploadResult = await uploadImageToCloudinary(file, folder);
-    
-    // Cloudinary handles transformations on-the-fly
-    // We construct URLs with different transformations for different use cases
     const publicId = uploadResult.public_id;
     
     const result: ProcessedImage = {
       original: {
         url: getCloudinaryUrl(publicId, CloudinaryPresets.cover) || uploadResult.url,
-        path: publicId, // Use public_id as path identifier
+        path: publicId,
         width: uploadResult.width,
         height: uploadResult.height,
         size: uploadResult.size,
@@ -221,31 +324,26 @@ export const uploadProcessedImage = async (
       thumbnail: {
         url: getCloudinaryUrl(publicId, CloudinaryPresets.thumbnail) || uploadResult.url,
         path: publicId,
-        width: Math.min(400, uploadResult.width), // Approximate thumbnail dimensions
+        width: Math.min(400, uploadResult.width),
         height: Math.min(300, uploadResult.height),
-        size: uploadResult.size, // Approximate
+        size: uploadResult.size,
       },
       ogImage: {
         url: getCloudinaryUrl(publicId, CloudinaryPresets.social) || uploadResult.url,
         path: publicId,
         width: 1200,
         height: 630,
-        size: uploadResult.size, // Approximate
+        size: uploadResult.size,
       },
     };
     
-    console.log('Processed image result (Cloudinary):', result);
     return result;
   } catch (error) {
     console.error('Error processing and uploading image:', error);
-    throw new Error('Failed to process and upload image');
+    rethrowUploadError(error, 'Failed to process and upload image');
   }
 };
 
-/**
- * Upload featured image for posts
- * Uses Cloudinary with on-the-fly transformations
- */
 export const uploadFeaturedImage = async (file: File): Promise<ProcessedImage> => {
   return uploadProcessedImage(file, 'posts');
 };
@@ -257,16 +355,15 @@ export const uploadImageToMediaLibrary = async (
   caption: string = ''
 ): Promise<string> => {
   try {
-    // Upload to Cloudinary via API (this also registers in media library)
-    const result = await apiService.uploadMedia(file, {
+    const preparedFile = await prepareImageForUpload(file)
+    const result = await apiService.uploadMedia(preparedFile, {
       folder: 'media',
       alt: alt || file.name,
     });
     
-    // Return public_id - frontend will construct Cloudinary URLs as needed
     return result.public_id;
   } catch (error) {
     console.error('Error uploading image to media library:', error);
-    throw new Error('Failed to upload image to media library');
+    rethrowUploadError(error, 'Failed to upload image to media library');
   }
 };
