@@ -31,7 +31,7 @@ const HeroSecondaryCard = ({ post }: HeroSecondaryCardProps) => {
         <div className="flex-1 min-w-0">
           {post.category && (
             <div className="mb-1.5">
-              <CategoryPill category={post.category} />
+              <CategoryPill category={post.category} asSpan />
             </div>
           )}
           <h3 className="text-sm font-bold text-gray-900 dark:text-white leading-snug group-hover:text-brand-gold transition-colors line-clamp-3">

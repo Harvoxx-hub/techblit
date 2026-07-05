@@ -5,16 +5,15 @@ import MagazineGrid from '@/components/homepage/layout/MagazineGrid'
 import SidebarRail from '@/components/homepage/rails/SidebarRail'
 import MobileSidebarRails from '@/components/homepage/rails/MobileSidebarRails'
 import BreakingTicker from '@/components/homepage/sections/BreakingTicker'
-import InlineNewsletter from '@/components/homepage/sections/InlineNewsletter'
-import HotNowSection from '@/components/homepage/sections/HotNowSection'
+import HomepageHeroSection from '@/components/homepage/sections/HomepageHeroSection'
 import PopularNowSection from '@/components/homepage/sections/PopularNowSection'
-import WeeklyReviewSection from '@/components/homepage/sections/WeeklyReviewSection'
 import EditorsChoiceSection from '@/components/homepage/sections/EditorsChoiceSection'
 import WorthReadingSection from '@/components/homepage/sections/WorthReadingSection'
-import FeaturedCategorySection from '@/components/homepage/sections/FeaturedCategorySection'
-import MediaHubSection from '@/components/homepage/sections/MediaHubSection'
 import CategoryColumnsSection from '@/components/homepage/sections/CategoryColumnsSection'
+import VideoSessionSection from '@/components/homepage/sections/VideoSessionSection'
 import BrandPressStrip from '@/components/homepage/sections/BrandPressStrip'
+import MediaHubSection from '@/components/homepage/sections/MediaHubSection'
+import FoundersRepoCta from '@/components/homepage/sections/FoundersRepoCta'
 import FooterNewsletter from '@/components/homepage/sections/FooterNewsletter'
 import { getHomepageData } from '@/lib/homepageData'
 import { Metadata } from 'next'
@@ -71,34 +70,34 @@ export default async function Home() {
       />
       <Navigation />
       <BreakingTicker posts={data.breaking} />
-      <InlineNewsletter />
+
+      <HomepageHeroSection
+        hotNow={data.hotNow}
+        breaking={data.breaking}
+        trending={data.trending}
+      />
 
       <MagazineGrid
         mobileRails={
-          <MobileSidebarRails
-            trending={data.trending}
-            breaking={data.breaking}
-          />
+          <MobileSidebarRails latest={data.latest} />
         }
         main={
           <>
-            <HotNowSection hotNow={data.hotNow} secondary={data.heroSecondary} />
             <PopularNowSection posts={data.popular} />
-            <WeeklyReviewSection episodes={data.media.newsReview} />
             <EditorsChoiceSection posts={data.editorsChoice} />
             <WorthReadingSection posts={data.worthReading} />
-            <FeaturedCategorySection category={data.featuredCategory} />
-            <MediaHubSection media={data.media} />
+            <FoundersRepoCta />
             <CategoryColumnsSection columns={data.categoryColumns} />
+            <VideoSessionSection
+              newsReview={data.media.newsReview}
+              hotVideos={data.media.hotVideos}
+            />
+            <MediaHubSection media={data.media} />
             <BrandPressStrip posts={data.brandPress} />
           </>
         }
         sidebar={
-          <SidebarRail
-            trending={data.trending}
-            breaking={data.breaking}
-            latest={data.trending}
-          />
+          <SidebarRail latest={data.latest} />
         }
       />
 

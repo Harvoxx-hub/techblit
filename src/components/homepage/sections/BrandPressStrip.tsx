@@ -16,7 +16,7 @@ const BrandPressStrip = ({ posts }: BrandPressStripProps) => {
   return (
     <SectionContainer className="pb-12">
       <SectionHeader label="Brand Press" href="/category/brand-press" />
-      <div className="flex gap-4 overflow-x-auto scrollbar-hide pb-2">
+      <div className="flex gap-3 sm:gap-4 overflow-x-auto scrollbar-hide pb-2 snap-x snap-mandatory -mx-1 px-1 sm:mx-0 sm:px-0">
         {posts.map((post) => {
           const imageUrl = getImageUrlFromData(post.featuredImage, { preset: 'cover' })
           const gradient = getCategoryGradient('brand-press')
@@ -25,7 +25,7 @@ const BrandPressStrip = ({ posts }: BrandPressStripProps) => {
             <Link
               key={post.id}
               href={`/${post.slug}`}
-              className="group shrink-0 w-64 sm:w-72"
+              className="group shrink-0 snap-start w-[78vw] max-w-[288px] sm:w-64 md:w-72"
             >
               <article>
                 <div className={`relative aspect-[4/3] rounded-lg overflow-hidden bg-gradient-to-br ${gradient} mb-2`}>

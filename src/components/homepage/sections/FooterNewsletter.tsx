@@ -46,7 +46,7 @@ const FooterNewsletter = ({ id = 'footer-newsletter' }: FooterNewsletterProps) =
       <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 text-center">
         <h2
           id="footer-newsletter-heading"
-          className="text-2xl lg:text-3xl font-bold text-white mb-2"
+          className="text-xl sm:text-2xl lg:text-3xl font-bold text-white mb-2"
         >
           Stay informed, not overwhelmed
         </h2>

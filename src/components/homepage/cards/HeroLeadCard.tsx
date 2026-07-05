@@ -37,7 +37,7 @@ const HeroLeadCard = ({ post, label = 'Hot Now' }: HeroLeadCardProps) => {
             <div className="absolute bottom-0 left-0 right-0 p-5 lg:p-7">
               {post.category && (
                 <div className="mb-3">
-                  <CategoryPill category={post.category} />
+                  <CategoryPill category={post.category} asSpan />
                 </div>
               )}
               <h2 className="text-2xl lg:text-4xl font-bold text-white leading-tight group-hover:underline decoration-brand-gold underline-offset-4">

@@ -21,15 +21,20 @@ export async function getHomepageData(): Promise<HomepageData> {
     console.error('Homepage endpoint unavailable, falling back to posts list:', error)
   }
 
-  const fallback = await fetch(`${API_BASE}/posts?limit=100`, {
-    next: { revalidate: 3600 },
-  })
+  try {
+    const fallback = await fetch(`${API_BASE}/posts?limit=120`, {
+      next: { revalidate: 3600 },
+    })
 
-  if (!fallback.ok) {
+    if (!fallback.ok) {
+      return emptyHomepageData()
+    }
+
+    const json = await fallback.json()
+    const posts: HomepagePost[] = json.data || json || []
+    return buildHomepageFromPosts(posts)
+  } catch (error) {
+    console.error('Posts fallback unavailable, returning empty homepage:', error)
     return emptyHomepageData()
   }
-
-  const json = await fallback.json()
-  const posts: HomepagePost[] = json.data || json || []
-  return buildHomepageFromPosts(posts)
 }

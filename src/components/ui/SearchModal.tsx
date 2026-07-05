@@ -223,7 +223,7 @@ export default function SearchModal() {
                           {/* Content */}
                           <div className="flex-1 min-w-0">
                             <div className="flex items-start justify-between">
-                              <h3 className="text-sm font-semibold text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors line-clamp-2">
+                              <h3 className="text-sm font-semibold text-gray-900 dark:text-white group-hover:text-brand-gold transition-colors line-clamp-2">
                                 {result.title}
                               </h3>
                             </div>

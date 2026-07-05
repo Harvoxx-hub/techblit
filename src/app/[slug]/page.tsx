@@ -1,145 +1,177 @@
-import Link from 'next/link';
-import Image from 'next/image';
-import { notFound } from 'next/navigation';
-import Navigation from '@/components/ui/Navigation';
-import Footer from '@/components/ui/Footer';
-import SuggestedArticles from '@/components/ui/SuggestedArticles';
-import SocialShare from '@/components/ui/SocialShare';
-import NewsletterSection from '@/components/ui/NewsletterSection';
-import { generatePostSEO, generateStructuredData } from '@/lib/seo';
-import { getAuthorUrl } from '@/lib/authorUtils';
-import { formatDateShort } from '@/lib/dateUtils';
-import { Metadata } from 'next';
-// Note: This is a server component, so we'll use direct API calls
-// For server-side, we can call the API directly
-import { ProcessedImage } from '@/lib/imageProcessing';
+import Link from 'next/link'
+import Image from 'next/image'
+import { notFound } from 'next/navigation'
+import Navigation from '@/components/ui/Navigation'
+import Footer from '@/components/ui/Footer'
+import SocialShare from '@/components/ui/SocialShare'
+import FooterNewsletter from '@/components/homepage/sections/FooterNewsletter'
+import CategoryPill from '@/components/homepage/atoms/CategoryPill'
+import ArticleSidebar from '@/components/article/ArticleSidebar'
+import ArticleRelatedPosts from '@/components/article/ArticleRelatedPosts'
+import { generatePostSEO, generateStructuredData, type BlogPostSEO } from '@/lib/seo'
+import { getAuthorUrl } from '@/lib/authorUtils'
+import { formatDateShort } from '@/lib/dateUtils'
+import { getImageUrlFromData } from '@/lib/imageHelpers'
+import { getPostsApiUrl } from '@/lib/apiConfig'
+import { renderContent } from '@/lib/markdown'
+import { getCategoryByLabel } from '@/lib/categories'
+import {
+  fetchPostsList,
+  getPrimaryCategory,
+  filterRelatedPosts,
+  filterLatestPosts,
+  getAtnFeaturedVideo,
+  FOUNDERS_CTA_CATEGORIES,
+} from '@/lib/articlePageData'
+import { ProcessedImage } from '@/lib/imageProcessing'
+import { Metadata } from 'next'
 
 interface BlogPost {
-  id: string;
-  title: string;
-  slug: string;
-  content: string;
-  contentHtml?: string;
-  createdAt: any;
-  updatedAt?: any;
-  author?: string | { uid: string; name: string };
-  excerpt?: string;
-  status?: string;
-  publishedAt?: any;
+  id: string
+  title: string
+  slug: string
+  content: string
+  contentHtml?: string
+  createdAt: unknown
+  updatedAt?: unknown
+  author?: string | { uid: string; name: string }
+  excerpt?: string
+  status?: string
+  publishedAt?: unknown
+  category?: string
   featuredImage?: ProcessedImage | {
-    url: string;
-    alt: string;
-    width?: number;
-    height?: number;
-  };
-  categories?: string[];
-  tags?: string[];
-  metaTitle?: string;
-  metaDescription?: string;
-  canonical?: string;
+    url: string
+    alt: string
+    width?: number
+    height?: number
+  }
+  categories?: string[]
+  tags?: string[]
+  readTime?: string
+  metaTitle?: string
+  metaDescription?: string
+  canonical?: string
   social?: {
-    ogTitle?: string;
-    ogDescription?: string;
-    twitterCard?: 'summary' | 'summary_large_image';
-  };
+    ogTitle?: string
+    ogDescription?: string
+    twitterCard?: 'summary' | 'summary_large_image'
+  }
   seo?: {
-    noindex?: boolean;
-    nofollow?: boolean;
-  };
+    noindex?: boolean
+    nofollow?: boolean
+  }
 }
 
-import { getImageUrlFromData } from '@/lib/imageHelpers';
-import { getPostsApiUrl } from '@/lib/apiConfig';
-import { renderContent } from '@/lib/markdown';
+const getImageUrl = (image: BlogPost['featuredImage']): string =>
+  getImageUrlFromData(image, { preset: 'cover' }) || ''
 
-function getImageUrl(image: BlogPost['featuredImage']): string {
-  if (!image) return '';
-  return getImageUrlFromData(image, { preset: 'cover' }) || '';
-}
-
-// Server-side function to fetch post data from API
 async function getPost(slug: string): Promise<BlogPost | null> {
   try {
-    const API_BASE = getPostsApiUrl();
+    const API_BASE = getPostsApiUrl()
     const response = await fetch(`${API_BASE}/posts/${slug}`, {
-      next: { revalidate: 3600 } // Revalidate every hour (ISR)
-    });
-    
+      next: { revalidate: 3600 },
+    })
+
     if (!response.ok) {
-      if (response.status === 404) {
-        return null;
-      }
-      throw new Error(`Failed to fetch post: ${response.status}`);
+      if (response.status === 404) return null
+      throw new Error(`Failed to fetch post: ${response.status}`)
     }
-    
-    const result = await response.json();
-    return result.data || result as BlogPost;
+
+    const result = await response.json()
+    return result.data || result as BlogPost
   } catch (error) {
-    console.error('Error fetching post:', error);
-    return null;
+    console.error('Error fetching post:', error)
+    return null
   }
 }
 
-// Generate static params for SSG - fetch all published post slugs at build time
 export async function generateStaticParams() {
   try {
-    const API_BASE = getPostsApiUrl();
+    const API_BASE = getPostsApiUrl()
     const response = await fetch(`${API_BASE}/posts?limit=1000`, {
-      next: { revalidate: 3600 } // Revalidate every hour
-    });
-    
-    if (!response.ok) {
-      console.warn('Failed to fetch posts for static generation');
-      return [];
-    }
-    
-    const result = await response.json();
-    const posts = result.data || result;
-    
-    return posts.map((post: any) => ({
-      slug: post.slug || post.id
-    }));
+      next: { revalidate: 3600 },
+    })
+
+    if (!response.ok) return []
+
+    const result = await response.json()
+    const posts = result.data || result
+
+    return posts.map((post: { slug?: string; id?: string }) => ({
+      slug: post.slug || post.id,
+    }))
   } catch (error) {
-    console.error('Error generating static params:', error);
-    return [];
+    console.error('Error generating static params:', error)
+    return []
   }
 }
 
-// Enable ISR (Incremental Static Regeneration) - revalidate every hour
-export const revalidate = 3600;
+export const revalidate = 3600
 
-// Generate metadata for the blog post
-export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
-  const { slug } = await params;
-  const post = await getPost(slug);
-  
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>
+}): Promise<Metadata> {
+  const { slug } = await params
+  const post = await getPost(slug)
+
   if (!post) {
     return {
       title: 'Post Not Found - TechBlit',
-      description: 'The post you\'re looking for doesn\'t exist or has been removed.',
-    };
+      description: "The post you're looking for doesn't exist or has been removed.",
+    }
   }
 
-  return generatePostSEO(post);
+  return generatePostSEO(post as BlogPostSEO)
 }
 
-// Main blog post page component
-export default async function BlogPostPage({ params }: { params: Promise<{ slug: string }> }) {
-  const { slug } = await params;
-  const post = await getPost(slug);
+export default async function BlogPostPage({
+  params,
+}: {
+  params: Promise<{ slug: string }>
+}) {
+  const { slug } = await params
+  const post = await getPost(slug)
 
-  // Post not found: API returned 404 (no published post with this slug in Firestore).
-  // Triggers the global 404 page (app/not-found.tsx) with proper 404 status.
   if (!post) {
-    notFound();
+    notFound()
   }
 
-  // Generate structured data for SEO (returns array of schemas)
-  const structuredDataSchemas = generateStructuredData(post);
+  const [allPosts, atnVideo] = await Promise.all([
+    fetchPostsList(40),
+    getAtnFeaturedVideo(),
+  ])
+
+  const primaryCategory = getPrimaryCategory(post)
+  const categoryMeta = primaryCategory ? getCategoryByLabel(primaryCategory) : null
+  const categorySlug = categoryMeta?.slug || null
+
+  const latest = filterLatestPosts(allPosts, post.id, 6)
+  const categoryPosts = filterRelatedPosts(allPosts, post.id, primaryCategory, 5)
+  const relatedPosts = filterRelatedPosts(allPosts, post.id, primaryCategory, 3)
+  const showFoundersCta = primaryCategory
+    ? FOUNDERS_CTA_CATEGORIES.includes(primaryCategory)
+    : false
+
+  const structuredDataSchemas = generateStructuredData(post as BlogPostSEO)
+  const articleUrl = `https://www.techblit.com/${post.slug}`
+  const imageUrl = getImageUrl(post.featuredImage)
+  const dateLabel = formatDateShort(post.publishedAt || post.createdAt)
+  const authorName =
+    typeof post.author === 'string' ? post.author : post.author?.name
+
+  const proseClasses =
+    'prose prose-sm sm:prose-base md:prose-lg max-w-none dark:prose-invert ' +
+    'prose-img:max-w-full prose-img:rounded-lg prose-img:my-4 ' +
+    'prose-a:text-brand-gold prose-a:no-underline hover:prose-a:underline ' +
+    'prose-headings:text-gray-900 dark:prose-headings:text-white ' +
+    'prose-p:text-gray-700 dark:prose-p:text-gray-300 ' +
+    'prose-li:text-gray-700 dark:prose-li:text-gray-300 ' +
+    'prose-strong:text-gray-900 dark:prose-strong:text-white'
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Structured Data - Multiple schemas */}
+    <div className="min-h-screen bg-white dark:bg-gray-950 overflow-x-hidden">
       {structuredDataSchemas.map((schema, index) => (
         <script
           key={index}
@@ -148,92 +180,135 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
         />
       ))}
 
-      <Navigation showBackButton={true} />
+      <Navigation />
 
-      {/* Blog Post Content */}
-      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
-        <div className="relative flex flex-col xl:flex-row gap-4 xl:gap-8">
-          {/* Article Content */}
-          <article className="flex-1 max-w-4xl mx-auto w-full">
-        <header className="mb-6 sm:mb-8">
-          <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 mb-3 sm:mb-4 leading-tight">{post.title}</h1>
-          
-          <div className="flex flex-col sm:flex-row sm:items-center text-xs sm:text-sm text-gray-500 gap-2 sm:gap-4 mb-4 sm:mb-6">
-            {post.author && (
-              <span>
-                By{' '}
-                <Link
-                  href={getAuthorUrl(typeof post.author === 'string' ? post.author : post.author.name)}
-                  className="text-blue-600 hover:text-blue-800 font-medium hover:underline transition-colors"
-                >
-                  {typeof post.author === 'string' ? post.author : post.author.name}
-                </Link>
-              </span>
-            )}
-            <time>
-              {formatDateShort(post.publishedAt || post.createdAt)}
-            </time>
-          </div>
-          
-          {/* Featured Image - full image visible (no cropping) */}
-          {post.featuredImage && getImageUrl(post.featuredImage) && (
-            <div className="mb-4 sm:mb-6 -mx-4 sm:mx-0 relative aspect-video max-h-[85vh] w-full">
-              <Image
-                src={getImageUrl(post.featuredImage)}
-                alt={
-                  typeof post.featuredImage === 'object' && 'alt' in post.featuredImage && post.featuredImage.alt
-                    ? post.featuredImage.alt
-                    : `${post.title} - TechBlit${post.categories?.[0] ? ` coverage of ${post.categories[0]}` : ''}`
-                }
-                fill
-                sizes="(max-width: 768px) 100vw, 896px"
-                className="object-contain rounded-lg"
-                priority
+      <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+        {/* Breadcrumb */}
+        <nav
+          className="flex flex-wrap items-center gap-2 text-xs text-gray-500 dark:text-gray-400 mb-6"
+          aria-label="Breadcrumb"
+        >
+          <Link href="/" className="hover:text-brand-gold transition-colors">
+            Home
+          </Link>
+          {primaryCategory && categorySlug && (
+            <>
+              <span aria-hidden="true">/</span>
+              <Link
+                href={`/category/${categorySlug}`}
+                className="hover:text-brand-gold transition-colors"
+              >
+                {primaryCategory}
+              </Link>
+            </>
+          )}
+          <span aria-hidden="true">/</span>
+          <span className="text-gray-700 dark:text-gray-300 line-clamp-1">{post.title}</span>
+        </nav>
+
+        <div className="flex flex-col lg:flex-row gap-8 xl:gap-10">
+          <article className="flex-1 min-w-0 max-w-4xl">
+            <header className="mb-6 sm:mb-8">
+              {primaryCategory && (
+                <div className="mb-3">
+                  <CategoryPill category={primaryCategory} />
+                </div>
+              )}
+
+              <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-[2.75rem] font-bold text-gray-900 dark:text-white mb-4 leading-tight">
+                {post.title}
+              </h1>
+
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs sm:text-sm text-gray-500 dark:text-gray-400 mb-5">
+                {authorName && (
+                  <span>
+                    By{' '}
+                    <Link
+                      href={getAuthorUrl(authorName)}
+                      className="text-brand-navy dark:text-brand-gold font-medium hover:underline transition-colors"
+                    >
+                      {authorName}
+                    </Link>
+                  </span>
+                )}
+                {authorName && <span aria-hidden="true">·</span>}
+                <time>{dateLabel}</time>
+                {post.readTime && (
+                  <>
+                    <span aria-hidden="true">·</span>
+                    <span>{post.readTime} read</span>
+                  </>
+                )}
+              </div>
+
+              {imageUrl && (
+                <div className="relative aspect-[16/9] rounded-lg sm:rounded-xl overflow-hidden mb-5 sm:mb-6 bg-gray-100 dark:bg-gray-900">
+                  <Image
+                    src={imageUrl}
+                    alt={
+                      typeof post.featuredImage === 'object' &&
+                      post.featuredImage &&
+                      'alt' in post.featuredImage &&
+                      post.featuredImage.alt
+                        ? post.featuredImage.alt
+                        : post.title
+                    }
+                    fill
+                    sizes="(max-width: 1024px) 100vw, 896px"
+                    className="object-cover"
+                    priority
+                  />
+                </div>
+              )}
+
+              {post.excerpt && (
+                <p className="text-base sm:text-lg text-gray-600 dark:text-gray-300 leading-relaxed mb-5 border-l-4 border-brand-gold pl-4">
+                  {post.excerpt}
+                </p>
+              )}
+
+              <SocialShare
+                url={articleUrl}
+                title={post.title}
+                description={post.excerpt || ''}
+                variant="compact"
+              />
+            </header>
+
+            <div className="bg-white dark:bg-gray-900 rounded-lg shadow-sm border border-gray-100 dark:border-gray-800 p-4 sm:p-6 md:p-8 mb-8">
+              <div
+                className={proseClasses}
+                dangerouslySetInnerHTML={{
+                  __html: renderContent(post.content, post.contentHtml),
+                }}
               />
             </div>
-          )}
-          
-          {/* Excerpt */}
-          {post.excerpt && (
-            <div className="text-base sm:text-lg text-gray-600 mb-4 sm:mb-6">
-              {post.excerpt}
-            </div>
-          )}
-        </header>
 
-        <div className="bg-white rounded-lg shadow-sm p-4 sm:p-6 md:p-8">
-          <div
-            className="prose prose-sm sm:prose-base md:prose-lg max-w-none text-gray-900 prose-img:max-w-full prose-img:rounded-lg prose-img:my-4 prose-a:text-blue-600 prose-a:no-underline hover:prose-a:underline prose-strong:text-gray-900 prose-headings:text-gray-900 prose-p:text-gray-700 prose-li:text-gray-700"
-            dangerouslySetInnerHTML={{
-              __html: renderContent(post.content, post.contentHtml)
-            }}
-          />
-        </div>
-
-        {/* Social Share */}
-        <div className="mt-8 sm:mt-12 mb-6 sm:mb-8">
-          <SocialShare 
-            url={`https://www.techblit.com/${post.slug}`}
-            title={post.title}
-            description={post.excerpt || ''}
-          />
-        </div>
+            <SocialShare
+              url={articleUrl}
+              title={post.title}
+              description={post.excerpt || ''}
+            />
           </article>
+
+          <div className="lg:w-[300px] xl:w-[320px] shrink-0">
+            <div className="lg:sticky lg:top-20 xl:top-24">
+              <ArticleSidebar
+                latest={latest}
+                categoryPosts={categoryPosts}
+                categoryLabel={primaryCategory}
+                categorySlug={categorySlug}
+                atnVideo={atnVideo}
+                showFoundersCta={showFoundersCta}
+              />
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* Suggested Articles */}
-      <SuggestedArticles 
-        currentPostId={post.id}
-        currentPostCategories={post.categories}
-        currentPostTags={post.tags}
-        className="bg-gray-50"
-      />
-
-      {/* Newsletter Section */}
-      <NewsletterSection className="bg-white" />
-      
+      <ArticleRelatedPosts posts={relatedPosts} />
+      <FooterNewsletter />
       <Footer />
     </div>
-  );
+  )
 }

@@ -13,7 +13,7 @@ const PopularNowSection = ({ posts }: PopularNowSectionProps) => {
   return (
     <SectionContainer>
       <SectionHeader label="Popular Now" href="/blog" />
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
         {posts.slice(0, 4).map((post) => (
           <GridCard key={post.id} post={post} />
         ))}

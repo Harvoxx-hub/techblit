@@ -13,8 +13,8 @@ const SectionContainer = ({
   as: Tag = 'section',
 }: SectionContainerProps) => {
   return (
-    <Tag className={cn('py-8 lg:py-10', className)}>
-      <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
+    <Tag className={cn('py-6 sm:py-8 lg:py-10', className)}>
+      <div className="w-full max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
         {children}
       </div>
     </Tag>

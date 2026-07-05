@@ -5,9 +5,16 @@ interface CategoryPillProps {
   category?: string
   href?: string
   variant?: 'default' | 'breaking'
+  /** Use inside card links to avoid nested <a> tags */
+  asSpan?: boolean
 }
 
-const CategoryPill = ({ category, href, variant = 'default' }: CategoryPillProps) => {
+const CategoryPill = ({
+  category,
+  href,
+  variant = 'default',
+  asSpan = false,
+}: CategoryPillProps) => {
   if (!category) return null
 
   const cat = getCategoryByLabel(category)
@@ -19,6 +26,14 @@ const CategoryPill = ({ category, href, variant = 'default' }: CategoryPillProps
     variant === 'breaking'
       ? 'bg-brand-gold text-brand-navy'
       : 'bg-brand-navy text-brand-gold dark:bg-brand-navy dark:text-brand-gold'
+
+  if (asSpan) {
+    return (
+      <span className={`${baseClasses} ${variantClasses}`}>
+        {category}
+      </span>
+    )
+  }
 
   return (
     <Link

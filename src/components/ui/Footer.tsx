@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { CATEGORIES } from '@/lib/categories'
+import { ATN_FULL_NAME, ATN_LABEL, ATN_PLAYLIST_URL } from '@/lib/atn'
 
 const FOOTER_CATEGORIES = CATEGORIES.slice(0, 6)
 
@@ -110,12 +111,14 @@ export default function Footer() {
               >
                 partnership@techblit.com
               </a>
-              <Link
-                href="/series/101"
+              <a
+                href={ATN_PLAYLIST_URL}
+                target="_blank"
+                rel="noopener noreferrer"
                 className="block text-gray-400 hover:text-white transition-colors text-sm"
               >
-                TechBlit 101 Series
-              </Link>
+                {ATN_FULL_NAME} ({ATN_LABEL})
+              </a>
             </div>
           </div>
         </div>

@@ -43,7 +43,7 @@ const CategoryColumn = ({ label, slug, lead, more }: CategoryColumnProps) => {
         </div>
         {lead.category && (
           <div className="mb-2">
-            <CategoryPill category={lead.category} />
+            <CategoryPill category={lead.category} asSpan />
           </div>
         )}
         <h4 className="text-base font-bold text-gray-900 dark:text-white group-hover:text-brand-gold transition-colors line-clamp-2">

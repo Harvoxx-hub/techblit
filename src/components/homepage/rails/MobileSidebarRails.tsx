@@ -1,34 +1,22 @@
 import { HomepagePost } from '@/lib/homepageTypes'
-import HorizontalScrollRail from '../rails/HorizontalScrollRail'
+import HorizontalScrollRail from './HorizontalScrollRail'
 import CompactListItem from '../cards/CompactListItem'
 
 interface MobileSidebarRailsProps {
-  trending: HomepagePost[]
-  breaking: HomepagePost[]
+  latest: HomepagePost[]
 }
 
-const MobileSidebarRails = ({ trending, breaking }: MobileSidebarRailsProps) => {
+const MobileSidebarRails = ({ latest }: MobileSidebarRailsProps) => {
+  if (!latest.length) return null
+
   return (
-    <>
-      {trending.length > 0 && (
-        <HorizontalScrollRail label="Trending Now">
-          {trending.slice(0, 5).map((post) => (
-            <div key={post.id} className="shrink-0 w-56">
-              <CompactListItem post={post} />
-            </div>
-          ))}
-        </HorizontalScrollRail>
-      )}
-      {breaking.length > 0 && (
-        <HorizontalScrollRail label="Breaking News">
-          {breaking.slice(0, 5).map((post) => (
-            <div key={post.id} className="shrink-0 w-56">
-              <CompactListItem post={post} />
-            </div>
-          ))}
-        </HorizontalScrollRail>
-      )}
-    </>
+    <HorizontalScrollRail label="Latest Stories">
+      {latest.slice(0, 5).map((post) => (
+        <div key={post.id} className="shrink-0 w-[85vw] max-w-[280px] sm:w-72">
+          <CompactListItem post={post} showThumbnail />
+        </div>
+      ))}
+    </HorizontalScrollRail>
   )
 }
 

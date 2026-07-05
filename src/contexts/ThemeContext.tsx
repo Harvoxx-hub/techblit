@@ -37,20 +37,17 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   // Apply theme to document
   useEffect(() => {
     if (mounted) {
-      const root = document.documentElement;
-      if (theme === 'dark') {
-        root.classList.add('dark');
-      } else {
-        root.classList.remove('dark');
-      }
-      
+      const root = document.documentElement
+      root.classList.toggle('dark', theme === 'dark')
+      root.classList.toggle('light', theme === 'light')
+
       try {
-        localStorage.setItem('techblit-theme', theme);
-      } catch (error) {
+        localStorage.setItem('techblit-theme', theme)
+      } catch {
         // Ignore localStorage errors
       }
     }
-  }, [theme, mounted]);
+  }, [theme, mounted])
 
   const toggleTheme = () => {
     setThemeState(prev => prev === 'light' ? 'dark' : 'light');

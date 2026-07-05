@@ -30,10 +30,10 @@ const GridCard = ({ post }: GridCardProps) => {
         </div>
         {post.category && (
           <div className="mb-2">
-            <CategoryPill category={post.category} />
+            <CategoryPill category={post.category} asSpan />
           </div>
         )}
-        <h3 className="text-sm font-bold text-gray-900 dark:text-white leading-snug group-hover:underline line-clamp-2 flex-1">
+        <h3 className="text-sm sm:text-base font-bold text-gray-900 dark:text-white leading-snug group-hover:underline line-clamp-3 sm:line-clamp-2 flex-1">
           {post.title}
         </h3>
         {post.excerpt && (

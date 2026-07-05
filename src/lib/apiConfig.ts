@@ -9,9 +9,15 @@ export const DEFAULT_API_BASE_URL =
   'https://techblit-cloud-function-production.up.railway.app';
 
 export function getApiBaseUrl(): string {
-  return (
-    process.env.NEXT_PUBLIC_FIREBASE_FUNCTIONS_URL || DEFAULT_API_BASE_URL
-  );
+  if (process.env.NEXT_PUBLIC_FIREBASE_FUNCTIONS_URL) {
+    return process.env.NEXT_PUBLIC_FIREBASE_FUNCTIONS_URL
+  }
+
+  if (process.env.NODE_ENV === 'development') {
+    return 'http://localhost:3001'
+  }
+
+  return DEFAULT_API_BASE_URL
 }
 
 export function getPostsApiUrl(): string {

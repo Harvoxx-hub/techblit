@@ -140,7 +140,7 @@ export default async function CategoryPage({ params }: { params: Promise<{ slug:
             </p>
             <Link
               href="/"
-              className="inline-flex items-center px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors"
+              className="inline-flex items-center px-6 py-3 bg-brand-navy hover:bg-brand-navy/90 text-white font-semibold rounded-lg transition-colors"
             >
               ← Back to Home
             </Link>
@@ -238,7 +238,7 @@ export default async function CategoryPage({ params }: { params: Promise<{ slug:
 
                     {/* Content */}
                     <div className="p-6">
-                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors line-clamp-2 mb-3">
+                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white group-hover:text-brand-gold transition-colors line-clamp-2 mb-3">
                         {post.title}
                       </h3>
                       
@@ -316,7 +316,7 @@ export default async function CategoryPage({ params }: { params: Promise<{ slug:
 
                         {/* Content */}
                         <div className="p-4">
-                          <h3 className="text-sm font-semibold text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors line-clamp-2 mb-2">
+                          <h3 className="text-sm font-semibold text-gray-900 dark:text-white group-hover:text-brand-gold transition-colors line-clamp-2 mb-2">
                             {post.title}
                           </h3>
                           

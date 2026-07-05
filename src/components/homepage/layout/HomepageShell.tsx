@@ -6,7 +6,7 @@ interface HomepageShellProps {
 
 const HomepageShell = ({ children }: HomepageShellProps) => {
   return (
-    <div className="min-h-screen bg-white dark:bg-gray-950">
+    <div className="min-h-screen bg-white dark:bg-gray-950 overflow-x-hidden">
       {children}
     </div>
   )

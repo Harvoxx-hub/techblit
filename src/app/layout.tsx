@@ -93,12 +93,26 @@ export default function RootLayout({
     },
   };
 
+  const themeInitScript = `
+(function () {
+  try {
+    var stored = localStorage.getItem('techblit-theme');
+    var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    var isDark = stored === 'dark' || (!stored && prefersDark);
+    var root = document.documentElement;
+    root.classList.toggle('dark', isDark);
+    root.classList.toggle('light', !isDark);
+  } catch (e) {}
+})();
+`
+
   return (
-    <html lang="en" className={inter.variable}>
+    <html lang="en" className={inter.variable} suppressHydrationWarning>
       <body
         className={`font-sans antialiased ${inter.className}`}
         suppressHydrationWarning={true}
       >
+        <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
         <Script
           strategy="afterInteractive"
           src="https://www.googletagmanager.com/gtag/js?id=G-8MTJTQ7N85"

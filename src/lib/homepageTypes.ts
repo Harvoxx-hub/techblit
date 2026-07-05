@@ -56,5 +56,6 @@ export interface HomepageData {
   featuredCategory: FeaturedCategory
   categoryColumns: CategoryColumn[]
   brandPress: HomepagePost[]
+  latest: HomepagePost[]
   media: HomepageMedia
 }

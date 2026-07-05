@@ -13,9 +13,9 @@ const WorthReadingSection = ({ posts }: WorthReadingSectionProps) => {
   return (
     <SectionContainer className="bg-gray-50 dark:bg-gray-900/30">
       <SectionHeader label="Worth Reading" href="/blog" />
-      <ul className="grid grid-cols-1 md:grid-cols-2 gap-x-8">
+      <ul className="grid grid-cols-1 md:grid-cols-2 gap-x-6 lg:gap-x-8">
         {posts.map((post) => (
-          <CompactListItem key={post.id} post={post} showCategory />
+          <CompactListItem key={post.id} post={post} showCategory showThumbnail />
         ))}
       </ul>
     </SectionContainer>

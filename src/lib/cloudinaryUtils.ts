@@ -46,6 +46,8 @@ export const CloudinaryPresets = {
   inline: { width: 800, format: 'auto', quality: 'auto' },
   /** Thumbnails: 400px width, auto format/quality */
   thumbnail: { width: 400, format: 'auto', quality: 'auto' },
+  /** Square thumbs for list items (2x retina for 64px display) */
+  thumbSquare: { width: 128, height: 128, crop: 'fill', gravity: 'auto', format: 'auto', quality: 85 },
   /** Social preview (OG/Twitter): 1200x630, JPG for WhatsApp/Facebook crawler compatibility */
   social: { width: 1200, height: 630, crop: 'fill', format: 'jpg', quality: 'auto' },
   /** Avatar: 200x200, fill crop, face gravity */

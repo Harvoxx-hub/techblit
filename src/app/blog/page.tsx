@@ -192,7 +192,7 @@ export default async function BlogPage({ searchParams }: { searchParams: Promise
 
                   {/* Content */}
                   <div className="p-6">
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors line-clamp-2 mb-3">
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white group-hover:text-brand-gold transition-colors line-clamp-2 mb-3">
                       {post.title}
                     </h3>
                     

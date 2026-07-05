@@ -43,7 +43,7 @@ export const defaultSEO = {
   },
 }
 
-interface BlogPostSEO {
+export interface BlogPostSEO {
   id: string
   title: string
   slug: string
