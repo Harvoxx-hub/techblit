@@ -1,6 +1,7 @@
 import { Metadata } from 'next'
 import { ProcessedImage } from './imageProcessing'
 import { getSocialImageUrl, getImageUrlFromData, extractPublicId } from './imageHelpers'
+import { fetchLatestPublishedPost } from './articlePageData'
 
 function getISODateString(date: Date | { toDate: () => Date } | undefined): string | undefined {
   if (!date) return undefined
@@ -102,6 +103,57 @@ const getFeaturedImageMeta = (featuredImage: BlogPostSEO['featuredImage']) => {
   }
 
   return { url, alt, width, height }
+}
+
+const HOMEPAGE_TITLE = "TechBlit - Igniting Africa's Tech Conversation"
+const HOMEPAGE_DESCRIPTION =
+  'Discover the latest African tech news, startup insights, funding rounds, and innovation stories. Your destination for comprehensive coverage of Africa\'s technology ecosystem.'
+
+export async function generateHomepageSEO(): Promise<Metadata> {
+  const latestPost = await fetchLatestPublishedPost()
+  const fallbackImage = `${SITE_URL}/api/og`
+
+  const ogTitle = latestPost?.title || HOMEPAGE_TITLE
+  const ogDescription = latestPost?.excerpt || HOMEPAGE_DESCRIPTION
+
+  const { url: ogImage, alt: ogImageAlt, width: ogWidth, height: ogHeight } = latestPost
+    ? getFeaturedImageMeta(latestPost.featuredImage as BlogPostSEO['featuredImage'])
+    : { url: fallbackImage, alt: HOMEPAGE_TITLE, width: 1200, height: 630 }
+
+  const imageUrl = latestPost?.featuredImage ? ogImage : fallbackImage
+
+  return {
+    title: HOMEPAGE_TITLE,
+    description: HOMEPAGE_DESCRIPTION,
+    keywords: defaultSEO.keywords,
+    alternates: {
+      canonical: SITE_URL,
+    },
+    openGraph: {
+      title: ogTitle,
+      description: ogDescription,
+      type: 'website',
+      url: SITE_URL,
+      siteName: 'TechBlit',
+      locale: 'en_US',
+      images: [
+        {
+          url: imageUrl,
+          width: ogWidth,
+          height: ogHeight,
+          alt: ogImageAlt || ogTitle,
+        },
+      ],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: ogTitle,
+      description: ogDescription,
+      images: [imageUrl],
+      creator: '@techblit',
+      site: '@techblit',
+    },
+  }
 }
 
 export function generatePostSEO(post: BlogPostSEO): Metadata {

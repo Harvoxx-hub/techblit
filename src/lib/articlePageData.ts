@@ -58,4 +58,9 @@ export async function getAtnFeaturedVideo(): Promise<VideoItem | null> {
   }
 }
 
+export async function fetchLatestPublishedPost(): Promise<HomepagePost | null> {
+  const posts = await fetchPostsList(1)
+  return posts[0] ?? null
+}
+
 export const FOUNDERS_CTA_CATEGORIES = ['Startup', 'Funding', 'Fintech']

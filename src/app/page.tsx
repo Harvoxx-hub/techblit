@@ -16,23 +16,13 @@ import MediaHubSection from '@/components/homepage/sections/MediaHubSection'
 import FoundersRepoCta from '@/components/homepage/sections/FoundersRepoCta'
 import FooterNewsletter from '@/components/homepage/sections/FooterNewsletter'
 import { getHomepageData } from '@/lib/homepageData'
+import { generateHomepageSEO } from '@/lib/seo'
 import { Metadata } from 'next'
 
 export const revalidate = 3600
 
-export const metadata: Metadata = {
-  title: "TechBlit - Igniting Africa's Tech Conversation",
-  description: "Discover the latest African tech news, startup insights, funding rounds, and innovation stories. Your destination for comprehensive coverage of Africa's technology ecosystem.",
-  keywords: ['African tech', 'Nigeria tech', 'startups Africa', 'tech news', 'African innovation', 'fintech', 'funding rounds', 'startup ecosystem', 'African technology', 'tech ecosystem'],
-  openGraph: {
-    title: "TechBlit - Igniting Africa's Tech Conversation",
-    description: "Discover the latest African tech news, startup insights, funding rounds, and innovation stories.",
-    type: 'website',
-    url: 'https://www.techblit.com',
-  },
-  alternates: {
-    canonical: 'https://www.techblit.com',
-  },
+export async function generateMetadata(): Promise<Metadata> {
+  return generateHomepageSEO()
 }
 
 export default async function Home() {
