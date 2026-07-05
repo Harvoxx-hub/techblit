@@ -38,7 +38,7 @@ export default function WritersPage() {
       '@type': 'Organization',
       name: 'TechBlit',
       sameAs: 'https://www.techblit.com',
-      logo: 'https://www.techblit.com/logo.png',
+      logo: 'https://www.techblit.com/favicon.png',
     },
     jobLocation: {
       '@type': 'Place',

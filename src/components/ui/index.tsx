@@ -1145,10 +1145,6 @@ export { default as TagInput } from './TagInput';
 export { default as ThemeToggle } from './ThemeToggle';
 
 // Landing Page Components
-export { default as Hero } from './Hero';
-export { default as HeroSection } from './HeroSection';
-export { default as CategoryHighlights } from './CategoryHighlights';
-export { default as BrandPressSection } from './BrandPressSection';
 export { default as NewsletterSection } from './NewsletterSection';
 export { default as Footer } from './Footer';
 

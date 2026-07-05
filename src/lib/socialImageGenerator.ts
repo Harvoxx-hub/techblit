@@ -29,7 +29,7 @@ function getLogoUrl(): string {
   const baseUrl = typeof window !== 'undefined' 
     ? window.location.origin 
     : process.env.NEXT_PUBLIC_SITE_URL || 'https://www.techblit.com';
-  return `${baseUrl}/logo.png`;
+  return `${baseUrl}/favicon.png`;
 }
 
 /**

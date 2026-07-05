@@ -4,14 +4,18 @@
  * Returns a 1200x630 PNG for Open Graph / social sharing.
  * WhatsApp and Facebook do NOT support SVG - this provides a raster fallback.
  */
-import { ImageResponse } from 'next/og';
+import { ImageResponse } from 'next/og'
 
-export const runtime = 'edge';
-export const alt = "TechBlit - Igniting Africa's Tech Conversation";
-export const size = { width: 1200, height: 630 };
-export const contentType = 'image/png';
+export const runtime = 'edge'
+export const alt = "TechBlit - Igniting Africa's Tech Conversation"
+export const size = { width: 1200, height: 630 }
+export const contentType = 'image/png'
+
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.techblit.com'
 
 export async function GET() {
+  const logoUrl = `${SITE_URL}/favicon.png`
+
   return new ImageResponse(
     (
       <div
@@ -22,12 +26,11 @@ export async function GET() {
           flexDirection: 'column',
           alignItems: 'flex-start',
           justifyContent: 'center',
-          background: 'linear-gradient(135deg, #1f2937 0%, #111827 100%)',
+          background: 'linear-gradient(135deg, #00102B 0%, #000817 100%)',
           padding: 80,
           fontFamily: 'system-ui, -apple-system, sans-serif',
         }}
       >
-        {/* Logo block */}
         <div
           style={{
             display: 'flex',
@@ -36,13 +39,12 @@ export async function GET() {
             marginBottom: 16,
           }}
         >
-          <div
-            style={{
-              width: 80,
-              height: 80,
-              background: '#3b82f6',
-              borderRadius: 12,
-            }}
+          <img
+            src={logoUrl}
+            alt="TechBlit logo"
+            width={80}
+            height={80}
+            style={{ borderRadius: 12 }}
           />
           <span
             style={{
@@ -55,17 +57,15 @@ export async function GET() {
             TechBlit
           </span>
         </div>
-        {/* Tagline */}
         <span
           style={{
             fontSize: 32,
-            color: '#9ca3af',
+            color: '#F2C200',
             marginBottom: 8,
           }}
         >
           Igniting Africa&apos;s Tech Conversation
         </span>
-        {/* Description */}
         <span
           style={{
             fontSize: 24,
@@ -75,42 +75,6 @@ export async function GET() {
         >
           Latest tech news, startup insights & funding from across Africa
         </span>
-        {/* Tech icons */}
-        <div
-          style={{
-            display: 'flex',
-            gap: 40,
-            position: 'absolute',
-            right: 80,
-            top: 120,
-          }}
-        >
-          <div
-            style={{
-              width: 80,
-              height: 80,
-              borderRadius: '50%',
-              background: 'rgba(59, 130, 246, 0.3)',
-            }}
-          />
-          <div
-            style={{
-              width: 80,
-              height: 80,
-              borderRadius: '50%',
-              background: 'rgba(16, 185, 129, 0.3)',
-            }}
-          />
-          <div
-            style={{
-              width: 80,
-              height: 80,
-              borderRadius: '50%',
-              background: 'rgba(245, 158, 11, 0.3)',
-            }}
-          />
-        </div>
-        {/* Bottom accent */}
         <div
           style={{
             position: 'absolute',
@@ -118,7 +82,7 @@ export async function GET() {
             left: 0,
             right: 0,
             height: 50,
-            background: '#3b82f6',
+            background: '#F2C200',
           }}
         />
       </div>
@@ -126,5 +90,5 @@ export async function GET() {
     {
       ...size,
     }
-  );
+  )
 }

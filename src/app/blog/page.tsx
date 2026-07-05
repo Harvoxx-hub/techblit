@@ -106,7 +106,7 @@ export default async function BlogPage({ searchParams }: { searchParams: Promise
       name: 'TechBlit',
       logo: {
         '@type': 'ImageObject',
-        url: 'https://www.techblit.com/logo.png',
+        url: 'https://www.techblit.com/favicon.png',
       },
     },
     mainEntity: {

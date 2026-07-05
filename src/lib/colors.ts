@@ -83,11 +83,30 @@ export const tailwindColors = {
 
 // Gradient combinations using actual brand colors
 export const gradients = {
-  primary: 'from-slate-900 to-slate-800', // Dark navy gradient
-  secondary: 'from-yellow-400 to-yellow-500', // Bright yellow gradient
+  primary: 'from-[#00102B] to-[#000a1c]',
+  secondary: 'from-[#F2C200] to-[#d9a800]',
   accent: 'from-green-500 to-green-600',
-  primarySecondary: 'from-slate-900 to-yellow-400', // Navy to yellow
-  primaryAccent: 'from-slate-900 to-green-500',
-  secondaryAccent: 'from-yellow-400 to-green-500',
-  hero: 'from-slate-900 via-slate-800 to-yellow-400', // Navy to yellow hero gradient
-};
+  primarySecondary: 'from-[#00102B] to-[#F2C200]',
+  primaryAccent: 'from-[#00102B] to-green-500',
+  secondaryAccent: 'from-[#F2C200] to-green-500',
+  hero: 'from-[#00102B] via-[#000e26] to-[#F2C200]/30',
+}
+
+export const getCategoryGradient = (categorySlug?: string): string => {
+  const slug = categorySlug?.toLowerCase()
+  switch (slug) {
+    case 'startup': return 'from-[#00102B] to-indigo-800'
+    case 'tech-news':
+    case 'tech news': return 'from-[#00102B] to-blue-700'
+    case 'funding': return 'from-[#00102B] to-[#F2C200]/60'
+    case 'insights': return 'from-[#00102B] to-purple-800'
+    case 'events': return 'from-[#00102B] to-rose-800'
+    case 'fintech': return 'from-[#00102B] to-cyan-800'
+    case 'ai-innovation': return 'from-[#00102B] to-teal-700'
+    case 'developer-tools': return 'from-[#00102B] to-emerald-700'
+    case 'opinions': return 'from-[#00102B] to-orange-700'
+    case 'brand-press':
+    case 'brand press': return 'from-[#00102B] to-slate-700'
+    default: return 'from-[#00102B] to-slate-800'
+  }
+}

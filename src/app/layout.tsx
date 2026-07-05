@@ -79,7 +79,7 @@ export default function RootLayout({
     '@type': 'Organization',
     name: 'TechBlit',
     url: SITE_URL,
-    logo: `${SITE_URL}/logo.png`,
+    logo: `${SITE_URL}/favicon.png`,
     description: "Igniting Africa's Tech Conversation",
     sameAs: [
       'https://twitter.com/techblit',

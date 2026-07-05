@@ -23,6 +23,7 @@ import {
   ExclamationCircleIcon
 } from '@heroicons/react/24/outline';
 import { Input, Textarea, Button, Card, CardContent, Dropdown, Alert, Spinner, Checkbox } from '@/components/ui';
+import HomepageSettingsPanel from '@/components/admin/HomepageSettingsPanel';
 
 function SettingsManager() {
   const [settings, setSettings] = useState<SiteSettings>({
@@ -444,6 +445,9 @@ Sitemap: ${siteUrl}/sitemap.xml`;
             </div>
           </CardContent>
         </Card>
+
+        {/* Homepage Curation */}
+        <HomepageSettingsPanel />
 
         {/* Maintenance Mode */}
         <Card>

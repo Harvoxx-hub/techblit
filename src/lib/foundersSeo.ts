@@ -76,7 +76,7 @@ export function buildFoundersDirectoryJsonLd(siteUrl: string) {
         '@id': `${siteUrl}/#organization`,
         name: 'TechBlit',
         url: siteUrl,
-        logo: `${siteUrl}/logo.png`,
+        logo: `${siteUrl}/favicon.png`,
         sameAs: [
           'https://twitter.com/techblit',
           'https://facebook.com/techblit',

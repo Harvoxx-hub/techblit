@@ -34,8 +34,7 @@ class ApiService {
     if (typeof window === 'undefined') return null;
     
     try {
-      const { getAuth } = await import('firebase/auth');
-      const auth = getAuth();
+      const { auth } = await import('@/lib/firebase');
       const user = auth.currentUser;
       if (user) {
         // Force refresh if requested or if token is expired
@@ -46,8 +45,7 @@ class ApiService {
       // If token refresh fails, try to get a fresh token
       if (!forceRefresh) {
         try {
-          const { getAuth } = await import('firebase/auth');
-          const auth = getAuth();
+          const { auth } = await import('@/lib/firebase');
           const user = auth.currentUser;
           if (user) {
             return await user.getIdToken(true); // Force refresh
@@ -496,6 +494,25 @@ class ApiService {
 
   async updateSettings(data: any) {
     return this.request('/settings', {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async getHomepageSettings() {
+    return this.request('/settings/homepage');
+  }
+
+  async updateHomepageSettings(data: {
+    hotNowPostId?: string | null
+    editorsChoicePostIds?: string[]
+    worthReadingPostIds?: string[]
+    featuredCategorySlug?: string
+    ytPlaylist101?: string
+    ytPlaylistNewsReview?: string
+    ytPlaylistHotVideos?: string
+  }) {
+    return this.request('/settings/homepage', {
       method: 'PUT',
       body: JSON.stringify(data),
     });

@@ -1,14 +1,25 @@
-import Navigation from '@/components/ui/Navigation';
-import HeroSection from '@/components/ui/HeroSection';
-import CategoryHighlights from '@/components/ui/CategoryHighlights';
-import BrandPressSection from '@/components/ui/BrandPressSection';
-import CategorySection from '@/components/ui/CategorySection';
-import NewsletterSection from '@/components/ui/NewsletterSection';
-import Footer from '@/components/ui/Footer';
-import { getHomepageData } from '@/lib/homepageData';
-import { Metadata } from 'next';
+import Navigation from '@/components/ui/Navigation'
+import Footer from '@/components/ui/Footer'
+import HomepageShell from '@/components/homepage/layout/HomepageShell'
+import MagazineGrid from '@/components/homepage/layout/MagazineGrid'
+import SidebarRail from '@/components/homepage/rails/SidebarRail'
+import MobileSidebarRails from '@/components/homepage/rails/MobileSidebarRails'
+import BreakingTicker from '@/components/homepage/sections/BreakingTicker'
+import InlineNewsletter from '@/components/homepage/sections/InlineNewsletter'
+import HotNowSection from '@/components/homepage/sections/HotNowSection'
+import PopularNowSection from '@/components/homepage/sections/PopularNowSection'
+import WeeklyReviewSection from '@/components/homepage/sections/WeeklyReviewSection'
+import EditorsChoiceSection from '@/components/homepage/sections/EditorsChoiceSection'
+import WorthReadingSection from '@/components/homepage/sections/WorthReadingSection'
+import FeaturedCategorySection from '@/components/homepage/sections/FeaturedCategorySection'
+import MediaHubSection from '@/components/homepage/sections/MediaHubSection'
+import CategoryColumnsSection from '@/components/homepage/sections/CategoryColumnsSection'
+import BrandPressStrip from '@/components/homepage/sections/BrandPressStrip'
+import FooterNewsletter from '@/components/homepage/sections/FooterNewsletter'
+import { getHomepageData } from '@/lib/homepageData'
+import { Metadata } from 'next'
 
-export const revalidate = 3600;
+export const revalidate = 3600
 
 export const metadata: Metadata = {
   title: "TechBlit - Igniting Africa's Tech Conversation",
@@ -23,10 +34,10 @@ export const metadata: Metadata = {
   alternates: {
     canonical: 'https://www.techblit.com',
   },
-};
+}
 
 export default async function Home() {
-  const data = await getHomepageData();
+  const data = await getHomepageData()
 
   const structuredData = {
     '@context': 'https://schema.org',
@@ -39,7 +50,7 @@ export default async function Home() {
       name: 'TechBlit',
       logo: {
         '@type': 'ImageObject',
-        url: 'https://www.techblit.com/logo.png',
+        url: 'https://www.techblit.com/favicon.png',
       },
     },
     potentialAction: {
@@ -50,41 +61,49 @@ export default async function Home() {
       },
       'query-input': 'required name=search_term_string',
     },
-  };
+  }
 
   return (
-    <div className="min-h-screen bg-white dark:bg-gray-900">
+    <HomepageShell>
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
       />
       <Navigation />
-      <HeroSection
-        mainPost={data.heroPosts[0]}
-        secondaryPosts={data.heroPosts.slice(1, 3)}
+      <BreakingTicker posts={data.breaking} />
+      <InlineNewsletter />
+
+      <MagazineGrid
+        mobileRails={
+          <MobileSidebarRails
+            trending={data.trending}
+            breaking={data.breaking}
+          />
+        }
+        main={
+          <>
+            <HotNowSection hotNow={data.hotNow} secondary={data.heroSecondary} />
+            <PopularNowSection posts={data.popular} />
+            <WeeklyReviewSection episodes={data.media.newsReview} />
+            <EditorsChoiceSection posts={data.editorsChoice} />
+            <WorthReadingSection posts={data.worthReading} />
+            <FeaturedCategorySection category={data.featuredCategory} />
+            <MediaHubSection media={data.media} />
+            <CategoryColumnsSection columns={data.categoryColumns} />
+            <BrandPressStrip posts={data.brandPress} />
+          </>
+        }
+        sidebar={
+          <SidebarRail
+            trending={data.trending}
+            breaking={data.breaking}
+            latest={data.trending}
+          />
+        }
       />
-      <CategoryHighlights posts={data.highlights} />
-      <BrandPressSection posts={data.brandPress} />
-      <CategorySection
-        categoryLabel="Startup"
-        categorySlug="Startup"
-        title="Startup"
-        posts={data.categories.startup}
-      />
-      <CategorySection
-        categoryLabel="Tech News"
-        categorySlug="tech-news"
-        title="Tech News"
-        posts={data.categories.techNews}
-      />
-      <CategorySection
-        categoryLabel="Events"
-        categorySlug="events"
-        title="Events"
-        posts={data.categories.events}
-      />
-      <NewsletterSection />
+
+      <FooterNewsletter id="footer-newsletter" />
       <Footer />
-    </div>
-  );
+    </HomepageShell>
+  )
 }

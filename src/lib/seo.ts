@@ -314,7 +314,7 @@ export function generateStructuredData(post: BlogPostSEO) {
       name: 'TechBlit',
       logo: {
         '@type': 'ImageObject',
-        url: `${SITE_URL}/logo.png`,
+        url: `${SITE_URL}/favicon.png`,
         width: 600,
         height: 60,
       },

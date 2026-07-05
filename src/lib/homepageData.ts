@@ -1,27 +1,8 @@
 import { getPostsApiUrl } from '@/lib/apiConfig'
+import { HomepageData, HomepagePost } from '@/lib/homepageTypes'
+import { normalizeHomepageData, emptyHomepageData, buildHomepageFromPosts } from '@/lib/homepageBuckets'
 
-export interface HomepagePost {
-  id: string
-  title: string
-  slug: string
-  excerpt?: string
-  category?: string
-  categories?: string[]
-  author?: string | { uid: string; name: string }
-  publishedAt?: unknown
-  featuredImage?: unknown
-}
-
-export interface HomepageData {
-  heroPosts: HomepagePost[]
-  highlights: HomepagePost[]
-  brandPress: HomepagePost[]
-  categories: {
-    startup: HomepagePost[]
-    techNews: HomepagePost[]
-    events: HomepagePost[]
-  }
-}
+export type { HomepagePost, HomepageData } from '@/lib/homepageTypes'
 
 export async function getHomepageData(): Promise<HomepageData> {
   const API_BASE = getPostsApiUrl()
@@ -34,49 +15,21 @@ export async function getHomepageData(): Promise<HomepageData> {
     if (response.ok) {
       const json = await response.json()
       const data = json.data || json
-      return {
-        heroPosts: data.heroPosts || [],
-        highlights: data.highlights || [],
-        brandPress: data.brandPress || [],
-        categories: data.categories || { startup: [], techNews: [], events: [] },
-      }
+      return normalizeHomepageData(data)
     }
   } catch (error) {
     console.error('Homepage endpoint unavailable, falling back to posts list:', error)
   }
 
-  const fallback = await fetch(`${API_BASE}/posts?limit=20`, {
+  const fallback = await fetch(`${API_BASE}/posts?limit=100`, {
     next: { revalidate: 3600 },
   })
 
   if (!fallback.ok) {
-    return {
-      heroPosts: [],
-      highlights: [],
-      brandPress: [],
-      categories: { startup: [], techNews: [], events: [] },
-    }
+    return emptyHomepageData()
   }
 
   const json = await fallback.json()
   const posts: HomepagePost[] = json.data || json || []
-
-  const matchCategory = (post: HomepagePost, label: string) => {
-    const lower = label.toLowerCase()
-    return (
-      post.category?.toLowerCase() === lower ||
-      (post.categories || []).some((c) => String(c).toLowerCase() === lower)
-    )
-  }
-
-  return {
-    heroPosts: posts.slice(0, 5),
-    highlights: posts.slice(0, 8),
-    brandPress: posts.filter((p) => matchCategory(p, 'Brand Press')).slice(0, 6),
-    categories: {
-      startup: posts.filter((p) => matchCategory(p, 'Startup')).slice(0, 4),
-      techNews: posts.filter((p) => matchCategory(p, 'Tech News')).slice(0, 4),
-      events: posts.filter((p) => matchCategory(p, 'Events')).slice(0, 4),
-    },
-  }
+  return buildHomepageFromPosts(posts)
 }
