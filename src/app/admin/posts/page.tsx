@@ -19,11 +19,14 @@ import {
 } from '@heroicons/react/24/outline';
 import { Input, Dropdown, Button, Card, CardContent, Badge } from '@/components/ui';
 import { parseDate, formatDateShort } from '@/lib/dateUtils';
-import { generateSocialMediaImageFromPost } from '@/lib/socialImageGenerator';
+import { getImageUrlFromData } from '@/lib/imageHelpers';
 
 function PostsManager() {
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(false);
+  const pageSize = 25;
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<PostStatus | 'all'>('all');
   const [filteredPosts, setFilteredPosts] = useState<Post[]>([]);
@@ -33,11 +36,12 @@ function PostsManager() {
 
   useEffect(() => {
     const fetchPosts = async () => {
+      setLoading(true);
       try {
-        // Use admin endpoint to get all posts with any status
-        const postsData = await apiService.getAllPosts({ limit: 1000 });
-        
-        const formattedPosts: Post[] = postsData.map((post: any) => {
+        const offset = (page - 1) * pageSize;
+        const result = await apiService.getAllPosts({ limit: pageSize, offset });
+
+        const formattedPosts: Post[] = result.posts.map((post: any) => {
           // Parse socialMediaImage if it exists
           let socialMediaImage = undefined;
           if (post.socialMediaImage) {
@@ -67,6 +71,7 @@ function PostsManager() {
         
         setPosts(formattedPosts);
         setFilteredPosts(formattedPosts);
+        setHasMore(result.hasMore);
       } catch (error) {
         console.error('Error fetching posts:', error);
       } finally {
@@ -75,7 +80,7 @@ function PostsManager() {
     };
 
     fetchPosts();
-  }, []);
+  }, [page]);
 
   useEffect(() => {
     let filtered = posts;
@@ -127,6 +132,7 @@ function PostsManager() {
     try {
       // Generate image client-side
       console.log('Generating image client-side...');
+      const { generateSocialMediaImageFromPost } = await import('@/lib/socialImageGenerator');
       const blob = await generateSocialMediaImageFromPost(post);
       console.log('Image generated successfully, size:', blob.size, 'bytes');
        
@@ -165,13 +171,7 @@ function PostsManager() {
   };
 
   const getFeaturedImageUrl = (post: Post): string | null => {
-    const fi = post.featuredImage as any;
-    if (!fi) return null;
-    if (typeof fi === 'string') return fi;
-    if (fi.url) return fi.url;
-    if (fi.original?.url) return fi.original.url;
-    if (fi.ogImage?.url) return fi.ogImage.url;
-    return null;
+    return getImageUrlFromData(post.featuredImage, { preset: 'cover' });
   };
 
   const handleBreakingNews = async (post: Post) => {
@@ -429,6 +429,24 @@ function PostsManager() {
               </div>
             </div>
           )}
+        </div>
+
+        <div className="flex items-center justify-between mt-6">
+          <Button
+            variant="outline"
+            disabled={page <= 1 || loading}
+            onClick={() => setPage((p) => Math.max(1, p - 1))}
+          >
+            Previous
+          </Button>
+          <span className="text-sm text-gray-500">Page {page}</span>
+          <Button
+            variant="outline"
+            disabled={!hasMore || loading}
+            onClick={() => setPage((p) => p + 1)}
+          >
+            Next
+          </Button>
         </div>
 
         {/* Stats Summary */}

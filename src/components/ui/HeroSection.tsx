@@ -17,7 +17,7 @@ interface FeaturedPost {
   publishedAt?: any;
   author?: string | { uid: string; name: string };
   readTime?: string;
-  featuredImage?: string;
+  featuredImage?: any;
   isFeatured?: boolean;
 }
 
@@ -27,10 +27,16 @@ interface HeroSectionProps {
 }
 
 export default function HeroSection({ mainPost, secondaryPosts }: HeroSectionProps) {
+  const hasServerData = Boolean(mainPost || (secondaryPosts && secondaryPosts.length > 0));
   const [featuredPosts, setFeaturedPosts] = useState<FeaturedPost[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!hasServerData);
 
   useEffect(() => {
+    if (hasServerData) {
+      setLoading(false);
+      return;
+    }
+
     const fetchFeaturedPosts = async () => {
       try {
         // Fetch recent posts from API
@@ -44,7 +50,7 @@ export default function HeroSection({ mainPost, secondaryPosts }: HeroSectionPro
     };
 
     fetchFeaturedPosts();
-  }, []);
+  }, [hasServerData]);
 
   // formatDate is now imported from dateUtils
 

@@ -1,20 +1,9 @@
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { storage } from '@/lib/firebase';
-import apiService from '@/lib/apiService';
-import { 
-  getImageDimensions, 
-  generateUniqueFileName,
-  ProcessedImage 
-} from './imageProcessing';
-import { getCloudinaryUrl, CloudinaryPresets } from './cloudinaryUtils';
-
-export interface UploadResult {
-  url: string;
-  path: string;
-  name: string;
-  size: number;
-  type: string;
-}
+import apiService from '@/lib/apiService'
+import {
+  getImageDimensions,
+  ProcessedImage
+} from './imageProcessing'
+import { getCloudinaryUrl, CloudinaryPresets } from './cloudinaryUtils'
 
 const ALLOWED_UPLOAD_MIME_TYPES = new Set([
   'image/jpeg',
@@ -25,7 +14,6 @@ const ALLOWED_UPLOAD_MIME_TYPES = new Set([
 
 const ALLOWED_UPLOAD_EXTENSIONS = new Set(['jpg', 'jpeg', 'png', 'webp'])
 
-// Backend multer limit is 5MB — stay safely below it after client processing
 const MAX_UPLOAD_BYTES = 4.5 * 1024 * 1024
 const MAX_IMAGE_DIMENSION = 2400
 
@@ -153,10 +141,6 @@ const encodeCanvasUnderLimit = async (
   throw new Error('Image is too large after compression. Try a smaller image (max 5MB).')
 }
 
-/**
- * Resize and compress images before upload so they stay under the backend 5MB limit.
- * Also prevents tiny files (e.g. SVG) from being rasterized into multi-megabyte uploads.
- */
 export const prepareImageForUpload = async (file: File): Promise<File> => {
   if (file.type === 'image/svg+xml') {
     throw new Error('SVG images are not supported. Please use JPG, PNG, or WebP.')
@@ -166,7 +150,6 @@ export const prepareImageForUpload = async (file: File): Promise<File> => {
     throw new Error('Unsupported file type. Please use JPG, PNG, or WebP.')
   }
 
-  // Already within limits — skip re-encoding to avoid quality loss
   if (
     isAllowedFeaturedImageFile(file) &&
     file.size > 0 &&
@@ -229,91 +212,38 @@ const rethrowUploadError = (error: unknown, fallback: string): never => {
   throw new Error(fallback)
 }
 
-/**
- * Upload image to Cloudinary via backend API
- */
 export const uploadImageToCloudinary = async (
   file: File,
   folder: 'posts' | 'authors' | 'categories' | 'ui' | 'media' = 'media'
 ): Promise<{
-  public_id: string;
-  image_id: string;
-  url: string;
-  width: number;
-  height: number;
-  format: string;
-  filename: string;
-  size: number;
+  public_id: string
+  image_id: string
+  url: string
+  width: number
+  height: number
+  format: string
+  filename: string
+  size: number
 }> => {
   try {
     const preparedFile = await prepareImageForUpload(file)
-    const result = await apiService.uploadMedia(preparedFile, { folder });
-    return result;
+    const result = await apiService.uploadMedia(preparedFile, { folder })
+    return result
   } catch (error) {
-    console.error('Error uploading image to Cloudinary:', error);
-    return rethrowUploadError(error, 'Failed to upload image to Cloudinary');
+    console.error('Error uploading image to Cloudinary:', error)
+    return rethrowUploadError(error, 'Failed to upload image to Cloudinary')
   }
-};
-
-/**
- * Upload image to Firebase Storage (legacy - kept for backward compatibility)
- * @deprecated Use uploadImageToCloudinary instead
- */
-export const uploadImageToFirebase = async (
-  file: File,
-  path: string = 'images'
-): Promise<UploadResult> => {
-  try {
-    const timestamp = Date.now();
-    const randomString = Math.random().toString(36).substring(2, 15);
-    const fileExtension = file.name.split('.').pop();
-    const fileName = `${timestamp}-${randomString}.${fileExtension}`;
-    
-    const imageRef = ref(storage, `${path}/${fileName}`);
-    const snapshot = await uploadBytes(imageRef, file);
-    const downloadURL = await getDownloadURL(snapshot.ref);
-    
-    return {
-      url: downloadURL,
-      path: snapshot.ref.fullPath,
-      name: fileName,
-      size: file.size,
-      type: file.type,
-    };
-  } catch (error) {
-    console.error('Error uploading image:', error);
-    throw new Error('Failed to upload image');
-  }
-};
-
-export const uploadPostImage = async (file: File): Promise<string> => {
-  const result = await uploadImageToCloudinary(file, 'posts');
-  return result.public_id;
-};
-
-const uploadSingleFile = async (file: File, path: string): Promise<{ url: string; path: string; size: number }> => {
-  const fileName = generateUniqueFileName(file.name);
-  const storageRef = ref(storage, `${path}/${fileName}`);
-  
-  const snapshot = await uploadBytes(storageRef, file);
-  const downloadURL = await getDownloadURL(snapshot.ref);
-  
-  return {
-    url: downloadURL,
-    path: snapshot.ref.fullPath,
-    size: file.size,
-  };
-};
+}
 
 export const uploadProcessedImage = async (
   file: File,
   folder: 'posts' | 'authors' | 'categories' | 'ui' | 'media' = 'media'
 ): Promise<ProcessedImage> => {
   try {
-    const uploadResult = await uploadImageToCloudinary(file, folder);
-    const publicId = uploadResult.public_id;
-    
-    const result: ProcessedImage = {
+    const uploadResult = await uploadImageToCloudinary(file, folder)
+    const publicId = uploadResult.public_id
+
+    return {
       original: {
         url: getCloudinaryUrl(publicId, CloudinaryPresets.cover) || uploadResult.url,
         path: publicId,
@@ -335,35 +265,31 @@ export const uploadProcessedImage = async (
         height: 630,
         size: uploadResult.size,
       },
-    };
-    
-    return result;
+    }
   } catch (error) {
-    console.error('Error processing and uploading image:', error);
-    return rethrowUploadError(error, 'Failed to process and upload image');
+    console.error('Error processing and uploading image:', error)
+    return rethrowUploadError(error, 'Failed to process and upload image')
   }
-};
+}
 
 export const uploadFeaturedImage = async (file: File): Promise<ProcessedImage> => {
-  return uploadProcessedImage(file, 'posts');
-};
+  return uploadProcessedImage(file, 'posts')
+}
 
 export const uploadImageToMediaLibrary = async (
   file: File,
-  uploadedBy: string,
-  alt: string = '',
-  caption: string = ''
+  _uploadedBy: string,
+  alt: string = ''
 ): Promise<string> => {
   try {
     const preparedFile = await prepareImageForUpload(file)
     const result = await apiService.uploadMedia(preparedFile, {
       folder: 'media',
       alt: alt || file.name,
-    });
-    
-    return result.public_id;
+    })
+    return result.public_id
   } catch (error) {
-    console.error('Error uploading image to media library:', error);
-    return rethrowUploadError(error, 'Failed to upload image to media library');
+    console.error('Error uploading image to media library:', error)
+    return rethrowUploadError(error, 'Failed to upload image to media library')
   }
-};
+}

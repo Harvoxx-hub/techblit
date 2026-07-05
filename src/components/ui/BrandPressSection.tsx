@@ -30,11 +30,22 @@ const formatAuthor = (author: any): string => {
   return 'Techblit Team';
 };
 
-export default function BrandPressSection() {
-  const [posts, setPosts] = useState<Post[]>([]);
-  const [loading, setLoading] = useState(true);
+interface BrandPressSectionProps {
+  posts?: Post[];
+}
+
+export default function BrandPressSection({ posts: initialPosts }: BrandPressSectionProps) {
+  const hasServerData = Boolean(initialPosts && initialPosts.length > 0);
+  const [posts, setPosts] = useState<Post[]>(initialPosts || []);
+  const [loading, setLoading] = useState(!hasServerData);
 
   useEffect(() => {
+    if (hasServerData) {
+      setPosts(initialPosts || []);
+      setLoading(false);
+      return;
+    }
+
     const fetchBrandPressPosts = async () => {
       setLoading(true);
       try {
@@ -65,7 +76,7 @@ export default function BrandPressSection() {
     };
 
     fetchBrandPressPosts();
-  }, []);
+  }, [hasServerData, initialPosts]);
 
   if (loading) {
     return (

@@ -3,10 +3,12 @@ import HeroSection from '@/components/ui/HeroSection';
 import CategoryHighlights from '@/components/ui/CategoryHighlights';
 import BrandPressSection from '@/components/ui/BrandPressSection';
 import CategorySection from '@/components/ui/CategorySection';
-import EventBanner from '@/components/ui/EventBanner';
 import NewsletterSection from '@/components/ui/NewsletterSection';
 import Footer from '@/components/ui/Footer';
+import { getHomepageData } from '@/lib/homepageData';
 import { Metadata } from 'next';
+
+export const revalidate = 3600;
 
 export const metadata: Metadata = {
   title: "TechBlit - Igniting Africa's Tech Conversation",
@@ -23,7 +25,9 @@ export const metadata: Metadata = {
   },
 };
 
-export default function Home() {
+export default async function Home() {
+  const data = await getHomepageData();
+
   const structuredData = {
     '@context': 'https://schema.org',
     '@type': 'WebSite',
@@ -55,12 +59,30 @@ export default function Home() {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
       />
       <Navigation />
-      <HeroSection />
-      <CategoryHighlights />
-      <BrandPressSection />
-      <CategorySection categoryLabel="Startup" categorySlug="Startup" title="Startup" />
-      <CategorySection categoryLabel="Tech News" categorySlug="tech-news" title="Tech News" />
-      <CategorySection categoryLabel="Events" categorySlug="events" title="Events" />
+      <HeroSection
+        mainPost={data.heroPosts[0]}
+        secondaryPosts={data.heroPosts.slice(1, 3)}
+      />
+      <CategoryHighlights posts={data.highlights} />
+      <BrandPressSection posts={data.brandPress} />
+      <CategorySection
+        categoryLabel="Startup"
+        categorySlug="Startup"
+        title="Startup"
+        posts={data.categories.startup}
+      />
+      <CategorySection
+        categoryLabel="Tech News"
+        categorySlug="tech-news"
+        title="Tech News"
+        posts={data.categories.techNews}
+      />
+      <CategorySection
+        categoryLabel="Events"
+        categorySlug="events"
+        title="Events"
+        posts={data.categories.events}
+      />
       <NewsletterSection />
       <Footer />
     </div>

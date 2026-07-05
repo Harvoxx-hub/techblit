@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import Image from 'next/image';
 import { notFound } from 'next/navigation';
 import Navigation from '@/components/ui/Navigation';
 import Footer from '@/components/ui/Footer';
@@ -47,32 +48,13 @@ interface BlogPost {
   };
 }
 
-import { getCrawlableImageUrl, sanitizeWordPressUrls } from '@/lib/imageUrlUtils';
 import { getImageUrlFromData } from '@/lib/imageHelpers';
 import { getPostsApiUrl } from '@/lib/apiConfig';
 import { renderContent } from '@/lib/markdown';
 
-// Helper function to get image URL from either format
-// Prioritizes Cloudinary public_id over legacy URLs for migrated images
-function getImageUrl(image: ProcessedImage | { url: string; alt: string; width?: number; height?: number; public_id?: string; image_id?: string } | undefined): string {
+function getImageUrl(image: BlogPost['featuredImage']): string {
   if (!image) return '';
-  
-  // Use getImageUrlFromData which prioritizes public_id/image_id over legacy URLs
-  const cloudinaryUrl = getImageUrlFromData(image, { preset: 'cover' });
-  if (cloudinaryUrl) {
-    return cloudinaryUrl;
-  }
-  
-  // Fallback to legacy URL extraction (for unmigrated posts)
-  let url = '';
-  if ('original' in image) {
-    url = image.original.url;
-  } else {
-    url = image.url;
-  }
-  
-  // Convert to crawlable URL (removes tokens, converts to public URLs)
-  return getCrawlableImageUrl(url) || '';
+  return getImageUrlFromData(image, { preset: 'cover' }) || '';
 }
 
 // Server-side function to fetch post data from API
@@ -194,18 +176,19 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
           </div>
           
           {/* Featured Image - full image visible (no cropping) */}
-          {post.featuredImage && (
-            <div className="mb-4 sm:mb-6 -mx-4 sm:mx-0">
-              <img
+          {post.featuredImage && getImageUrl(post.featuredImage) && (
+            <div className="mb-4 sm:mb-6 -mx-4 sm:mx-0 relative aspect-video max-h-[85vh] w-full">
+              <Image
                 src={getImageUrl(post.featuredImage)}
                 alt={
-                  'alt' in post.featuredImage && post.featuredImage.alt 
-                    ? post.featuredImage.alt 
+                  typeof post.featuredImage === 'object' && 'alt' in post.featuredImage && post.featuredImage.alt
+                    ? post.featuredImage.alt
                     : `${post.title} - TechBlit${post.categories?.[0] ? ` coverage of ${post.categories[0]}` : ''}`
                 }
-                className="w-full h-auto max-h-[85vh] object-contain rounded-lg sm:rounded-lg"
-                width={'original' in post.featuredImage ? post.featuredImage.original.width : post.featuredImage.width || 800}
-                height={'original' in post.featuredImage ? post.featuredImage.original.height : post.featuredImage.height || 400}
+                fill
+                sizes="(max-width: 768px) 100vw, 896px"
+                className="object-contain rounded-lg"
+                priority
               />
             </div>
           )}
@@ -222,7 +205,7 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
           <div
             className="prose prose-sm sm:prose-base md:prose-lg max-w-none text-gray-900 prose-img:max-w-full prose-img:rounded-lg prose-img:my-4 prose-a:text-blue-600 prose-a:no-underline hover:prose-a:underline prose-strong:text-gray-900 prose-headings:text-gray-900 prose-p:text-gray-700 prose-li:text-gray-700"
             dangerouslySetInnerHTML={{
-              __html: sanitizeWordPressUrls(renderContent(post.content, post.contentHtml))
+              __html: renderContent(post.content, post.contentHtml)
             }}
           />
         </div>

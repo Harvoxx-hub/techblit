@@ -244,8 +244,7 @@ export function getImageUrl(
   if (publicId) {
     return getCloudinaryUrl(publicId, options);
   }
-  
-  // Otherwise, return original URL (legacy Firebase Storage, etc.)
-  return identifier;
+
+  return null;
 }
 

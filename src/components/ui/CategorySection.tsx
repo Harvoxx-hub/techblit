@@ -26,6 +26,7 @@ interface CategorySectionProps {
   categorySlug: string;
   title: string;
   limit?: number;
+  posts?: Post[];
 }
 
 const getImageUrl = (imageData: any): string | null => {
@@ -42,12 +43,20 @@ export default function CategorySection({
   categoryLabel, 
   categorySlug, 
   title,
-  limit: postsLimit = 4 
+  limit: postsLimit = 4,
+  posts: initialPosts,
 }: CategorySectionProps) {
-  const [posts, setPosts] = useState<Post[]>([]);
-  const [loading, setLoading] = useState(true);
+  const hasServerData = Boolean(initialPosts && initialPosts.length > 0);
+  const [posts, setPosts] = useState<Post[]>(initialPosts || []);
+  const [loading, setLoading] = useState(!hasServerData);
 
   useEffect(() => {
+    if (hasServerData) {
+      setPosts(initialPosts || []);
+      setLoading(false);
+      return;
+    }
+
     const fetchCategoryPosts = async () => {
       setLoading(true);
       try {
@@ -78,7 +87,7 @@ export default function CategorySection({
     };
 
     fetchCategoryPosts();
-  }, [categorySlug, categoryLabel, postsLimit]);
+  }, [categorySlug, categoryLabel, postsLimit, hasServerData, initialPosts]);
 
   if (loading) {
     return (

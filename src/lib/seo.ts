@@ -1,20 +1,19 @@
-import { Metadata } from 'next';
-import { ProcessedImage } from './imageProcessing';
-import { getCrawlableImageUrl } from './imageUrlUtils';
+import { Metadata } from 'next'
+import { ProcessedImage } from './imageProcessing'
+import { getSocialImageUrl, getImageUrlFromData, extractPublicId } from './imageHelpers'
 
-// Helper function to convert Firestore timestamps to ISO strings
 function getISODateString(date: Date | { toDate: () => Date } | undefined): string | undefined {
-  if (!date) return undefined;
+  if (!date) return undefined
   if (typeof date === 'object' && 'toDate' in date) {
-    return date.toDate().toISOString();
+    return date.toDate().toISOString()
   }
   if (date instanceof Date) {
-    return date.toISOString();
+    return date.toISOString()
   }
-  return undefined;
+  return undefined
 }
 
-const SITE_URL = 'https://www.techblit.com';
+const SITE_URL = 'https://www.techblit.com'
 
 export const defaultSEO = {
   title: "TechBlit - Igniting Africa's Tech Conversation",
@@ -42,96 +41,81 @@ export const defaultSEO = {
     site: '@techblit',
     cardType: 'summary_large_image',
   },
-};
-
-// Blog post interface for SEO
-interface BlogPostSEO {
-  id: string;
-  title: string;
-  slug: string;
-  excerpt?: string;
-  metaTitle?: string;
-  metaDescription?: string;
-  canonical?: string;
-  tags?: string[];
-  category?: string;
-  categories?: string[];
-  author?: string | { uid: string; name: string };
-  publishedAt?: Date | { toDate: () => Date };
-  updatedAt?: Date | { toDate: () => Date };
-  createdAt?: Date | { toDate: () => Date };
-  featuredImage?: ProcessedImage | {
-    url: string;
-    alt: string;
-    width?: number;
-    height?: number;
-  };
-  social?: {
-    ogTitle?: string;
-    ogDescription?: string;
-    twitterCard?: 'summary' | 'summary_large_image';
-  };
-  seo?: {
-    noindex?: boolean;
-    nofollow?: boolean;
-  };
 }
 
-// Helper functions to check image format
-const isProcessedImage = (image: any): image is ProcessedImage => {
-  return image && typeof image === 'object' && 'original' in image && 'thumbnail' in image && 'ogImage' in image;
-};
+interface BlogPostSEO {
+  id: string
+  title: string
+  slug: string
+  excerpt?: string
+  metaTitle?: string
+  metaDescription?: string
+  canonical?: string
+  tags?: string[]
+  category?: string
+  categories?: string[]
+  author?: string | { uid: string; name: string }
+  publishedAt?: Date | { toDate: () => Date }
+  updatedAt?: Date | { toDate: () => Date }
+  createdAt?: Date | { toDate: () => Date }
+  featuredImage?: ProcessedImage | {
+    public_id?: string
+    url?: string
+    alt?: string
+    width?: number
+    height?: number
+  }
+  social?: {
+    ogTitle?: string
+    ogDescription?: string
+    twitterCard?: 'summary' | 'summary_large_image'
+  }
+  seo?: {
+    noindex?: boolean
+    nofollow?: boolean
+  }
+}
 
-const isLegacyImage = (image: any): image is { url: string; alt: string; width?: number; height?: number } => {
-  return image && typeof image === 'object' && 'url' in image && 'alt' in image;
-};
+const getFeaturedImageMeta = (featuredImage: BlogPostSEO['featuredImage']) => {
+  const socialUrl = featuredImage ? getSocialImageUrl(featuredImage) : null
+  const coverUrl = featuredImage ? getImageUrlFromData(featuredImage, { preset: 'social' }) : null
+  const url = socialUrl || coverUrl || `${SITE_URL}/api/og`
 
-// Generate dynamic SEO metadata for blog posts
-export function generatePostSEO(post: BlogPostSEO): Metadata {
-  const siteUrl = SITE_URL;
-  const postUrl = `${siteUrl}/${post.slug}`;
-  
-  // Use custom meta title/description or fallback to post title/excerpt
-  const title = post.metaTitle || post.title;
-  const description = post.metaDescription || post.excerpt || 'Read this article on TechBlit';
-  
-  // Use custom social media titles/descriptions or fallback to main ones
-  const ogTitle = post.social?.ogTitle || title;
-  const ogDescription = post.social?.ogDescription || description;
-  
-  // Determine Open Graph image - use PNG API (WhatsApp/Facebook don't support SVG)
-  let ogImage = `${SITE_URL}/api/og`;
-  let ogImageAlt = post.title;
-  
-  if (post.featuredImage) {
-    // Import Cloudinary helper for social images
-    const { getSocialImageUrl } = require('./imageHelpers');
-    
-    // Try to get social image URL (uses Cloudinary social preset if public_id)
-    const socialImageUrl = getSocialImageUrl(post.featuredImage);
-    if (socialImageUrl) {
-      ogImage = socialImageUrl;
-      ogImageAlt = (typeof post.featuredImage === 'object' && 'alt' in post.featuredImage) 
-        ? post.featuredImage.alt || post.title
-        : post.title;
-    } else {
-      // Fallback to crawlable URL (handles legacy formats)
-      const crawlableUrl = getCrawlableImageUrl(
-        isProcessedImage(post.featuredImage) ? post.featuredImage.ogImage?.url : 
-        isLegacyImage(post.featuredImage) ? post.featuredImage.url : 
-        typeof post.featuredImage === 'string' ? post.featuredImage : null,
-        { width: 1200, height: 630, crop: 'fill', format: 'jpg' }
-      );
-      if (crawlableUrl) {
-        ogImage = crawlableUrl;
-        ogImageAlt = isLegacyImage(post.featuredImage) && post.featuredImage.alt 
-          ? post.featuredImage.alt 
-          : post.title;
-      }
+  let alt = 'TechBlit'
+  let width = 1200
+  let height = 630
+
+  if (featuredImage && typeof featuredImage === 'object') {
+    if ('alt' in featuredImage && featuredImage.alt) {
+      alt = featuredImage.alt
+    }
+    if ('width' in featuredImage && featuredImage.width) {
+      width = featuredImage.width
+    }
+    if ('height' in featuredImage && featuredImage.height) {
+      height = featuredImage.height
+    }
+    if ('ogImage' in featuredImage && featuredImage.ogImage) {
+      width = featuredImage.ogImage.width || width
+      height = featuredImage.ogImage.height || height
     }
   }
-  
-  // Build keywords from tags and category
+
+  return { url, alt, width, height }
+}
+
+export function generatePostSEO(post: BlogPostSEO): Metadata {
+  const siteUrl = SITE_URL
+  const postUrl = `${siteUrl}/${post.slug}`
+
+  const title = post.metaTitle || post.title
+  const description = post.metaDescription || post.excerpt || 'Read this article on TechBlit'
+
+  const ogTitle = post.social?.ogTitle || title
+  const ogDescription = post.social?.ogDescription || description
+
+  const { url: ogImage, alt: ogImageAlt, width: ogWidth, height: ogHeight } = getFeaturedImageMeta(post.featuredImage)
+
   const keywords = [
     'African tech',
     'Nigeria tech',
@@ -143,27 +127,23 @@ export function generatePostSEO(post: BlogPostSEO): Metadata {
     'African technology',
     ...(post.tags || []),
     ...(post.category ? [post.category] : [])
-  ].filter(Boolean);
+  ].filter(Boolean)
 
-  // Helper function to get author name
   const getAuthorName = (author: string | { uid: string; name: string } | undefined): string => {
-    if (!author) return 'TechBlit Team';
-    if (typeof author === 'string') return author;
-    return author.name;
-  };
+    if (!author) return 'TechBlit Team'
+    if (typeof author === 'string') return author
+    return author.name
+  }
 
-  const authorName = getAuthorName(post.author);
+  const authorName = getAuthorName(post.author)
 
-  // Get dates with proper fallbacks - never use empty strings
-  // Priority: publishedAt > createdAt for published time
-  // Priority: updatedAt > publishedAt > createdAt for modified time
-  const publishedTime = getISODateString(post.publishedAt) || getISODateString(post.createdAt);
-  const modifiedTime = getISODateString(post.updatedAt) || getISODateString(post.publishedAt) || getISODateString(post.createdAt);
+  const publishedTime = getISODateString(post.publishedAt) || getISODateString(post.createdAt)
+  const modifiedTime = getISODateString(post.updatedAt) || getISODateString(post.publishedAt) || getISODateString(post.createdAt)
 
-  const metadata: Metadata = {
-    title: title,
-    description: description,
-    keywords: keywords,
+  return {
+    title,
+    description,
+    keywords,
     authors: [{ name: authorName }],
     creator: 'TechBlit',
     publisher: 'TechBlit',
@@ -186,15 +166,13 @@ export function generatePostSEO(post: BlogPostSEO): Metadata {
       images: [
         {
           url: ogImage,
-          width: (isProcessedImage(post.featuredImage) && post.featuredImage.ogImage?.width) || 
-                 (isLegacyImage(post.featuredImage) && post.featuredImage.width) || 1200,
-          height: (isProcessedImage(post.featuredImage) && post.featuredImage.ogImage?.height) || 
-                  (isLegacyImage(post.featuredImage) && post.featuredImage.height) || 630,
-          alt: ogImageAlt,
+          width: ogWidth,
+          height: ogHeight,
+          alt: ogImageAlt || post.title,
         },
       ],
-      publishedTime: publishedTime,
-      modifiedTime: modifiedTime,
+      publishedTime,
+      modifiedTime,
       authors: [authorName],
       section: post.category || post.categories?.[0],
       tags: post.tags,
@@ -222,24 +200,20 @@ export function generatePostSEO(post: BlogPostSEO): Metadata {
       'article:author': authorName,
       'article:section': post.category || post.categories?.[0] || 'Technology',
       'article:tag': post.tags?.join(', ') || '',
-      // Only include date meta tags if we have valid dates (never empty strings)
       ...(publishedTime && { 'article:published_time': publishedTime }),
       ...(modifiedTime && { 'article:modified_time': modifiedTime }),
     },
-  };
-
-  return metadata;
+  }
 }
 
-// Generate category page SEO
 export function generateCategorySEO(category: string, description?: string): Metadata {
-  const siteUrl = SITE_URL;
-  const categoryUrl = `${siteUrl}/category/${category}`;
-  const title = `${category} - TechBlit | African Tech News`;
-  const desc = description || `Latest ${category} news, insights, and analysis from Africa's tech ecosystem`;
+  const siteUrl = SITE_URL
+  const categoryUrl = `${siteUrl}/category/${category}`
+  const title = `${category} - TechBlit | African Tech News`
+  const desc = description || `Latest ${category} news, insights, and analysis from Africa's tech ecosystem`
 
   return {
-    title: title,
+    title,
     description: desc,
     keywords: ['African tech', 'Nigeria tech', category.toLowerCase(), 'tech news', 'startups', 'innovation', 'African technology'],
     authors: [{ name: 'TechBlit Team' }],
@@ -254,7 +228,7 @@ export function generateCategorySEO(category: string, description?: string): Met
       locale: 'en_US',
       url: categoryUrl,
       siteName: 'TechBlit',
-      title: title,
+      title,
       description: desc,
       images: [
         {
@@ -267,7 +241,7 @@ export function generateCategorySEO(category: string, description?: string): Met
     },
     twitter: {
       card: 'summary_large_image',
-      title: title,
+      title,
       description: desc,
       images: [`${SITE_URL}/api/og`],
       creator: '@techblit',
@@ -284,100 +258,53 @@ export function generateCategorySEO(category: string, description?: string): Met
         'max-snippet': -1,
       },
     },
-  };
+  }
 }
 
-// Utility function to extract text content from HTML for meta descriptions
 export function extractTextFromHTML(html: string, maxLength: number = 160): string {
-  // Remove HTML tags and get plain text
-  const text = html.replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim();
-  
-  // Truncate if too long
+  const text = html.replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim()
+
   if (text.length <= maxLength) {
-    return text;
+    return text
   }
-  
-  // Find the last complete word within the limit
-  const truncated = text.substring(0, maxLength);
-  const lastSpace = truncated.lastIndexOf(' ');
-  
-  return lastSpace > 0 ? truncated.substring(0, lastSpace) + '...' : truncated + '...';
+
+  const truncated = text.substring(0, maxLength)
+  const lastSpace = truncated.lastIndexOf(' ')
+
+  return lastSpace > 0 ? truncated.substring(0, lastSpace) + '...' : truncated + '...'
 }
 
-// Generate structured data for blog posts (JSON-LD)
-// Returns an array with Article/NewsArticle and BreadcrumbList schemas
 export function generateStructuredData(post: BlogPostSEO) {
-  const siteUrl = SITE_URL;
-  const postUrl = `${siteUrl}/${post.slug}`;
-  
-  // Helper function to get author name
-  const getAuthorName = (author: string | { uid: string; name: string } | undefined): string => {
-    if (!author) return 'TechBlit Team';
-    if (typeof author === 'string') return author;
-    return author.name;
-  };
+  const siteUrl = SITE_URL
+  const postUrl = `${siteUrl}/${post.slug}`
 
-  const authorName = getAuthorName(post.author);
-  const category = post.category || post.categories?.[0] || 'Technology';
-  
-  // Get featured image URL and convert to crawlable URL for SEO
-  let rawFeaturedImageUrl = '';
-  if (isProcessedImage(post.featuredImage) && post.featuredImage.ogImage?.url) {
-    rawFeaturedImageUrl = post.featuredImage.ogImage.url;
-  } else if (isLegacyImage(post.featuredImage) && post.featuredImage.url) {
-    rawFeaturedImageUrl = post.featuredImage.url;
+  const getAuthorName = (author: string | { uid: string; name: string } | undefined): string => {
+    if (!author) return 'TechBlit Team'
+    if (typeof author === 'string') return author
+    return author.name
   }
-  
-  const featuredImageUrl = rawFeaturedImageUrl 
-    ? getCrawlableImageUrl(rawFeaturedImageUrl)
-    : `${SITE_URL}/api/og`;
-  
-  // Get dates with proper fallbacks - same logic as metadata generation
-  const publishedTime = getISODateString(post.publishedAt) || getISODateString(post.createdAt);
-  const modifiedTime = getISODateString(post.updatedAt) || getISODateString(post.publishedAt) || getISODateString(post.createdAt);
-  
-  // Determine if it's a news article (recent posts) or regular article
-  // Use publishedAt or createdAt as fallback for date comparison
-  // NOTE: We avoid using Date.now() to prevent hydration mismatches between server and client
-  // Instead, we use a deterministic approach: check if published within last 7 days using a fixed reference
-  const dateForComparison = post.publishedAt || post.createdAt;
-  const publishedDate = dateForComparison ? 
-    (typeof dateForComparison === 'object' && 'toDate' in dateForComparison 
-      ? dateForComparison.toDate() 
-      : new Date(dateForComparison)) : 
-    null;
-  
-  // For hydration safety, we'll use Article type for all posts instead of NewsArticle
-  // This avoids hydration mismatches while still providing proper schema
-  // NewsArticle requires very recent content (within hours/days), which can cause hydration issues
-  // Article is more stable and works well for all blog posts
-  const isNewsArticle = false;
-  
-  // Build image array with proper ImageObject structure (required by Google)
-  const imageWidth = (isProcessedImage(post.featuredImage) && post.featuredImage.ogImage?.width) || 
-                     (isLegacyImage(post.featuredImage) && post.featuredImage.width) || 1200;
-  const imageHeight = (isProcessedImage(post.featuredImage) && post.featuredImage.ogImage?.height) || 
-                      (isLegacyImage(post.featuredImage) && post.featuredImage.height) || 630;
-  
-  // Generate descriptive alt text for images (better for Google Images)
-  const imageAlt = isLegacyImage(post.featuredImage) && post.featuredImage.alt 
-    ? post.featuredImage.alt 
-    : `${post.title} - TechBlit coverage of ${category}`;
-  
+
+  const authorName = getAuthorName(post.author)
+  const category = post.category || post.categories?.[0] || 'Technology'
+
+  const { url: featuredImageUrl, alt: imageAlt, width: imageWidth, height: imageHeight } = getFeaturedImageMeta(post.featuredImage)
+
+  const publishedTime = getISODateString(post.publishedAt) || getISODateString(post.createdAt)
+  const modifiedTime = getISODateString(post.updatedAt) || getISODateString(post.publishedAt) || getISODateString(post.createdAt)
+
   const imageArray = [{
     '@type': 'ImageObject',
     url: featuredImageUrl,
     width: imageWidth,
     height: imageHeight,
-  }];
+  }]
 
-  // Main Article/NewsArticle schema
   const articleSchema = {
     '@context': 'https://schema.org',
-    '@type': isNewsArticle ? 'NewsArticle' : 'Article',
+    '@type': 'Article',
     headline: post.title,
     description: post.metaDescription || post.excerpt || '',
-    image: imageArray, // Array of ImageObject (Google best practice)
+    image: imageArray,
     author: {
       '@type': 'Person',
       name: authorName,
@@ -407,9 +334,8 @@ export function generateStructuredData(post: BlogPostSEO) {
     keywords: post.tags?.join(', ') || category || 'technology',
     articleSection: category,
     wordCount: post.excerpt?.split(' ').length || 0,
-  };
+  }
 
-  // BreadcrumbList schema
   const breadcrumbSchema = {
     '@context': 'https://schema.org',
     '@type': 'BreadcrumbList',
@@ -439,30 +365,27 @@ export function generateStructuredData(post: BlogPostSEO) {
         item: postUrl,
       },
     ],
-  };
+  }
 
-  // Separate ImageObject schema for featured image (Google best practice)
-  // This gives Google direct mapping for fast image indexing
-  const imageObjectSchema = post.featuredImage ? {
+  const imageObjectSchema = extractPublicId(post.featuredImage) ? {
     '@context': 'https://schema.org',
     '@type': 'ImageObject',
     contentUrl: featuredImageUrl,
     url: featuredImageUrl,
     width: imageWidth,
     height: imageHeight,
-    description: imageAlt,
+    description: imageAlt || `${post.title} - TechBlit coverage of ${category}`,
     license: `${siteUrl}/license`,
     creator: {
       '@type': 'Organization',
       name: 'TechBlit',
     },
-  } : null;
+  } : null
 
-  // Return array of schemas (filter out null values)
-  const schemas: any[] = [articleSchema, breadcrumbSchema];
+  const schemas: unknown[] = [articleSchema, breadcrumbSchema]
   if (imageObjectSchema) {
-    schemas.push(imageObjectSchema);
+    schemas.push(imageObjectSchema)
   }
-  
-  return schemas;
+
+  return schemas
 }

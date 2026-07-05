@@ -30,15 +30,20 @@ import {
   Spinner,
   TagInput
 } from '@/components/ui';
-import RichTextEditor from '@/components/editor/RichTextEditor';
+import dynamic from 'next/dynamic';
 import SEOSuggestions from '@/components/editor/SEOSuggestions';
 import CanonicalUrlManager from '@/components/editor/CanonicalUrlManager';
 import Scheduling from '@/components/editor/Scheduling';
 import Preview from '@/components/editor/Preview';
 import FeaturedImageUpload from '@/components/editor/FeaturedImageUpload';
-import { uploadFeaturedImage } from '@/lib/imageUpload';
-import { sanitizeWordPressUrls } from '@/lib/imageUrlUtils';
+import { uploadImageToCloudinary } from '@/lib/imageUpload';
+import { normalizeFeaturedImageForSave, extractPublicId, FeaturedImageRef, getInlineImageUrl, getCoverUrl } from '@/lib/imageHelpers';
 import { revalidatePost } from '@/app/actions/revalidate';
+
+const RichTextEditor = dynamic(
+  () => import('@/components/editor/RichTextEditor'),
+  { ssr: false, loading: () => <Spinner /> }
+);
 
 function EditPostEditor() {
   const router = useRouter();
@@ -47,21 +52,20 @@ function EditPostEditor() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   
-  // Wrapper function to upload featured images with multiple versions
-  const handleImageUpload = async (file: File) => {
-    if (!user?.uid) {
-      throw new Error('User not authenticated');
-    }
-    return await uploadFeaturedImage(file);
+  const handleFeaturedImageUpload = async (file: File): Promise<FeaturedImageRef> => {
+    const result = await uploadImageToCloudinary(file, 'posts');
+    return normalizeFeaturedImageForSave(
+      result,
+      file.name.split('.')[0] || 'Featured image'
+    );
   };
-  
-  // Wrapper function for RichTextEditor (returns string URL)
+
   const handleRichTextImageUpload = async (file: File): Promise<string> => {
     if (!user?.uid) {
       throw new Error('User not authenticated');
     }
-    const processedImage = await uploadFeaturedImage(file);
-    return processedImage.original.url;
+    const result = await uploadImageToCloudinary(file, 'posts');
+    return getInlineImageUrl({ public_id: result.public_id }) || result.url;
   };
   
   const [post, setPost] = useState<Partial<Post>>({
@@ -147,14 +151,10 @@ function EditPostEditor() {
         finalStatus = 'scheduled';
       }
 
-      // Sanitize WordPress URLs from content before saving
-      const sanitizedContentHtml = post.contentHtml ? sanitizeWordPressUrls(post.contentHtml) : '';
-
-      // Filter out undefined values and prepare for API
       const updateData: any = {
         title: post.title,
         content: post.contentHtml,
-        contentHtml: sanitizedContentHtml,
+        contentHtml: post.contentHtml,
         excerpt: post.excerpt,
         tags: post.tags || [],
         categories: post.category ? [post.category] : [],
@@ -429,7 +429,7 @@ function EditPostEditor() {
                 <FeaturedImageUpload
                   value={post.featuredImage}
                   onChange={(image) => setPost(prev => ({ ...prev, featuredImage: image || undefined }))}
-                  onUpload={handleImageUpload}
+                  onUpload={handleFeaturedImageUpload}
                   required={false}
                 />
               </CardContent>
@@ -448,7 +448,7 @@ function EditPostEditor() {
               metaDescription={post.metaDescription || ''}
               slug={post.slug || ''}
               author={post.author}
-              featuredImage={(post.featuredImage as any)?.url}
+              featuredImage={getCoverUrl(post.featuredImage) || undefined}
               postId={post.id}
               status={status}
             />

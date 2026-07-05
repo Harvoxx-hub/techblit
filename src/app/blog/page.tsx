@@ -1,5 +1,6 @@
 // Server-side API calls
 import Link from 'next/link';
+import Image from 'next/image';
 import Navigation from '@/components/ui/Navigation';
 import Footer from '@/components/ui/Footer';
 import { Metadata } from 'next';
@@ -19,35 +20,30 @@ interface Post {
 }
 
 // Server-side function to fetch paginated published posts
-async function getBlogPosts(page: number = 1): Promise<{ posts: Post[]; total: number }> {
+async function getBlogPosts(page: number = 1): Promise<{ posts: Post[]; hasMore: boolean }> {
   const pageSize = 25;
   try {
     const FUNCTIONS_URL = process.env.NEXT_PUBLIC_FIREBASE_FUNCTIONS_URL || 
                           'https://techblit-cloud-function-production.up.railway.app';
     const API_BASE = `${FUNCTIONS_URL}/api/v1`;
-    
-    // Fetch all posts (API doesn't support pagination yet, so we fetch all and paginate client-side)
-    const response = await fetch(`${API_BASE}/posts?limit=1000`, {
-      next: { revalidate: 3600 } // Revalidate every hour
+    const offset = (page - 1) * pageSize;
+
+    const response = await fetch(`${API_BASE}/posts?limit=${pageSize}&offset=${offset}`, {
+      next: { revalidate: 3600 }
     });
     
     if (!response.ok) {
       console.error('Failed to fetch posts');
-      return { posts: [], total: 0 };
+      return { posts: [], hasMore: false };
     }
     
     const result = await response.json();
-    const allPosts = (result.data || result) as Post[];
+    const posts = (result.data || result) as Post[];
     
-    const total = allPosts.length;
-    const startIndex = (page - 1) * pageSize;
-    const endIndex = startIndex + pageSize;
-    const posts = allPosts.slice(startIndex, endIndex);
-    
-    return { posts, total };
+    return { posts, hasMore: posts.length === pageSize };
   } catch (error) {
     console.error('Error fetching posts:', error);
-    return { posts: [], total: 0 };
+    return { posts: [], hasMore: false };
   }
 }
 
@@ -69,8 +65,7 @@ export const metadata: Metadata = {
 export default async function BlogPage({ searchParams }: { searchParams: Promise<{ page?: string }> }) {
   const params = await searchParams;
   const currentPage = parseInt(params.page || '1', 10);
-  const { posts, total } = await getBlogPosts(currentPage);
-  const totalPages = Math.ceil(total / 25);
+  const { posts, hasMore } = await getBlogPosts(currentPage);
 
   const getImageUrl = (imageData: any): string | null => {
     return getImageUrlFromData(imageData, { preset: 'cover' });
@@ -116,7 +111,7 @@ export default async function BlogPage({ searchParams }: { searchParams: Promise
     },
     mainEntity: {
       '@type': 'ItemList',
-      numberOfItems: total,
+      numberOfItems: posts.length,
       itemListElement: posts.slice(0, 10).map((post, index) => ({
         '@type': 'ListItem',
         position: index + 1,
@@ -167,10 +162,12 @@ export default async function BlogPage({ searchParams }: { searchParams: Promise
                   {/* Image */}
                   <div className={`aspect-video bg-gradient-to-br ${getCategoryGradient(post.category)} relative overflow-hidden`}>
                     {getImageUrl(post.featuredImage) ? (
-                      <img
+                      <Image
                         src={getImageUrl(post.featuredImage)!}
                         alt={post.title}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        fill
+                        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 20vw"
+                        className="object-cover group-hover:scale-105 transition-transform duration-300"
                       />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center">
@@ -214,9 +211,8 @@ export default async function BlogPage({ searchParams }: { searchParams: Promise
               </Link>
             ))}
           </div>
-          {totalPages > 1 && (
-            <div className="mt-12 flex justify-center items-center space-x-2">
-              {/* Previous Button */}
+          {(currentPage > 1 || hasMore) && (
+            <div className="mt-12 flex justify-center items-center space-x-4">
               {currentPage > 1 ? (
                 <Link
                   href={`/blog?page=${currentPage - 1}`}
@@ -230,38 +226,9 @@ export default async function BlogPage({ searchParams }: { searchParams: Promise
                 </div>
               )}
 
-              {/* Page Numbers */}
-              <div className="flex space-x-1">
-                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                  let pageNum;
-                  if (totalPages <= 5) {
-                    pageNum = i + 1;
-                  } else if (currentPage <= 3) {
-                    pageNum = i + 1;
-                  } else if (currentPage >= totalPages - 2) {
-                    pageNum = totalPages - 4 + i;
-                  } else {
-                    pageNum = currentPage - 2 + i;
-                  }
+              <span className="text-sm text-gray-500 dark:text-gray-400">Page {currentPage}</span>
 
-                  return (
-                    <Link
-                      key={pageNum}
-                      href={`/blog?page=${pageNum}`}
-                      className={`px-4 py-2 rounded-lg transition-colors ${
-                        currentPage === pageNum
-                          ? 'bg-blue-600 text-white'
-                          : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
-                      }`}
-                    >
-                      {pageNum}
-                    </Link>
-                  );
-                })}
-              </div>
-
-              {/* Next Button */}
-              {currentPage < totalPages ? (
+              {hasMore ? (
                 <Link
                   href={`/blog?page=${currentPage + 1}`}
                   className="px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-lg border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
@@ -276,9 +243,8 @@ export default async function BlogPage({ searchParams }: { searchParams: Promise
             </div>
           )}
 
-          {/* Page Info */}
           <div className="mt-4 text-center text-sm text-gray-600 dark:text-gray-400">
-            Showing {posts.length > 0 ? (currentPage - 1) * 25 + 1 : 0} - {Math.min(currentPage * 25, total)} of {total} posts
+            Page {currentPage} · {posts.length} articles
           </div>
           </>
         )}

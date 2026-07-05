@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import apiService from '@/lib/apiService';
 import { gradients } from '@/lib/colors';
 import { getImageUrlFromData } from '@/lib/imageHelpers';
@@ -18,12 +19,23 @@ interface Post {
   readTime?: string;
 }
 
-export default function CategoryHighlights() {
-  const [posts, setPosts] = useState<Post[]>([]);
-  const [loading, setLoading] = useState(true);
+interface CategoryHighlightsProps {
+  posts?: Post[];
+}
+
+export default function CategoryHighlights({ posts: initialPosts }: CategoryHighlightsProps) {
+  const hasServerData = Boolean(initialPosts && initialPosts.length > 0);
+  const [posts, setPosts] = useState<Post[]>(initialPosts || []);
+  const [loading, setLoading] = useState(!hasServerData);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    if (hasServerData) {
+      setPosts(initialPosts || []);
+      setLoading(false);
+      return;
+    }
+
     const fetchLatestPosts = async () => {
       try {
         setLoading(true);
@@ -40,7 +52,7 @@ export default function CategoryHighlights() {
     };
 
     fetchLatestPosts();
-  }, []);
+  }, [hasServerData, initialPosts]);
 
   const getImageUrl = (imageData: any): string | null => {
     return getImageUrlFromData(imageData, { preset: 'cover' });
@@ -149,10 +161,12 @@ export default function CategoryHighlights() {
                 {/* Image */}
                 <div className={`aspect-video bg-gradient-to-br ${getCategoryGradient(post.category)} relative overflow-hidden`}>
                   {getImageUrl(post.featuredImage) ? (
-                    <img
+                    <Image
                       src={getImageUrl(post.featuredImage)!}
                       alt={post.title}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      fill
+                      sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 25vw"
+                      className="object-cover group-hover:scale-105 transition-transform duration-300"
                     />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center">

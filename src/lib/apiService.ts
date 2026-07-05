@@ -216,7 +216,7 @@ class ApiService {
     status?: string;
     category?: string;
     tag?: string;
-  }): Promise<Post[]> {
+  }): Promise<{ posts: Post[]; limit: number; offset: number; hasMore: boolean }> {
     try {
       const queryParams = new URLSearchParams();
       if (params?.limit) queryParams.append('limit', params.limit.toString());
@@ -226,20 +226,50 @@ class ApiService {
       if (params?.tag) queryParams.append('tag', params.tag);
       
       const query = queryParams.toString();
-      return await this.request<Post[]>(`/posts/admin/all${query ? `?${query}` : ''}`);
+      const result = await this.request<{ posts: Post[]; limit: number; offset: number; hasMore: boolean } | Post[]>(
+        `/posts/admin/all${query ? `?${query}` : ''}`
+      );
+
+      if (result && typeof result === 'object' && 'posts' in result && Array.isArray(result.posts)) {
+        return result;
+      }
+
+      const posts = Array.isArray(result) ? result : [];
+      return {
+        posts,
+        limit: params?.limit || posts.length,
+        offset: params?.offset || 0,
+        hasMore: false,
+      };
     } catch (error: any) {
-      // Fallback to regular getPosts if admin endpoint doesn't exist yet (not deployed)
       if (error?.message?.includes('not found') || error?.message?.includes('404')) {
         console.warn('Admin endpoint not available, falling back to public endpoint (may only show published posts)');
-        return this.getPosts({
+        const posts = await this.getPosts({
           limit: params?.limit,
           offset: params?.offset,
           category: params?.category,
           tag: params?.tag
         });
+        return {
+          posts,
+          limit: params?.limit || posts.length,
+          offset: params?.offset || 0,
+          hasMore: false,
+        };
       }
       throw error;
     }
+  }
+
+  async getAdminPostStats(): Promise<{
+    total: number;
+    draft: number;
+    in_review: number;
+    scheduled: number;
+    published: number;
+    archived: number;
+  }> {
+    return this.request('/posts/admin/stats');
   }
 
   async getPostBySlug(slug: string): Promise<Post | null> {

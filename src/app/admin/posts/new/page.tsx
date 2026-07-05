@@ -20,17 +20,22 @@ import {
   PhotoIcon,
   SparklesIcon
 } from '@heroicons/react/24/outline';
-import { Input, Textarea, Button, Card, CardContent, Dropdown, TagInput } from '@/components/ui';
-import RichTextEditor from '@/components/editor/RichTextEditor';
+import { Input, Textarea, Button, Card, CardContent, Dropdown, TagInput, Spinner } from '@/components/ui';
+import dynamic from 'next/dynamic';
+import { uploadImageToCloudinary } from '@/lib/imageUpload';
+import { normalizeFeaturedImageForSave, extractPublicId, FeaturedImageRef, getInlineImageUrl, getCoverUrl } from '@/lib/imageHelpers';
 import SEOSuggestions from '@/components/editor/SEOSuggestions';
 import CanonicalUrlManager from '@/components/editor/CanonicalUrlManager';
 import Scheduling from '@/components/editor/Scheduling';
 import Preview from '@/components/editor/Preview';
 import FeaturedImageUpload from '@/components/editor/FeaturedImageUpload';
-import { uploadFeaturedImage } from '@/lib/imageUpload';
 import { useAutoSave, useAutoSaveIndicator } from '@/hooks/useAutoSave';
 import { CATEGORY_OPTIONS } from '@/lib/categories';
-import { sanitizeWordPressUrls } from '@/lib/imageUrlUtils';
+
+const RichTextEditor = dynamic(
+  () => import('@/components/editor/RichTextEditor'),
+  { ssr: false, loading: () => <Spinner /> }
+);
 
 function NewPostEditor() {
   const router = useRouter();
@@ -41,14 +46,20 @@ function NewPostEditor() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isPrefilled, setIsPrefilled] = useState(false);
 
-  // Wrapper function to upload featured images with multiple versions
-  // For RichTextEditor, we need to return just the URL string
   const handleImageUpload = async (file: File) => {
     if (!user?.uid) {
       throw new Error('User not authenticated');
     }
-    const processed = await uploadFeaturedImage(file);
-    return processed.original.url;
+    const result = await uploadImageToCloudinary(file, 'posts');
+    return getInlineImageUrl({ public_id: result.public_id }) || result.url;
+  };
+
+  const handleFeaturedImageUpload = async (file: File): Promise<FeaturedImageRef> => {
+    const result = await uploadImageToCloudinary(file, 'posts');
+    return normalizeFeaturedImageForSave(
+      result,
+      file.name.split('.')[0] || 'Featured image'
+    );
   };
   // Prefilled tags and categories
   const prefilledTags = [
@@ -190,10 +201,7 @@ function NewPostEditor() {
     if (!post.contentHtml) newErrors.content = 'Content is required';
     
     // Check for featured image in both possible structures
-    const hasFeaturedImage = post.featuredImage && (
-      ('original' in post.featuredImage && post.featuredImage.original?.url) ||
-      ('url' in post.featuredImage && post.featuredImage.url)
-    );
+    const hasFeaturedImage = Boolean(extractPublicId(post.featuredImage));
     if (!hasFeaturedImage) newErrors.featuredImage = 'Featured image is required';
     
     if (Object.keys(newErrors).length > 0) {
@@ -212,14 +220,10 @@ function NewPostEditor() {
         finalStatus = 'scheduled';
       }
 
-      // Sanitize WordPress URLs from content before saving
-      const sanitizedContentHtml = post.contentHtml ? sanitizeWordPressUrls(post.contentHtml) : '';
-      
-      // After validation, we know these fields are defined
       const postData = {
         title: post.title!,
         content: post.contentHtml!,
-        contentHtml: sanitizedContentHtml,
+        contentHtml: post.contentHtml!,
         excerpt: post.excerpt!,
         tags: post.tags || [],
         categories: post.category ? [post.category] : [],
@@ -293,11 +297,7 @@ function NewPostEditor() {
               metaDescription={post.metaDescription || ''}
               slug={post.slug || ''}
               author={post.author}
-              featuredImage={
-                post.featuredImage && 'original' in post.featuredImage 
-                  ? post.featuredImage.original?.url 
-                  : (post.featuredImage && 'url' in post.featuredImage ? post.featuredImage.url : undefined)
-              }
+              featuredImage={getCoverUrl(post.featuredImage) || undefined}
               postId={postId || undefined}
               status={post.status}
             />
@@ -458,7 +458,7 @@ function NewPostEditor() {
                   <FeaturedImageUpload
                     value={post.featuredImage}
                     onChange={(image) => setPost(prev => ({ ...prev, featuredImage: image || undefined }))}
-                    onUpload={handleImageUpload}
+                    onUpload={handleFeaturedImageUpload}
                     required
                     error={errors.featuredImage}
                     recommendedImages={prefilledData?.recommendedImages || []}

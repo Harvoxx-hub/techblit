@@ -1,4 +1,5 @@
 // Admin Dashboard Data Models and Types
+import type { FeaturedImageRef } from '@/lib/imageHelpers';
 
 export type UserRole = 'super_admin' | 'editor' | 'author' | 'reviewer' | 'viewer';
 export type PostStatus = 'draft' | 'in_review' | 'scheduled' | 'published' | 'archived';
@@ -116,21 +117,11 @@ export interface Post {
   updatedAt: Date;
   
   // Media
-  featuredImage?: {
-    storagePath: string;
-    url: string;
-    width: number;
-    height: number;
-    alt: string;
-  } | {
+  featuredImage?: FeaturedImageRef | {
     original: { url: string; path: string; width: number; height: number; size: number; };
     thumbnail: { url: string; path: string; width: number; height: number; size: number; };
     ogImage: { url: string; path: string; width: number; height: number; size: number; };
   };
-  
-  // Migration & Redirects
-  oldUrl?: string;
-  externalRedirectTo?: string;
   
   // SEO Controls
   seo: {

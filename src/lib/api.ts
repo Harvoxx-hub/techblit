@@ -38,9 +38,6 @@ export const API_ENDPOINTS = {
   validatePreviewToken: `${FUNCTIONS_URL}/validatePreviewToken`,
   getPreviewTokenStats: `${FUNCTIONS_URL}/getPreviewTokenStats`,
   
-  // Admin API - Post Migration
-  migrateAllPublishedPosts: `${FUNCTIONS_URL}/migrateAllPublishedPosts`,
-  
   // Admin API - Audit Logs
   getAuditLogs: `${FUNCTIONS_URL}/getAuditLogs`,
   getAuditLogStats: `${FUNCTIONS_URL}/getAuditLogStats`,

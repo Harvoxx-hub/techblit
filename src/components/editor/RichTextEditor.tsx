@@ -30,7 +30,6 @@ import {
   ArrowUturnRightIcon
 } from '@heroicons/react/24/outline';
 import { Button } from '@/components/ui';
-import { sanitizeWordPressUrls } from '@/lib/imageUrlUtils';
 
 // Initialize Markdown parser
 const md = new MarkdownIt({
@@ -232,12 +231,6 @@ export default function RichTextEditor({
         return;
       }
 
-      // Check for WordPress URLs in HTML content
-      if (html && sanitizeWordPressUrls(html) !== html) {
-        setTimeout(() => {
-          console.warn('⚠️ WordPress image URLs detected in pasted content. They will be automatically removed. Please use the image upload button to add images.');
-        }, 100);
-      }
     };
 
     const editorElement = editor.view.dom;

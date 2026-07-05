@@ -44,19 +44,21 @@ function AdminDashboard() {
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
-        // Fetch all posts via admin API
-        const posts = (await apiService.getAllPosts({ limit: 1000 })) as any[];
-        
+        const [statsData, postsResult, users] = await Promise.all([
+          apiService.getAdminPostStats(),
+          apiService.getAllPosts({ limit: 5, offset: 0 }),
+          apiService.getUsers({ limit: 100 }),
+        ]);
+
         const stats = {
-          totalPosts: posts.length,
-          publishedPosts: posts.filter((p: any) => p.status === 'published').length,
-          draftPosts: posts.filter((p: any) => p.status === 'draft').length,
-          inReviewPosts: posts.filter((p: any) => p.status === 'in_review').length,
-          totalUsers: 0, // Will be fetched separately
+          totalPosts: statsData.total || 0,
+          publishedPosts: statsData.published || 0,
+          draftPosts: statsData.draft || 0,
+          inReviewPosts: statsData.in_review || 0,
+          totalUsers: users.length,
         };
 
-        // Get recent posts (first 5)
-        const recentPostsData = posts.slice(0, 5).map((data: any) => ({
+        const recentPostsData = postsResult.posts.map((data: any) => ({
           id: data.id,
           ...data,
           author: data.author || { name: 'Unknown Author', uid: 'unknown' },
@@ -67,11 +69,6 @@ function AdminDashboard() {
           updatedAt: parseDate(data.updatedAt) || new Date(),
         } as Post));
 
-        // Fetch users via API
-        const users = (await apiService.getUsers({ limit: 100 })) as any[];
-        stats.totalUsers = users.length;
-
-        // Get recent users (first 5)
         const recentUsersData = users.slice(0, 5).map((data: any) => ({
           uid: data.uid || data.id,
           ...data,
