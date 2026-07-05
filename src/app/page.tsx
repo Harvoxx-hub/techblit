@@ -15,6 +15,7 @@ import BrandPressStrip from '@/components/homepage/sections/BrandPressStrip'
 import MediaHubSection from '@/components/homepage/sections/MediaHubSection'
 import FoundersRepoCta from '@/components/homepage/sections/FoundersRepoCta'
 import FooterNewsletter from '@/components/homepage/sections/FooterNewsletter'
+import HomepageEmptyState from '@/components/homepage/sections/HomepageEmptyState'
 import { getHomepageData } from '@/lib/homepageData'
 import { generateHomepageSEO } from '@/lib/seo'
 import { Metadata } from 'next'
@@ -27,6 +28,7 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default async function Home() {
   const data = await getHomepageData()
+  const hasStories = Boolean(data.hotNow)
 
   const structuredData = {
     '@context': 'https://schema.org',
@@ -60,6 +62,8 @@ export default async function Home() {
       />
       <Navigation />
       <BreakingTicker posts={data.breaking} />
+
+      {!hasStories && <HomepageEmptyState />}
 
       <HomepageHeroSection
         hotNow={data.hotNow}

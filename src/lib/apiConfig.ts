@@ -1,20 +1,17 @@
 /**
  * API base URL for the backend (Railway).
- * Used by server components and server-side fetch.
  *
- * Production (Vercel): Set NEXT_PUBLIC_FIREBASE_FUNCTIONS_URL in project
- * settings to this value, or leave unset to use the default below.
+ * Defaults to production so local `next dev` loads real posts without
+ * running the cloud function. Override for local API:
+ *   NEXT_PUBLIC_FIREBASE_FUNCTIONS_URL=http://localhost:3000
  */
 export const DEFAULT_API_BASE_URL =
-  'https://techblit-cloud-function-production.up.railway.app';
+  'https://techblit-cloud-function-production.up.railway.app'
 
 export function getApiBaseUrl(): string {
-  if (process.env.NEXT_PUBLIC_FIREBASE_FUNCTIONS_URL) {
-    return process.env.NEXT_PUBLIC_FIREBASE_FUNCTIONS_URL
-  }
-
-  if (process.env.NODE_ENV === 'development') {
-    return 'http://localhost:3001'
+  const configured = process.env.NEXT_PUBLIC_FIREBASE_FUNCTIONS_URL?.replace(/\/$/, '')
+  if (configured) {
+    return configured
   }
 
   return DEFAULT_API_BASE_URL
