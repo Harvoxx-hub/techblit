@@ -12,7 +12,6 @@ import WorthReadingSection from '@/components/homepage/sections/WorthReadingSect
 import CategoryColumnsSection from '@/components/homepage/sections/CategoryColumnsSection'
 import VideoSessionSection from '@/components/homepage/sections/VideoSessionSection'
 import BrandPressStrip from '@/components/homepage/sections/BrandPressStrip'
-import MediaHubSection from '@/components/homepage/sections/MediaHubSection'
 import FoundersRepoCta from '@/components/homepage/sections/FoundersRepoCta'
 import FooterNewsletter from '@/components/homepage/sections/FooterNewsletter'
 import HomepageEmptyState from '@/components/homepage/sections/HomepageEmptyState'
@@ -86,7 +85,6 @@ export default async function Home() {
               newsReview={data.media.newsReview}
               hotVideos={data.media.hotVideos}
             />
-            <MediaHubSection media={data.media} />
             <BrandPressStrip posts={data.brandPress} />
           </>
         }
