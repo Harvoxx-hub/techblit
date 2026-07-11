@@ -20,7 +20,8 @@ import {
   PhotoIcon,
   SparklesIcon
 } from '@heroicons/react/24/outline';
-import { Input, Textarea, Button, Card, CardContent, Dropdown, TagInput, Spinner } from '@/components/ui';
+import { Input, Textarea, Button, Card, CardContent, Dropdown, TagInput, Spinner, Modal } from '@/components/ui';
+import { SocialPostDialog } from '@/components/social/SocialPostDialog';
 import dynamic from 'next/dynamic';
 import { uploadImageToCloudinary } from '@/lib/imageUpload';
 import { normalizeFeaturedImageForSave, extractPublicId, FeaturedImageRef, getInlineImageUrl, getCoverUrl } from '@/lib/imageHelpers';
@@ -43,6 +44,8 @@ function NewPostEditor() {
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [postId, setPostId] = useState<string | null>(null);
+  const [justPublishedId, setJustPublishedId] = useState<string | null>(null);
+  const [showSocialDialog, setShowSocialDialog] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isPrefilled, setIsPrefilled] = useState(false);
 
@@ -237,13 +240,20 @@ function NewPostEditor() {
 
       const result = await apiService.createPost(postData);
       setPostId(result.id);
-      
+
       // If this is a draft save, stay on the page for auto-save
       if (finalStatus === 'draft') {
         // Don't redirect, let auto-save continue working
         return;
       }
-      
+
+      // If it published immediately (not scheduled for later), offer to
+      // post to social before navigating away.
+      if (finalStatus === 'published' && result.id) {
+        setJustPublishedId(result.id);
+        return;
+      }
+
       router.push('/admin/posts');
     } catch (error) {
       console.error('Error saving post:', error);
@@ -604,6 +614,29 @@ function NewPostEditor() {
           </div>
         </div>
       </div>
+
+      {justPublishedId && !showSocialDialog && (
+        <Modal isOpen onClose={() => router.push('/admin/posts')} title="Published!">
+          <p className="text-sm text-gray-600">Post to social media now?</p>
+          <div className="flex justify-end gap-2 mt-4">
+            <Button variant="outline" onClick={() => router.push('/admin/posts')}>Not now</Button>
+            <Button variant="primary" onClick={() => setShowSocialDialog(true)}>Post to Social</Button>
+          </div>
+        </Modal>
+      )}
+
+      {justPublishedId && showSocialDialog && (
+        <SocialPostDialog
+          isOpen
+          onClose={() => router.push('/admin/posts')}
+          postId={justPublishedId}
+          title={post.title || ''}
+          excerpt={post.excerpt || ''}
+          featuredImageUrl={getCoverUrl(post.featuredImage)}
+          category={post.category || ''}
+          slug={post.slug || ''}
+        />
+      )}
     </AdminLayout>
   );
 }

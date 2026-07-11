@@ -16,10 +16,12 @@ import {
   TrashIcon,
   ArrowDownTrayIcon,
   NewspaperIcon,
+  ShareIcon,
 } from '@heroicons/react/24/outline';
 import { Input, Dropdown, Button, Card, CardContent, Badge } from '@/components/ui';
 import { parseDate, formatDateShort } from '@/lib/dateUtils';
 import { getImageUrlFromData } from '@/lib/imageHelpers';
+import { SocialPostDialog } from '@/components/social/SocialPostDialog';
 
 function PostsManager() {
   const [posts, setPosts] = useState<Post[]>([]);
@@ -33,6 +35,7 @@ function PostsManager() {
   const [deleting, setDeleting] = useState<string | null>(null);
   const [generatingImage, setGeneratingImage] = useState<string | null>(null);
   const [generatingBreakingNews, setGeneratingBreakingNews] = useState<string | null>(null);
+  const [socialDialogPost, setSocialDialogPost] = useState<Post | null>(null);
 
   useEffect(() => {
     const fetchPosts = async () => {
@@ -389,6 +392,15 @@ function PostsManager() {
                           )}
                         </button>
                       )}
+                      {post.status === 'published' && (
+                        <button
+                          className="text-gray-400 hover:text-blue-600"
+                          title="Post to Social"
+                          onClick={() => setSocialDialogPost(post)}
+                        >
+                          <ShareIcon className="h-5 w-5" />
+                        </button>
+                      )}
                       <button
                         className={`text-gray-400 hover:text-red-600 ${deleting === post.id ? 'opacity-50 cursor-not-allowed' : ''}`}
                         title="Delete Post"
@@ -479,6 +491,19 @@ function PostsManager() {
           })}
         </div>
       </div>
+
+      {socialDialogPost && (
+        <SocialPostDialog
+          isOpen={!!socialDialogPost}
+          onClose={() => setSocialDialogPost(null)}
+          postId={socialDialogPost.id!}
+          title={socialDialogPost.title}
+          excerpt={socialDialogPost.excerpt || ''}
+          featuredImageUrl={getFeaturedImageUrl(socialDialogPost)}
+          category={socialDialogPost.category || ''}
+          slug={socialDialogPost.slug}
+        />
+      )}
     </AdminLayout>
   );
 }

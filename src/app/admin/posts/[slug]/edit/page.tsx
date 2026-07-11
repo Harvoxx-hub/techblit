@@ -19,17 +19,19 @@ import {
   TagIcon,
   FolderIcon
 } from '@heroicons/react/24/outline';
-import { 
-  Button, 
-  Input, 
-  Textarea, 
-  Card, 
-  CardContent, 
-  Select, 
-  Alert, 
+import {
+  Button,
+  Input,
+  Textarea,
+  Card,
+  CardContent,
+  Select,
+  Alert,
   Spinner,
-  TagInput
+  TagInput,
+  Modal
 } from '@/components/ui';
+import { SocialPostDialog } from '@/components/social/SocialPostDialog';
 import dynamic from 'next/dynamic';
 import SEOSuggestions from '@/components/editor/SEOSuggestions';
 import CanonicalUrlManager from '@/components/editor/CanonicalUrlManager';
@@ -51,6 +53,8 @@ function EditPostEditor() {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [justPublishedId, setJustPublishedId] = useState<string | null>(null);
+  const [showSocialDialog, setShowSocialDialog] = useState(false);
   
   const handleFeaturedImageUpload = async (file: File): Promise<FeaturedImageRef> => {
     const result = await uploadImageToCloudinary(file, 'posts');
@@ -182,6 +186,14 @@ function EditPostEditor() {
       if (result?.previousSlug && result.previousSlug !== slugToRevalidate) {
         await revalidatePost(result.previousSlug);
       }
+
+      // If it published immediately (not scheduled for later), offer to
+      // post to social before navigating away.
+      if (finalStatus === 'published' && post.id) {
+        setJustPublishedId(post.id);
+        return;
+      }
+
       router.push('/admin/posts');
     } catch (error) {
       console.error('Error saving post:', error);
@@ -455,6 +467,29 @@ function EditPostEditor() {
           </div>
         </div>
       </div>
+
+      {justPublishedId && !showSocialDialog && (
+        <Modal isOpen onClose={() => router.push('/admin/posts')} title="Published!">
+          <p className="text-sm text-gray-600">Post to social media now?</p>
+          <div className="flex justify-end gap-2 mt-4">
+            <Button variant="outline" onClick={() => router.push('/admin/posts')}>Not now</Button>
+            <Button variant="primary" onClick={() => setShowSocialDialog(true)}>Post to Social</Button>
+          </div>
+        </Modal>
+      )}
+
+      {justPublishedId && showSocialDialog && (
+        <SocialPostDialog
+          isOpen
+          onClose={() => router.push('/admin/posts')}
+          postId={justPublishedId}
+          title={post.title || ''}
+          excerpt={post.excerpt || ''}
+          featuredImageUrl={getCoverUrl(post.featuredImage)}
+          category={post.category || ''}
+          slug={post.slug || ''}
+        />
+      )}
     </AdminLayout>
   );
 }

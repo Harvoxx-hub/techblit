@@ -942,6 +942,79 @@ class ApiService {
       method: 'DELETE',
     });
   }
+
+  // ============================================================================
+  // SOCIAL POSTING (ShareViral cross-post)
+  // ============================================================================
+
+  // Returns a Blob, not JSON — bypasses `request()`, same reasoning as the
+  // existing handleBreakingNews raw-fetch in admin/posts/page.tsx. The exact
+  // blob returned here should be re-sent to postToSocial so the editor never
+  // posts something they didn't preview.
+  async generateBreakingNewsPreview(input: {
+    title: string;
+    excerpt?: string;
+    featuredImageUrl: string;
+    category?: string;
+    slug?: string;
+  }): Promise<Blob> {
+    const token = await this.getAuthToken();
+    const res = await fetch(`${this.baseUrl}/canva/breaking-news`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      credentials: 'omit',
+      mode: 'cors',
+      body: JSON.stringify(input),
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      throw new Error(data.error || `Failed to generate image (status ${res.status})`);
+    }
+    return res.blob();
+  }
+
+  async postToSocial(input: {
+    postId: string;
+    platforms: string[];
+    postText: string;
+    image: Blob;
+  }): Promise<{
+    success: boolean;
+    message: string;
+    total: number;
+    successful: number;
+    failed: number;
+    results: Array<{ success: boolean; message: string; platform: string; accountName?: string }>;
+  }> {
+    const token = await this.getAuthToken();
+    const formData = new FormData();
+    formData.append('postId', input.postId);
+    formData.append('platforms', input.platforms.join(','));
+    formData.append('postText', input.postText);
+    formData.append('image', input.image, 'breaking-news.jpg');
+
+    const res = await fetch(`${this.baseUrl}/social/post`, {
+      method: 'POST',
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      credentials: 'omit',
+      mode: 'cors',
+      body: formData,
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      throw new Error(data.error || `Social post failed (status ${res.status})`);
+    }
+    return data.data || data;
+  }
+
+  async getSocialStatus(postId: string): Promise<{
+    socialPosts: Array<{ postedAt: string; platforms: string[]; successful: number; failed: number; results: unknown[] }>;
+  }> {
+    return this.request(`/social/status/${encodeURIComponent(postId)}`);
+  }
 }
 
 // Export singleton instance
