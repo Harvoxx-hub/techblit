@@ -39,6 +39,20 @@ interface BlogPost {
   status?: string
   publishedAt?: unknown
   category?: string
+  postType?: 'article' | 'video' | string
+  video?: {
+    url: string
+    thumbnailUrl?: string
+    duration?: number
+    width?: number
+    height?: number
+  }
+  source?: {
+    platform?: string
+    url?: string
+    authorHandle?: string
+    creditLine?: string
+  }
   featuredImage?: ProcessedImage | {
     url: string
     alt: string
@@ -241,7 +255,20 @@ export default async function BlogPostPage({
                 )}
               </div>
 
-              {imageUrl && (
+              {post.postType === 'video' && post.video?.url ? (
+                <div className="relative aspect-video rounded-lg sm:rounded-xl overflow-hidden mb-5 sm:mb-6 bg-black">
+                  <video
+                    controls
+                    playsInline
+                    preload="metadata"
+                    poster={post.video.thumbnailUrl}
+                    className="w-full h-full object-contain"
+                    src={post.video.url}
+                  >
+                    Your browser does not support the video tag.
+                  </video>
+                </div>
+              ) : imageUrl ? (
                 <div className="relative aspect-[16/9] rounded-lg sm:rounded-xl overflow-hidden mb-5 sm:mb-6 bg-gray-100 dark:bg-gray-900">
                   <Image
                     src={imageUrl}
@@ -259,6 +286,25 @@ export default async function BlogPostPage({
                     priority
                   />
                 </div>
+              ) : null}
+
+              {post.source?.creditLine && (
+                <p className="text-sm text-gray-500 dark:text-gray-400 mb-4 italic">
+                  {post.source.creditLine}
+                  {post.source.url && (
+                    <>
+                      {' '}
+                      <a
+                        href={post.source.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-brand-gold hover:underline"
+                      >
+                        View original
+                      </a>
+                    </>
+                  )}
+                </p>
               )}
 
               {post.excerpt && (
