@@ -43,3 +43,9 @@ next-env.d.ts
 # Environment variables
 .env.local
 .env*.local
+
+# Claude Code worktrees — nested git worktrees under here got accidentally
+# tracked as a gitlink once (.claude/worktrees/<id>), which broke `git
+# status`/`diff` repo-wide once the worktree's own path moved. Never track
+# these as regular content.
+.claude/worktrees/
