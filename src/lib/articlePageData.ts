@@ -1,7 +1,6 @@
 import { getPostsApiUrl } from '@/lib/apiConfig'
 import { HomepagePost } from '@/lib/homepageTypes'
 import { VideoItem } from '@/lib/homepageTypes'
-import { getHomepageData } from '@/lib/homepageData'
 
 export async function fetchPostsList(limit = 40): Promise<HomepagePost[]> {
   try {
@@ -51,8 +50,15 @@ export const filterLatestPosts = (
 
 export async function getAtnFeaturedVideo(): Promise<VideoItem | null> {
   try {
-    const data = await getHomepageData()
-    return data.media.newsReview[0] ?? null
+    // Hits a dedicated endpoint rather than the full /homepage payload —
+    // that pulled in a 120-post Firestore query and the entire
+    // magazine-layout bucket build just to read one video out of it.
+    const response = await fetch(`${getPostsApiUrl()}/homepage/featured-video`, {
+      next: { revalidate: 3600 },
+    })
+    if (!response.ok) return null
+    const json = await response.json()
+    return json.data?.featuredVideo ?? null
   } catch {
     return null
   }
