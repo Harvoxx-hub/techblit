@@ -36,6 +36,7 @@ import dynamic from 'next/dynamic';
 import SEOSuggestions from '@/components/editor/SEOSuggestions';
 import CanonicalUrlManager from '@/components/editor/CanonicalUrlManager';
 import Scheduling from '@/components/editor/Scheduling';
+import Backdate from '@/components/editor/Backdate';
 import Preview from '@/components/editor/Preview';
 import FeaturedImageUpload from '@/components/editor/FeaturedImageUpload';
 import { uploadImageToCloudinary } from '@/lib/imageUpload';
@@ -55,7 +56,12 @@ function EditPostEditor() {
   const [saving, setSaving] = useState(false);
   const [justPublishedId, setJustPublishedId] = useState<string | null>(null);
   const [showSocialDialog, setShowSocialDialog] = useState(false);
-  
+  // Deliberately separate from post.publishedAt (the loaded, already-set
+  // value from a prior publish) — only set when the admin actively uses the
+  // Backdate widget this session, so an unpublish->republish cycle doesn't
+  // silently resend a stale old publish date instead of "now".
+  const [backdateAt, setBackdateAt] = useState<Date | undefined>(undefined);
+
   const handleFeaturedImageUpload = async (file: File): Promise<FeaturedImageRef> => {
     const result = await uploadImageToCloudinary(file, 'posts');
     return normalizeFeaturedImageForSave(
@@ -84,6 +90,7 @@ function EditPostEditor() {
     category: '',
     status: 'draft',
     scheduledAt: undefined,
+    publishedAt: undefined,
     featuredImage: undefined,
   });
   const [status, setStatus] = useState<PostStatus>('draft');
@@ -136,6 +143,17 @@ function EditPostEditor() {
     fetchPost();
   }, [params.slug, user]);
 
+  // Post dates come back from the API as Firestore-shaped
+  // { _seconds, _nanoseconds } objects, not real Date instances, so a bare
+  // .toISOString() call on a loaded (untouched) date would throw.
+  const toIsoString = (value: any): string | undefined => {
+    if (!value) return undefined;
+    if (value instanceof Date) return value.toISOString();
+    if (typeof value === 'string') return value;
+    if (typeof value._seconds === 'number') return new Date(value._seconds * 1000).toISOString();
+    return undefined;
+  };
+
   const handleSave = async (action: 'save' | 'publish' | 'schedule' | 'in_review') => {
     if (!post.title || !post.contentHtml) {
       alert('Please fill in the title and content');
@@ -167,7 +185,8 @@ function EditPostEditor() {
         metaTitle: post.metaTitle,
         metaDescription: post.metaDescription,
         canonical: post.canonical,
-        scheduledAt: post.scheduledAt ? post.scheduledAt.toISOString() : undefined,
+        scheduledAt: toIsoString(post.scheduledAt),
+        publishedAt: action === 'publish' ? toIsoString(backdateAt) : undefined,
       };
 
       // Remove undefined values
@@ -452,6 +471,18 @@ function EditPostEditor() {
               scheduledAt={post.scheduledAt}
               onScheduleChange={(date) => setPost(prev => ({ ...prev, scheduledAt: date || undefined }))}
             />
+
+            {/* Backdate */}
+            {status !== 'published' && (
+              <Card>
+                <CardContent className="p-6">
+                  <Backdate
+                    publishedAt={backdateAt}
+                    onChange={(date) => setBackdateAt(date || undefined)}
+                  />
+                </CardContent>
+              </Card>
+            )}
 
             {/* Preview */}
             <Preview

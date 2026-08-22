@@ -28,6 +28,7 @@ import { normalizeFeaturedImageForSave, extractPublicId, FeaturedImageRef, getIn
 import SEOSuggestions from '@/components/editor/SEOSuggestions';
 import CanonicalUrlManager from '@/components/editor/CanonicalUrlManager';
 import Scheduling from '@/components/editor/Scheduling';
+import Backdate from '@/components/editor/Backdate';
 import Preview from '@/components/editor/Preview';
 import FeaturedImageUpload from '@/components/editor/FeaturedImageUpload';
 import { useAutoSave, useAutoSaveIndicator } from '@/hooks/useAutoSave';
@@ -109,6 +110,7 @@ function NewPostEditor() {
     status: 'draft',
     visibility: 'public',
     scheduledAt: undefined,
+    publishedAt: undefined,
     featuredImage: undefined,
     seo: {
       noindex: false,
@@ -236,6 +238,7 @@ function NewPostEditor() {
         metaDescription: post.metaDescription,
         canonical: post.canonical,
         scheduledAt: post.scheduledAt,
+        publishedAt: finalStatus === 'published' ? post.publishedAt : undefined,
       };
 
       const result = await apiService.createPost(postData);
@@ -506,6 +509,16 @@ function NewPostEditor() {
                 <Scheduling
                   scheduledAt={post.scheduledAt}
                   onScheduleChange={(date) => setPost(prev => ({ ...prev, scheduledAt: date || undefined }))}
+                />
+              </CardContent>
+            </Card>
+
+            {/* Backdate */}
+            <Card>
+              <CardContent className="p-6">
+                <Backdate
+                  publishedAt={post.publishedAt}
+                  onChange={(date) => setPost(prev => ({ ...prev, publishedAt: date || undefined }))}
                 />
               </CardContent>
             </Card>
