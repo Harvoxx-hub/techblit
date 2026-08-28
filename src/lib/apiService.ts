@@ -567,22 +567,41 @@ class ApiService {
   // NEWSLETTER API
   // ============================================================================
 
-  async subscribeToNewsletter(data: { email: string; name?: string }) {
+  async subscribeToNewsletter(data: { email: string; name?: string; source?: string }) {
     return this.request('/newsletter/subscribe', {
       method: 'POST',
       body: JSON.stringify(data),
     });
   }
 
-  async unsubscribeFromNewsletter(data: { email: string }) {
-    return this.request('/newsletter/unsubscribe', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
+  /**
+   * Completes double opt-in. POST rather than GET so that mail scanners
+   * following the link in the confirmation email can't confirm on the
+   * reader's behalf.
+   */
+  async confirmNewsletterSubscription(data: { token: string }) {
+    return this.request<{ email?: string; status?: string; alreadyConfirmed?: boolean }>(
+      '/newsletter/confirm',
+      {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }
+    );
   }
 
-  async getNewsletterStats(): Promise<{ active?: number; recent?: number }> {
-    return this.request<{ active?: number; recent?: number }>('/newsletter/stats');
+  /**
+   * Unsubscribe is addressed by token, never by email address — the token is
+   * what proves the caller owns the mailbox.
+   */
+  async unsubscribeFromNewsletter(data: { token: string }) {
+    return this.request<{ email?: string; status?: string }>(
+      `/newsletter/unsubscribe?token=${encodeURIComponent(data.token)}`,
+      { method: 'POST' }
+    );
+  }
+
+  async getNewsletterStats(): Promise<{ active?: number; pending?: number; recent?: number }> {
+    return this.request<{ active?: number; pending?: number; recent?: number }>('/newsletter/stats');
   }
 
   // ============================================================================
