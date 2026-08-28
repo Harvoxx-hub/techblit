@@ -253,6 +253,9 @@ export const PERMISSIONS = {
 
   // Founder's Repository
   MANAGE_FOUNDERS: 'manage_founders',
+
+  // Brand Press (/press intake)
+  MANAGE_PRESS: 'manage_press',
 } as const;
 
 // Role-based permission mapping
@@ -266,6 +269,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, string[]> = {
     PERMISSIONS.MANAGE_MEDIA,
     PERMISSIONS.VIEW_ANALYTICS,
     PERMISSIONS.MANAGE_FOUNDERS,
+    PERMISSIONS.MANAGE_PRESS,
   ],
   author: [
     PERMISSIONS.CREATE_POST,

@@ -963,6 +963,54 @@ class ApiService {
   }
 
   // ============================================================================
+  // BRAND PRESS — /press landing page intake
+  // ============================================================================
+
+  /**
+   * Public: submit a story from the /press page. No auth, no payment — the
+   * team follows up with a Paystack link.
+   */
+  async submitPressStory(data: Record<string, unknown>) {
+    const res = await fetch(`${this.baseUrl}/press/submissions`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    const json = await res.json().catch(() => ({}));
+    if (!res.ok || (json as { success?: boolean }).success === false) {
+      const msg =
+        (json as { error?: { message?: string } })?.error?.message ||
+        (json as { message?: string })?.message ||
+        `HTTP ${res.status}`;
+      throw new Error(msg);
+    }
+    return (json as { data?: { id?: string } }).data ?? {};
+  }
+
+  async listPressSubmissions(params?: { status?: string; search?: string; limit?: number }) {
+    const q = new URLSearchParams();
+    if (params?.status) q.append('status', params.status);
+    if (params?.search) q.append('search', params.search);
+    if (params?.limit != null) q.append('limit', String(params.limit));
+    const qs = q.toString();
+    return this.request<unknown[]>(`/press/submissions${qs ? `?${qs}` : ''}`);
+  }
+
+  async getPressSubmission(id: string) {
+    return this.request<Record<string, unknown>>(`/press/submissions/${encodeURIComponent(id)}`);
+  }
+
+  async updatePressSubmission(
+    id: string,
+    data: { status?: string; paymentStatus?: string; adminNotes?: string },
+  ) {
+    return this.request<Record<string, unknown>>(`/press/submissions/${encodeURIComponent(id)}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    });
+  }
+
+  // ============================================================================
   // SOCIAL POSTING (ShareViral cross-post)
   // ============================================================================
 
