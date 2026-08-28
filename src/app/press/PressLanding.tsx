@@ -1,8 +1,7 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
 import apiService from '@/lib/apiService';
 import {
   formatNaira,
@@ -36,22 +35,23 @@ type SubmitState =
 
 export default function PressLanding({ pricing }: { pricing: PressPricing }) {
   const quotedPrice = pricing.current;
-  const searchParams = useSearchParams();
   const [state, setState] = useState<SubmitState>({ status: 'idle' });
   const referrer = useRef('');
+  // Captured after mount rather than via useSearchParams(), which would force
+  // this whole (statically rendered) page to client-render and keep the copy
+  // out of the initial HTML — bad for an ad landing page.
+  const utm = useRef<Record<string, string>>({});
 
   useEffect(() => {
     referrer.current = document.referrer || '';
-  }, []);
-
-  const utm = useMemo(() => {
+    const params = new URLSearchParams(window.location.search);
     const out: Record<string, string> = {};
     for (const key of PRESS_UTM_KEYS) {
-      const v = searchParams.get(key);
+      const v = params.get(key);
       if (v) out[key] = v;
     }
-    return out;
-  }, [searchParams]);
+    utm.current = out;
+  }, []);
 
   const whatsappHref = pressWhatsappLink(
     "Hi TechBlit — I'd like to publish a story and I'm not sure which package fits.",
@@ -82,7 +82,7 @@ export default function PressLanding({ pricing }: { pricing: PressPricing }) {
           notes: fd.get('notes'),
           consent: true,
           quotedPrice,
-          utm,
+          utm: utm.current,
           referrer: referrer.current,
           pagePath: '/press',
         });
@@ -99,7 +99,7 @@ export default function PressLanding({ pricing }: { pricing: PressPricing }) {
         });
       }
     },
-    [utm, quotedPrice],
+    [quotedPrice],
   );
 
   return (

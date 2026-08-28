@@ -1,4 +1,3 @@
-import { Suspense } from 'react';
 import type { Metadata } from 'next';
 import Navigation from '@/components/ui/Navigation';
 import Footer from '@/components/ui/Footer';
@@ -66,15 +65,7 @@ export default function PressPage() {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
       <Navigation />
-      <Suspense
-        fallback={
-          <div className="mx-auto max-w-3xl px-6 py-32 text-center text-[#00102B]/60">
-            Loading…
-          </div>
-        }
-      >
-        <PressLanding pricing={pricing} />
-      </Suspense>
+      <PressLanding pricing={pricing} />
       <Footer />
     </div>
   );
