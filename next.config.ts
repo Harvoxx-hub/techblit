@@ -8,7 +8,18 @@ const nextConfig: NextConfig = {
   compress: true,
   
   // Image optimization
+  //
+  // Images are served through Cloudinary's CDN via a custom loader
+  // (src/lib/cloudinaryImageLoader.ts), NOT Vercel's `/_next/image` optimizer.
+  // Post images already arrive as fully-transformed Cloudinary URLs, so
+  // double-optimizing through Vercel was redundant and exhausted the plan's
+  // Image Optimization quota (HTTP 402 on new images). deviceSizes/imageSizes
+  // still drive the responsive `srcset` widths passed to the loader; formats,
+  // minimumCacheTTL and the SVG/CSP options only affect the built-in
+  // optimizer and are now inert but kept for reference.
   images: {
+    loader: 'custom',
+    loaderFile: './src/lib/cloudinaryImageLoader.ts',
     remotePatterns: [
       {
         protocol: 'https',
