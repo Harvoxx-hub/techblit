@@ -24,7 +24,7 @@ export default function AboutPage() {
       <Navigation />
 
       {/* About Content */}
-      <div className="max-w-4xl mx-auto px-6 py-12">
+      <main className="max-w-4xl mx-auto px-6 py-12">
         <div className="bg-white rounded-lg shadow-sm p-8">
           <h1 className="text-4xl font-bold text-gray-900 mb-8">About TechBlit</h1>
           
@@ -79,8 +79,8 @@ export default function AboutPage() {
             </Link>
           </div>
         </div>
-      </div>
-      
+      </main>
+
       <Footer />
     </div>
   );

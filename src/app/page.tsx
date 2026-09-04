@@ -40,7 +40,7 @@ export default async function Home() {
       name: 'TechBlit',
       logo: {
         '@type': 'ImageObject',
-        url: 'https://www.techblit.com/favicon.png',
+        url: 'https://www.techblit.com/icon-512.png',
       },
     },
     potentialAction: {
@@ -60,38 +60,41 @@ export default async function Home() {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
       />
       <Navigation />
-      <BreakingTicker posts={data.breaking} />
 
-      {!hasStories && <HomepageEmptyState />}
+      <main>
+        <BreakingTicker posts={data.breaking} />
 
-      <HomepageHeroSection
-        hotNow={data.hotNow}
-        breaking={data.breaking}
-        trending={data.trending}
-      />
+        {!hasStories && <HomepageEmptyState />}
 
-      <MagazineGrid
-        mobileRails={
-          <MobileSidebarRails latest={data.latest} />
-        }
-        main={
-          <>
-            <PopularNowSection posts={data.popular} />
-            <EditorsChoiceSection posts={data.editorsChoice} />
-            <WorthReadingSection posts={data.worthReading} />
-            <FoundersRepoCta />
-            <CategoryColumnsSection columns={data.categoryColumns} />
-            <VideoSessionSection
-              newsReview={data.media.newsReview}
-              hotVideos={data.media.hotVideos}
-            />
-            <BrandPressStrip posts={data.brandPress} />
-          </>
-        }
-        sidebar={
-          <SidebarRail latest={data.latest} />
-        }
-      />
+        <HomepageHeroSection
+          hotNow={data.hotNow}
+          breaking={data.breaking}
+          trending={data.trending}
+        />
+
+        <MagazineGrid
+          mobileRails={
+            <MobileSidebarRails latest={data.latest} />
+          }
+          main={
+            <>
+              <PopularNowSection posts={data.popular} />
+              <EditorsChoiceSection posts={data.editorsChoice} />
+              <WorthReadingSection posts={data.worthReading} />
+              <FoundersRepoCta />
+              <CategoryColumnsSection columns={data.categoryColumns} />
+              <VideoSessionSection
+                newsReview={data.media.newsReview}
+                hotVideos={data.media.hotVideos}
+              />
+              <BrandPressStrip posts={data.brandPress} />
+            </>
+          }
+          sidebar={
+            <SidebarRail latest={data.latest} />
+          }
+        />
+      </main>
 
       <FooterNewsletter id="footer-newsletter" />
       <Footer />

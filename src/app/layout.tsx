@@ -24,15 +24,10 @@ export const metadata: Metadata = {
   authors: [{ name: 'TechBlit Team' }],
   creator: 'TechBlit',
   publisher: 'TechBlit',
-  icons: {
-    icon: [
-      { url: '/favicon.png', type: 'image/png' },
-    ],
-    apple: [
-      { url: '/favicon.png', type: 'image/png' },
-    ],
-    shortcut: '/favicon.png',
-  },
+  applicationName: 'TechBlit',
+  // Browser-tab and touch icons are provided by the file conventions in src/app/
+  // (favicon.ico, icon.svg, apple-icon.png). PWA / Speed Dial icons live in the
+  // web manifest (src/app/manifest.ts).
   openGraph: {
     type: 'website',
     locale: 'en_US',
@@ -79,7 +74,7 @@ export default function RootLayout({
     '@type': 'Organization',
     name: 'TechBlit',
     url: SITE_URL,
-    logo: `${SITE_URL}/favicon.png`,
+    logo: `${SITE_URL}/icon-512.png`,
     description: "Igniting Africa's Tech Conversation",
     sameAs: [
       'https://twitter.com/techblit',

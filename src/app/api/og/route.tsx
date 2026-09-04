@@ -114,7 +114,7 @@ export async function GET() {
     )
   }
 
-  const logoUrl = `${SITE_URL}/favicon.png`
+  const logoUrl = `${SITE_URL}/icon-192.png`
 
   return new ImageResponse(
     (
