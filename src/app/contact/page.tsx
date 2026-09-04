@@ -18,11 +18,9 @@ export const metadata: Metadata = {
   },
 };
 
-/*
- * TODO: add a street / registered address. Google News transparency wants a
- * physical address; keep it identical here, in the `address` block below, in
- * /about, and in the site footer.
- */
+// If a street / registered address is added later, put it above the city line
+// here, in the `address` block below, in /about, and in the site footer — all
+// four must stay identical.
 
 const contactSchema = {
   '@context': 'https://schema.org',
@@ -106,12 +104,14 @@ export default function ContactPage() {
 
           <h2>Address</h2>
           <p>
-            {/* TODO: add the street / registered address above the city line. */}
             TechBlit
             <br />
             Port Harcourt, Rivers State
             <br />
             Nigeria
+          </p>
+          <p>
+            Editorial responsibility rests with Victor Agbenro, Editor-in-Chief.
           </p>
 
           <h2>Follow TechBlit</h2>

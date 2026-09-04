@@ -38,8 +38,9 @@ export default function LicensePage() {
           <h2>Republishing full articles</h2>
           <p>
             Full-text republication, translation, or inclusion in a newsletter, aggregator, or
-            print publication requires a licence. {/* TODO: confirm whether any syndication
-            partners have blanket permission, and whether a Creative Commons option is offered. */}
+            print publication requires a written licence. TechBlit content is not published
+            under a Creative Commons licence, and no third party has standing permission to
+            republish it in full.
           </p>
 
           <h2>Images</h2>
@@ -58,9 +59,8 @@ export default function LicensePage() {
           </p>
 
           <p className="text-sm text-gray-500 dark:text-gray-400">
-            {/* TODO: set and maintain a real "last updated" date once legal has reviewed this page. */}
-            This page is provided for general guidance and does not constitute a licence or legal
-            advice.
+            Last updated 4 September 2026. This page is provided for general guidance and does
+            not itself constitute a licence or legal advice.
           </p>
         </div>
       </main>
