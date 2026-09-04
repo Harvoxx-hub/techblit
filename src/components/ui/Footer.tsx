@@ -96,21 +96,27 @@ export default function Footer() {
 
           <div>
             <h3 className="text-xs font-bold uppercase tracking-widest text-brand-gold mb-4">
-              Contact
+              TechBlit
             </h3>
             <div className="space-y-3">
-              <a
-                href="mailto:editor@techblit.com"
+              <Link
+                href="/about"
                 className="block text-gray-400 hover:text-white transition-colors text-sm"
               >
-                editor@techblit.com
-              </a>
-              <a
-                href="mailto:partnership@techblit.com"
+                About &amp; editorial standards
+              </Link>
+              <Link
+                href="/contact"
                 className="block text-gray-400 hover:text-white transition-colors text-sm"
               >
-                partnership@techblit.com
-              </a>
+                Contact
+              </Link>
+              <Link
+                href="/license"
+                className="block text-gray-400 hover:text-white transition-colors text-sm"
+              >
+                Licensing &amp; syndication
+              </Link>
               <a
                 href={ATN_PLAYLIST_URL}
                 target="_blank"
