@@ -196,6 +196,7 @@ export default async function BlogPostPage({
 
       <Navigation />
 
+      <main>
       <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
         {/* Breadcrumb */}
         <nav
@@ -353,6 +354,7 @@ export default async function BlogPostPage({
       </div>
 
       <ArticleRelatedPosts posts={relatedPosts} />
+      </main>
       <FooterNewsletter />
       <Footer />
     </div>

@@ -219,6 +219,7 @@ export default async function AuthorPage({ params }: AuthorPageProps) {
       />
       <Navigation />
 
+      <main>
       {/* Hero Section */}
       <AuthorHero
         authorName={authorName}
@@ -292,6 +293,7 @@ export default async function AuthorPage({ params }: AuthorPageProps) {
           </Link>
         </div>
       </section>
+      </main>
 
       <Footer />
     </div>

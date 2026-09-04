@@ -26,7 +26,7 @@ const NAV_LINKS: NavLink[] = [
   {
     href: ATN_PLAYLIST_URL,
     label: 'ATN',
-    ariaLabel: 'Africa Tech Network on YouTube',
+    ariaLabel: 'ATN — Africa Tech Network on YouTube',
     external: true,
   },
 ]

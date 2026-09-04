@@ -92,7 +92,7 @@ export default async function FounderProfilePage({
       />
       <Navigation />
 
-      <div className="mx-auto max-w-4xl px-4 py-10 sm:py-14">
+      <main className="mx-auto max-w-4xl px-4 py-10 sm:py-14">
         <Link
           href="/founders"
           className="inline-flex items-center gap-2 text-sm font-medium text-stone-600 transition hover:text-stone-900"
@@ -224,7 +224,7 @@ export default async function FounderProfilePage({
             </div>
           </div>
         </article>
-      </div>
+      </main>
       <Footer />
     </div>
   );

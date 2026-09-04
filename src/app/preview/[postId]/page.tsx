@@ -89,8 +89,8 @@ function LoadingSkeleton() {
   return (
     <div className="min-h-screen bg-gray-50">
       <Navigation showBackButton={true} />
-      
-      <div className="max-w-4xl mx-auto px-6 py-8">
+
+      <main className="max-w-4xl mx-auto px-6 py-8">
         <div className="animate-pulse">
           <div className="h-8 bg-gray-200 rounded w-3/4 mb-4"></div>
           <div className="h-4 bg-gray-200 rounded w-1/2 mb-6"></div>
@@ -100,8 +100,8 @@ function LoadingSkeleton() {
             <div className="h-4 bg-gray-200 rounded w-4/6"></div>
           </div>
         </div>
-      </div>
-      
+      </main>
+
       <Footer />
     </div>
   );
@@ -233,7 +233,8 @@ export default function PreviewPage() {
         }
       `}</style>
       <Navigation showBackButton={true} />
-      
+
+      <main>
       {/* Preview Banner */}
       <div className="max-w-4xl mx-auto px-6 pt-8">
         <PreviewBanner 
@@ -348,7 +349,8 @@ export default function PreviewPage() {
           </Link>
         </div>
       </article>
-      
+      </main>
+
       <Footer />
     </div>
   );

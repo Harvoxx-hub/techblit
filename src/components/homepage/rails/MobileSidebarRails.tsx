@@ -12,9 +12,9 @@ const MobileSidebarRails = ({ latest }: MobileSidebarRailsProps) => {
   return (
     <HorizontalScrollRail label="Latest Stories">
       {latest.slice(0, 5).map((post) => (
-        <div key={post.id} className="shrink-0 w-[85vw] max-w-[280px] sm:w-72">
-          <CompactListItem post={post} showThumbnail />
-        </div>
+        <li key={post.id} className="shrink-0 w-[85vw] max-w-[280px] sm:w-72">
+          <CompactListItem post={post} showThumbnail as="div" />
+        </li>
       ))}
     </HorizontalScrollRail>
   )

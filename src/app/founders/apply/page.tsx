@@ -135,7 +135,7 @@ export default function FoundersApplyPage() {
     return (
       <div>
         <Navigation />
-        <div className="mx-auto max-w-lg px-4 py-24 text-center sm:py-32">
+        <main className="mx-auto max-w-lg px-4 py-24 text-center sm:py-32">
           <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100 text-emerald-700">
             <CheckCircleIcon className="h-9 w-9" aria-hidden />
           </div>
@@ -157,7 +157,7 @@ export default function FoundersApplyPage() {
               Back to TechBlit home
             </Link>
           </div>
-        </div>
+        </main>
         <Footer />
       </div>
     );
@@ -166,7 +166,7 @@ export default function FoundersApplyPage() {
   return (
     <div>
       <Navigation />
-      <div className="mx-auto max-w-3xl px-4 py-10 sm:px-6 lg:py-14">
+      <main className="mx-auto max-w-3xl px-4 py-10 sm:px-6 lg:py-14">
         <Link
           href="/founders"
           className="inline-flex items-center gap-2 text-sm font-medium text-stone-600 transition hover:text-stone-900"
@@ -553,7 +553,7 @@ export default function FoundersApplyPage() {
             </Button>
           </div>
         </form>
-      </div>
+      </main>
       <Footer />
     </div>
   );

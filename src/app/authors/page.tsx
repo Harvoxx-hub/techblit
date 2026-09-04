@@ -72,6 +72,7 @@ export default async function AuthorsPage() {
     <div className="min-h-screen bg-white dark:bg-[#0a0a0a]">
       <Navigation />
 
+      <main>
       {/* Hero Section with Geometric Patterns */}
       <section className="relative overflow-hidden bg-gradient-to-br from-orange-500 via-amber-500 to-yellow-400 dark:from-orange-600 dark:via-amber-600 dark:to-yellow-500">
         {/* Animated geometric background pattern */}
@@ -205,6 +206,7 @@ export default async function AuthorsPage() {
           </Link>
         </div>
       </section>
+      </main>
 
       <Footer />
     </div>
