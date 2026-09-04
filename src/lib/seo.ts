@@ -4,13 +4,34 @@ import { getSocialImageUrl, getImageUrlFromData, extractPublicId } from './image
 import { fetchLatestPublishedPost } from './articlePageData'
 import { getAuthorUrl } from './authorUtils'
 
-function getISODateString(date: Date | { toDate: () => Date } | undefined): string | undefined {
+// Accepts Date, ISO string, epoch number, a Firestore Timestamp ({ toDate }),
+// or an API-serialized Timestamp ({ _seconds } / { seconds }). The last shape
+// is what the posts API actually returns, so anything narrower silently
+// dropped datePublished/dateModified from the article schema.
+function getISODateString(date: unknown): string | undefined {
   if (!date) return undefined
-  if (typeof date === 'object' && 'toDate' in date) {
-    return date.toDate().toISOString()
-  }
-  if (date instanceof Date) {
-    return date.toISOString()
+  try {
+    if (typeof date === 'string' || typeof date === 'number') {
+      const d = new Date(date)
+      return Number.isNaN(d.getTime()) ? undefined : d.toISOString()
+    }
+    if (date instanceof Date) {
+      return Number.isNaN(date.getTime()) ? undefined : date.toISOString()
+    }
+    if (typeof date === 'object') {
+      const obj = date as Record<string, unknown>
+      if (typeof obj.toDate === 'function') {
+        return (obj.toDate() as Date).toISOString()
+      }
+      if (typeof obj._seconds === 'number') {
+        return new Date(obj._seconds * 1000).toISOString()
+      }
+      if (typeof obj.seconds === 'number') {
+        return new Date(obj.seconds * 1000).toISOString()
+      }
+    }
+  } catch {
+    return undefined
   }
   return undefined
 }
@@ -76,6 +97,13 @@ export interface BlogPostSEO {
     noindex?: boolean
     nofollow?: boolean
   }
+  content?: string
+  contentHtml?: string
+  readTime?: string
+  /** Editor-supplied 3-5 sentence bullet summary. Populated by the CMS. */
+  keyPoints?: string[]
+  /** Editor-supplied Q&A pairs for the article. Populated by the CMS. */
+  faq?: { question: string; answer: string }[]
 }
 
 const getFeaturedImageMeta = (featuredImage: BlogPostSEO['featuredImage']) => {
@@ -353,12 +381,32 @@ export function generateStructuredData(post: BlogPostSEO) {
     height: imageHeight,
   }]
 
+  // Plain-text body helps AI answer engines extract and quote the article.
+  const rawBody = post.contentHtml || post.content || ''
+  const articleBody = rawBody
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&#39;|&rsquo;|&lsquo;/g, "'")
+    .replace(/&quot;|&ldquo;|&rdquo;/g, '"')
+    .replace(/\s+/g, ' ')
+    .trim()
+
+  const wordCount = articleBody
+    ? articleBody.split(' ').length
+    : post.excerpt?.split(' ').length || 0
+
   const articleSchema = {
     '@context': 'https://schema.org',
     '@type': 'NewsArticle',
     headline: post.title,
     description: post.metaDescription || post.excerpt || '',
     image: imageArray,
+    ...(articleBody ? { articleBody } : {}),
+    speakable: {
+      '@type': 'SpeakableSpecification',
+      cssSelector: ['.article-headline', '.article-summary'],
+    },
     author: {
       '@type': 'Person',
       name: authorName,
@@ -390,7 +438,7 @@ export function generateStructuredData(post: BlogPostSEO) {
     isAccessibleForFree: true,
     keywords: post.tags?.join(', ') || category || 'technology',
     articleSection: category,
-    wordCount: post.excerpt?.split(' ').length || 0,
+    wordCount,
   }
 
   const breadcrumbSchema = {
@@ -439,9 +487,28 @@ export function generateStructuredData(post: BlogPostSEO) {
     },
   } : null
 
+  const faqSchema =
+    post.faq && post.faq.length > 0
+      ? {
+          '@context': 'https://schema.org',
+          '@type': 'FAQPage',
+          mainEntity: post.faq.map((item) => ({
+            '@type': 'Question',
+            name: item.question,
+            acceptedAnswer: {
+              '@type': 'Answer',
+              text: item.answer,
+            },
+          })),
+        }
+      : null
+
   const schemas: unknown[] = [articleSchema, breadcrumbSchema]
   if (imageObjectSchema) {
     schemas.push(imageObjectSchema)
+  }
+  if (faqSchema) {
+    schemas.push(faqSchema)
   }
 
   return schemas

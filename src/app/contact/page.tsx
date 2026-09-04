@@ -6,10 +6,10 @@ import { Metadata } from 'next';
 export const metadata: Metadata = {
   title: 'Contact TechBlit',
   description:
-    'How to reach the TechBlit newsroom: editorial enquiries, story tips, corrections, partnerships, and our postal address.',
+    'How to reach the TechBlit newsroom: editorial enquiries, story tips, corrections, partnerships, and our address.',
   openGraph: {
     title: 'Contact TechBlit',
-    description: 'Reach the TechBlit newsroom — tips, corrections, partnerships, and postal address.',
+    description: 'Reach the TechBlit newsroom — tips, corrections, partnerships, and address.',
     type: 'website',
     url: 'https://www.techblit.com/contact',
   },
@@ -19,14 +19,9 @@ export const metadata: Metadata = {
 };
 
 /*
- * ─────────────────────────────────────────────────────────────────────────────
- * SCAFFOLD — Google News transparency requires a contact page with a name,
- * an email address, AND a physical/postal address.
- *
- * Replace [BRACKETED PLACEHOLDERS] with the real registered/mailing address
- * and confirm the mailbox routing below. Keep the address identical here, in
- * /about (orgSchema + "Ownership & funding"), and in the site footer.
- * ─────────────────────────────────────────────────────────────────────────────
+ * TODO: add a street / registered address. Google News transparency wants a
+ * physical address; keep it identical here, in the `address` block below, in
+ * /about, and in the site footer.
  */
 
 const contactSchema = {
@@ -40,13 +35,10 @@ const contactSchema = {
     url: 'https://www.techblit.com',
     logo: 'https://www.techblit.com/icon-512.png',
     email: 'editor@techblit.com',
-    // TODO: real address — must match /about and the footer.
     address: {
       '@type': 'PostalAddress',
-      streetAddress: '[STREET ADDRESS]',
       addressLocality: 'Port Harcourt',
       addressRegion: 'Rivers State',
-      postalCode: '[POSTAL CODE]',
       addressCountry: 'NG',
     },
     contactPoint: [
@@ -80,23 +72,23 @@ export default function ContactPage() {
 
         <div className="prose prose-lg dark:prose-invert max-w-none">
           <p>
-            TechBlit is an independent African tech news publication. Here is how to reach the
-            right person.
+            TechBlit is an independent African tech news publication based in Port
+            Harcourt, Nigeria. Here is how to reach the right person.
           </p>
 
           <h2>Newsroom &amp; story tips</h2>
           <p>
             News tips, press releases, and editorial enquiries:{' '}
-            <a href="mailto:editor@techblit.com">editor@techblit.com</a>.
-            {/* TODO: add a secure/anonymous tip route (e.g. Signal number or SecureDrop) if the
-                newsroom offers one. */}
+            <a href="mailto:editor@techblit.com">editor@techblit.com</a>. If you need to
+            share something sensitively, say so in your first email and we will arrange a
+            secure channel.
           </p>
 
           <h2>Corrections</h2>
           <p>
             To report an inaccuracy, email{' '}
-            <a href="mailto:editor@techblit.com">editor@techblit.com</a> with the article URL and
-            details. See our{' '}
+            <a href="mailto:editor@techblit.com">editor@techblit.com</a> with the article
+            URL and the details. See our{' '}
             <Link href="/about#corrections">corrections policy</Link>.
           </p>
 
@@ -109,16 +101,13 @@ export default function ContactPage() {
 
           <h2>Write for TechBlit</h2>
           <p>
-            Pitch a contribution via our{' '}
-            <Link href="/writers">writers page</Link>.
+            Pitch a contribution via our <Link href="/writers">writers page</Link>.
           </p>
 
-          <h2>Postal address</h2>
+          <h2>Address</h2>
           <p>
-            {/* TODO: replace with the real registered/mailing address. */}
+            {/* TODO: add the street / registered address above the city line. */}
             TechBlit
-            <br />
-            [STREET ADDRESS]
             <br />
             Port Harcourt, Rivers State
             <br />

@@ -74,6 +74,8 @@ interface BlogPost {
     noindex?: boolean
     nofollow?: boolean
   }
+  keyPoints?: string[]
+  faq?: { question: string; answer: string }[]
 }
 
 const getImageUrl = (image: BlogPost['featuredImage']): string =>
@@ -234,7 +236,7 @@ export default async function BlogPostPage({
                 </div>
               )}
 
-              <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-[2.75rem] font-bold text-gray-900 dark:text-white mb-4 leading-tight">
+              <h1 className="article-headline text-2xl sm:text-3xl md:text-4xl lg:text-[2.75rem] font-bold text-gray-900 dark:text-white mb-4 leading-tight">
                 {post.title}
               </h1>
 
@@ -324,9 +326,22 @@ export default async function BlogPostPage({
               )}
 
               {post.excerpt && (
-                <p className="text-base sm:text-lg text-gray-600 dark:text-gray-300 leading-relaxed mb-5 border-l-4 border-brand-gold pl-4">
+                <p className="article-summary text-base sm:text-lg text-gray-600 dark:text-gray-300 leading-relaxed mb-5 border-l-4 border-brand-gold pl-4">
                   {post.excerpt}
                 </p>
+              )}
+
+              {post.keyPoints && post.keyPoints.length > 0 && (
+                <div className="mb-5 rounded-lg border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900/60 p-4 sm:p-5">
+                  <h2 className="text-xs font-bold uppercase tracking-widest text-brand-gold mb-3">
+                    Key points
+                  </h2>
+                  <ul className="list-disc pl-5 space-y-1.5 text-sm sm:text-base text-gray-700 dark:text-gray-300 marker:text-brand-gold">
+                    {post.keyPoints.map((point, i) => (
+                      <li key={i}>{point}</li>
+                    ))}
+                  </ul>
+                </div>
               )}
 
               <SocialShare
@@ -345,6 +360,32 @@ export default async function BlogPostPage({
                 }}
               />
             </div>
+
+            {post.faq && post.faq.length > 0 && (
+              <section
+                aria-labelledby="article-faq-heading"
+                className="bg-white dark:bg-gray-900 rounded-lg shadow-sm border border-gray-100 dark:border-gray-800 p-4 sm:p-6 md:p-8 mb-8"
+              >
+                <h2
+                  id="article-faq-heading"
+                  className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white mb-4"
+                >
+                  Frequently asked questions
+                </h2>
+                <dl className="space-y-5">
+                  {post.faq.map((item, i) => (
+                    <div key={i}>
+                      <dt className="font-semibold text-gray-900 dark:text-white">
+                        {item.question}
+                      </dt>
+                      <dd className="mt-1 text-gray-700 dark:text-gray-300 leading-relaxed">
+                        {item.answer}
+                      </dd>
+                    </div>
+                  ))}
+                </dl>
+              </section>
+            )}
 
             <SocialShare
               url={articleUrl}

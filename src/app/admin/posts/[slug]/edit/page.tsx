@@ -34,6 +34,7 @@ import {
 import { SocialPostDialog } from '@/components/social/SocialPostDialog';
 import dynamic from 'next/dynamic';
 import SEOSuggestions from '@/components/editor/SEOSuggestions';
+import ArticleExtras from '@/components/editor/ArticleExtras';
 import CanonicalUrlManager from '@/components/editor/CanonicalUrlManager';
 import Scheduling from '@/components/editor/Scheduling';
 import Backdate from '@/components/editor/Backdate';
@@ -180,6 +181,10 @@ function EditPostEditor() {
         excerpt: post.excerpt,
         tags: post.tags || [],
         categories: post.category ? [post.category] : [],
+        keyPoints: (post.keyPoints || []).map(p => p.trim()).filter(Boolean),
+        faq: (post.faq || [])
+          .map(f => ({ question: f.question.trim(), answer: f.answer.trim() }))
+          .filter(f => f.question && f.answer),
         status: finalStatus,
         featuredImage: post.featuredImage,
         metaTitle: post.metaTitle,
@@ -391,6 +396,13 @@ function EditPostEditor() {
                 />
               </CardContent>
             </Card>
+
+            {/* Answer-engine extras */}
+            <ArticleExtras
+              keyPoints={post.keyPoints || []}
+              faq={post.faq || []}
+              onChange={({ keyPoints, faq }) => setPost(prev => ({ ...prev, keyPoints, faq }))}
+            />
 
             {/* Tags & Categories */}
             <Card>
