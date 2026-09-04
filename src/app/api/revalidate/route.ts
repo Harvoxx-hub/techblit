@@ -1,5 +1,6 @@
 import { revalidatePath } from 'next/cache';
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse, after } from 'next/server';
+import { submitToIndexNow } from '@/lib/indexNow';
 
 const REVALIDATE_SECRET = process.env.VERCEL_REVALIDATE_SECRET;
 
@@ -28,7 +29,7 @@ export async function POST(request: NextRequest) {
     REVALIDATE_SECRET && secret && secret === REVALIDATE_SECRET;
 
   // Paths to revalidate
-  let paths: string[] = [];
+  const paths: string[] = [];
 
   // Manual: ?slug= works. If VERCEL_REVALIDATE_SECRET is set, require secret for slug too.
   if (slugParam && (hasValidSecret || !REVALIDATE_SECRET)) {
@@ -71,6 +72,9 @@ export async function POST(request: NextRequest) {
     for (const path of paths) {
       revalidatePath(path);
     }
+    // Ping IndexNow (Bing et al., which ChatGPT Search relies on) after the
+    // response is sent — never block or fail revalidation on it.
+    after(() => submitToIndexNow(paths));
     return NextResponse.json({ revalidated: true, paths });
   } catch (err) {
     console.error('Revalidate error:', err);

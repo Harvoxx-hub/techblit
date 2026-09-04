@@ -198,16 +198,21 @@ export default async function AuthorPage({ params }: AuthorPageProps) {
   const structuredData = {
     '@context': 'https://schema.org',
     '@type': 'ProfilePage',
+    dateModified: stats.lastPublished,
     mainEntity: {
       '@type': 'Person',
       name: authorName,
       description: authorBio,
       url: `https://www.techblit.com/authors/${resolvedParams.name}`,
+      jobTitle: 'Contributor',
       worksFor: {
         '@type': 'Organization',
         name: 'TechBlit',
         url: 'https://www.techblit.com',
       },
+      ...(stats.categories && stats.categories.length > 0
+        ? { knowsAbout: stats.categories }
+        : {}),
     },
   };
 
