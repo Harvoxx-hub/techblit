@@ -38,7 +38,7 @@ export default function WritersPage() {
       '@type': 'Organization',
       name: 'TechBlit',
       sameAs: 'https://www.techblit.com',
-      logo: 'https://www.techblit.com/favicon.png',
+      logo: 'https://www.techblit.com/icon-512.png',
     },
     jobLocation: {
       '@type': 'Place',
@@ -68,7 +68,8 @@ export default function WritersPage() {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
       />
       <Navigation />
-      
+
+      <main>
       {/* Hero Section */}
       <WritersHero googleFormUrl={googleFormUrl} />
 
@@ -376,6 +377,7 @@ export default function WritersPage() {
           </div>
         </div>
       </section>
+      </main>
 
       <Footer />
     </div>

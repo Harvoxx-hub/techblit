@@ -11,6 +11,8 @@ interface CompactListItemProps {
   showCategory?: boolean
   showThumbnail?: boolean
   index?: number
+  /** Wrapper element. Use "div" when the item is not a direct child of a <ul>/<ol>. */
+  as?: 'li' | 'div'
 }
 
 const CompactListItem = ({
@@ -18,6 +20,7 @@ const CompactListItem = ({
   showCategory = false,
   showThumbnail = false,
   index,
+  as: Wrapper = 'li',
 }: CompactListItemProps) => {
   const dateLabel = post.publishedAt ? formatDateShort(post.publishedAt) : null
   const imageUrl = showThumbnail
@@ -26,7 +29,7 @@ const CompactListItem = ({
   const gradient = getCategoryGradient(post.category)
 
   return (
-    <li>
+    <Wrapper>
       <Link
         href={`/${post.slug}`}
         className="group flex gap-3 py-3 sm:py-2.5 border-b border-gray-100 dark:border-gray-800 last:border-0"
@@ -66,7 +69,7 @@ const CompactListItem = ({
           </div>
         </div>
       </Link>
-    </li>
+    </Wrapper>
   )
 }
 

@@ -31,6 +31,7 @@ export default async function Series101Page() {
     <div className="min-h-screen bg-white dark:bg-gray-950">
       <Navigation />
 
+      <main>
       <SectionContainer className="pt-8">
         <p className="text-xs font-bold uppercase tracking-widest text-brand-gold mb-2">
           Video Series
@@ -84,6 +85,7 @@ export default async function Series101Page() {
           </div>
         )}
       </SectionContainer>
+      </main>
 
       <Footer />
     </div>

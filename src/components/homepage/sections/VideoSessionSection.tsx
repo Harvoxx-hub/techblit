@@ -123,7 +123,6 @@ const VideoSessionSection = ({ newsReview, hotVideos }: VideoSessionSectionProps
                   target="_blank"
                   rel="noopener noreferrer"
                   className="mt-6 inline-flex items-center justify-center gap-2 self-start px-6 py-3 bg-brand-gold text-brand-navy rounded-lg font-bold text-sm hover:bg-yellow-400 transition-colors"
-                  aria-label="Subscribe to TechBlit on YouTube"
                 >
                   <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                     <path d="M23.5 6.2A3 3 0 0021.4 4.4C19.6 4 12 4 12 4s-7.6 0-9.4.4A3 3 0 00.5 6.2C0 8 0 12 0 12s0 4 .5 5.8A3 3 0 002.6 19.6C4.4 20 12 20 12 20s7.6 0 9.4-.4a3 3 0 002.1-2.2C24 16 24 12 24 12s0-4-.5-5.8zM9.75 15.02V8.98L15.5 12l-5.75 3.02z" />
@@ -195,7 +194,6 @@ const VideoSessionSection = ({ newsReview, hotVideos }: VideoSessionSectionProps
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center justify-center gap-2 px-5 py-2.5 border border-brand-gold text-brand-gold rounded-lg text-xs font-bold uppercase tracking-wider hover:bg-brand-gold hover:text-brand-navy transition-colors"
-                aria-label="Browse TechBlit videos on YouTube"
               >
                 Browse Videos →
               </Link>
