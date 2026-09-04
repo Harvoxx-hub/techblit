@@ -44,6 +44,20 @@ export async function generateSitemap(): Promise<SitemapUrl[]> {
     });
 
     urls.push({
+      loc: `${siteUrl}/contact`,
+      lastmod: new Date().toISOString(),
+      changefreq: 'yearly',
+      priority: 0.5,
+    });
+
+    urls.push({
+      loc: `${siteUrl}/license`,
+      lastmod: new Date().toISOString(),
+      changefreq: 'yearly',
+      priority: 0.3,
+    });
+
+    urls.push({
       loc: `${siteUrl}/blog`,
       lastmod: new Date().toISOString(),
       changefreq: 'daily',
@@ -214,11 +228,11 @@ export function generateRobotsTxt(siteUrl: string, customRules?: string): string
 Allow: /
 Disallow: /admin/
 Disallow: /api/
+Disallow: /newsletter/
 Disallow: /preview/
 
-Host: ${siteUrl}
-
-Sitemap: ${siteUrl}/sitemap.xml`;
+Sitemap: ${siteUrl}/sitemap.xml
+Sitemap: ${siteUrl}/news-sitemap.xml`;
 
   return customRules || defaultRules;
 }

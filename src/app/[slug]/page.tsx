@@ -10,7 +10,7 @@ import ArticleSidebar from '@/components/article/ArticleSidebar'
 import ArticleRelatedPosts from '@/components/article/ArticleRelatedPosts'
 import { generatePostSEO, generateStructuredData, type BlogPostSEO } from '@/lib/seo'
 import { getAuthorUrl } from '@/lib/authorUtils'
-import { formatDateShort } from '@/lib/dateUtils'
+import { formatDateShort, getISODateString } from '@/lib/dateUtils'
 import { getImageUrlFromData } from '@/lib/imageHelpers'
 import { getPostsApiUrl } from '@/lib/apiConfig'
 import { renderContent } from '@/lib/markdown'
@@ -172,6 +172,10 @@ export default async function BlogPostPage({
   const articleUrl = `https://www.techblit.com/${post.slug}`
   const imageUrl = getImageUrl(post.featuredImage)
   const dateLabel = formatDateShort(post.publishedAt || post.createdAt)
+  const publishedISO = getISODateString(post.publishedAt || post.createdAt)
+  const updatedISO = getISODateString(post.updatedAt)
+  const showUpdated =
+    !!updatedISO && !!publishedISO && new Date(updatedISO).getTime() - new Date(publishedISO).getTime() > 60 * 60 * 1000
   const authorName =
     typeof post.author === 'string' ? post.author : post.author?.name
 
@@ -247,7 +251,18 @@ export default async function BlogPostPage({
                   </span>
                 )}
                 {authorName && <span aria-hidden="true">·</span>}
-                <time>{dateLabel}</time>
+                <time dateTime={publishedISO}>{dateLabel}</time>
+                {showUpdated && (
+                  <>
+                    <span aria-hidden="true">·</span>
+                    <span>
+                      Updated{' '}
+                      <time dateTime={updatedISO}>
+                        {formatDateShort(post.updatedAt)}
+                      </time>
+                    </span>
+                  </>
+                )}
                 {post.readTime && (
                   <>
                     <span aria-hidden="true">·</span>
