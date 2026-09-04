@@ -103,6 +103,11 @@ export interface Post {
   canonical: string;
   tags: string[];
   category: string;
+
+  // Answer-engine extras (optional) — render a "Key points" box + an FAQ
+  // section with FAQPage structured data on the article page.
+  keyPoints?: string[];
+  faq?: { question: string; answer: string }[];
   
   // Author & Status
   author: {
