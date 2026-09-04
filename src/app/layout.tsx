@@ -124,6 +124,12 @@ export default function RootLayout({
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationSchema) }}
         />
+        <link
+          rel="alternate"
+          type="application/rss+xml"
+          title="TechBlit - Igniting Africa's Tech Conversation"
+          href="/feed.xml"
+        />
         <ThemeProvider>
           {children}
         </ThemeProvider>

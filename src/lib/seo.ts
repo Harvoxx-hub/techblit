@@ -2,6 +2,7 @@ import { Metadata } from 'next'
 import { ProcessedImage } from './imageProcessing'
 import { getSocialImageUrl, getImageUrlFromData, extractPublicId } from './imageHelpers'
 import { fetchLatestPublishedPost } from './articlePageData'
+import { getAuthorUrl } from './authorUtils'
 
 function getISODateString(date: Date | { toDate: () => Date } | undefined): string | undefined {
   if (!date) return undefined
@@ -337,6 +338,7 @@ export function generateStructuredData(post: BlogPostSEO) {
   }
 
   const authorName = getAuthorName(post.author)
+  const hasNamedAuthor = Boolean(post.author)
   const category = post.category || post.categories?.[0] || 'Technology'
 
   const { url: featuredImageUrl, alt: imageAlt, width: imageWidth, height: imageHeight } = getFeaturedImageMeta(post.featuredImage)
@@ -353,17 +355,19 @@ export function generateStructuredData(post: BlogPostSEO) {
 
   const articleSchema = {
     '@context': 'https://schema.org',
-    '@type': 'Article',
+    '@type': 'NewsArticle',
     headline: post.title,
     description: post.metaDescription || post.excerpt || '',
     image: imageArray,
     author: {
       '@type': 'Person',
       name: authorName,
+      ...(hasNamedAuthor ? { url: `${siteUrl}${getAuthorUrl(authorName)}` } : {}),
     },
     publisher: {
       '@type': 'Organization',
       name: 'TechBlit',
+      url: SITE_URL,
       logo: {
         '@type': 'ImageObject',
         url: `${SITE_URL}/icon-512.png`,
@@ -371,9 +375,9 @@ export function generateStructuredData(post: BlogPostSEO) {
         height: 512,
       },
       sameAs: [
-        SITE_URL,
         'https://twitter.com/techblit',
         'https://www.linkedin.com/company/techblit',
+        'https://www.facebook.com/techblitblog/',
       ],
     },
     datePublished: publishedTime,
@@ -383,6 +387,7 @@ export function generateStructuredData(post: BlogPostSEO) {
       '@id': postUrl,
     },
     url: postUrl,
+    isAccessibleForFree: true,
     keywords: post.tags?.join(', ') || category || 'technology',
     articleSection: category,
     wordCount: post.excerpt?.split(' ').length || 0,
