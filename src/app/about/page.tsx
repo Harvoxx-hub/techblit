@@ -21,18 +21,16 @@ export const metadata: Metadata = {
 };
 
 /*
- * ─────────────────────────────────────────────────────────────────────────────
- * Still needed for full Google News / AI-source transparency — replace the
- * bracketed spots and drop this note once done:
- *   1. A named editor-in-chief (and ideally 1–2 senior reporters) in
- *      "Editorial team", each linked to their /authors/<name> page.
- *   2. The legal entity that owns TechBlit + how it is funded, in
- *      "Ownership & funding".
- *   3. A street / registered address in the footer, /contact, and the
- *      `address` block below — all three must match.
- *   4. A real "last reviewed" date on "Editorial standards".
- * ─────────────────────────────────────────────────────────────────────────────
+ * Optional polish once available:
+ *   - A registered company name in "Ownership & funding" (currently stated as
+ *     independently owned/operated, founded by Victor Agbenro).
+ *   - A street address above the city line here, in /contact, and in the
+ *     footer — all three must stay identical.
+ *   - Link the Editor-in-Chief's name to /authors/victor-agbenro once that
+ *     profile has bylined articles.
  */
+
+const STANDARDS_LAST_REVIEWED = '4 September 2026';
 
 const orgSchema = {
   '@context': 'https://schema.org',
@@ -42,9 +40,12 @@ const orgSchema = {
   logo: 'https://www.techblit.com/icon-512.png',
   description: "Igniting Africa's Tech Conversation",
   email: 'editor@techblit.com',
+  founder: {
+    '@type': 'Person',
+    name: 'Victor Agbenro',
+  },
   address: {
     '@type': 'PostalAddress',
-    // TODO: add streetAddress once confirmed.
     addressLocality: 'Port Harcourt',
     addressRegion: 'Rivers State',
     addressCountry: 'NG',
@@ -102,16 +103,14 @@ export default function AboutPage() {
 
           <h2 id="editorial-team">Editorial team</h2>
           <p>
+            TechBlit is led by <strong>Victor Agbenro</strong>, Editor-in-Chief, who is
+            responsible for editorial decisions, standards, and corrections. He can be
+            reached at <a href="mailto:editor@techblit.com">editor@techblit.com</a>.
+          </p>
+          <p>
             Every TechBlit article carries a byline, and every writer has a profile page
             listing their work and the areas they cover. You can browse the full team on
             the <Link href="/authors">contributors page</Link>.
-          </p>
-          <p>
-            {/* TODO: name the editor-in-chief (and any senior reporters) here, each
-                linked to their /authors/<slug> page. */}
-            Editorial decisions and corrections are the responsibility of the TechBlit
-            editor, reachable at{' '}
-            <a href="mailto:editor@techblit.com">editor@techblit.com</a>.
           </p>
 
           <h2 id="editorial-standards">Editorial standards &amp; ethics</h2>
@@ -146,18 +145,21 @@ export default function AboutPage() {
             </li>
           </ul>
           <p>
-            {/* TODO: set a real "last reviewed" date once an editor signs off. */}
+            These standards were last reviewed on {STANDARDS_LAST_REVIEWED}.
           </p>
 
           <h2 id="ownership-funding">Ownership &amp; funding</h2>
           <p>
-            TechBlit is editorially independent and is not owned or controlled by any of
-            the companies, investors, or government bodies it covers.
+            TechBlit is independently owned and operated. It was founded by Victor
+            Agbenro and is not owned or controlled by any of the companies, investors,
+            or government bodies it covers.
           </p>
           <p>
-            {/* TODO: state the legal entity that owns/operates TechBlit and its revenue
-                sources (advertising, partnerships, events, investment), and disclose any
-                investor whose interests overlap with companies we cover. */}
+            TechBlit is funded through advertising, clearly labelled sponsored and
+            partner content, and events. We do not accept payment to publish, alter, or
+            withhold editorial coverage. Where a story concerns a company or person
+            connected to TechBlit or its partners, that connection is disclosed in the
+            article.
           </p>
 
           <h2 id="corrections">Corrections</h2>
