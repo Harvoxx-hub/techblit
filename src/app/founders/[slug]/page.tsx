@@ -110,7 +110,7 @@ export default async function FounderProfilePage({
               <div className="absolute right-6 top-6 z-10 h-16 w-16 rounded-2xl bg-white/10 p-2 ring-1 ring-white/20 backdrop-blur-sm sm:right-10 sm:top-10">
                 <Image
                   src={founder.startup_logo_url}
-                  alt=""
+                  alt={`${founder.startup_name} logo`}
                   width={64}
                   height={64}
                   className="h-full w-full object-contain"

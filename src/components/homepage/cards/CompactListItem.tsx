@@ -44,7 +44,7 @@ const CompactListItem = ({
             {imageUrl ? (
               <Image
                 src={imageUrl}
-                alt=""
+                alt={post.title}
                 width={64}
                 height={64}
                 className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-300"

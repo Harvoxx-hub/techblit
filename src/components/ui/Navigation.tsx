@@ -109,7 +109,7 @@ export default function Navigation({ showBackButton: _showBackButton = false }: 
             <div className="hidden sm:block" aria-hidden="true" />
             <div className="col-span-2 sm:col-span-1 flex items-center justify-end gap-4 sm:gap-6">
               <Link
-                href="/about"
+                href="/admin/login"
                 className="text-gray-300 hover:text-white transition-colors font-medium whitespace-nowrap"
               >
                 Sign In
@@ -165,7 +165,7 @@ export default function Navigation({ showBackButton: _showBackButton = false }: 
             >
               <Image
                 src="/favicon.png"
-                alt=""
+                alt="TechBlit"
                 width={56}
                 height={56}
                 className="h-10 w-10 sm:h-12 sm:w-12 lg:h-14 lg:w-14 object-contain group-hover:scale-105 transition-transform duration-300"

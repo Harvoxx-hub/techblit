@@ -136,7 +136,7 @@ const getFeaturedImageMeta = (featuredImage: BlogPostSEO['featuredImage']) => {
 
 const HOMEPAGE_TITLE = "TechBlit - Igniting Africa's Tech Conversation"
 const HOMEPAGE_DESCRIPTION =
-  'Discover the latest African tech news, startup insights, funding rounds, and innovation stories. Your destination for comprehensive coverage of Africa\'s technology ecosystem.'
+  "The latest African tech news — startups, funding rounds, policy, and innovation from across the continent, with deep coverage of Nigeria's tech ecosystem."
 
 export async function generateHomepageSEO(): Promise<Metadata> {
   const latestPost = await fetchLatestPublishedPost()

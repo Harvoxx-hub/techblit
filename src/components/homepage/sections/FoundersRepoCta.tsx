@@ -24,7 +24,7 @@ const FoundersRepoCta = () => {
           <div className="flex items-center gap-3 mb-3">
             <Image
               src="/favicon.png"
-              alt=""
+              alt="TechBlit"
               width={36}
               height={36}
               className="h-9 w-9 object-contain"

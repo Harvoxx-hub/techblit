@@ -21,7 +21,7 @@ const TrendingHeroCard = ({ post }: { post: HomepagePost }) => {
         {imageUrl ? (
           <Image
             src={imageUrl}
-            alt=""
+            alt={post.title}
             fill
             className="object-cover group-hover:scale-105 transition-transform duration-300"
             sizes="200px"
@@ -51,7 +51,7 @@ const BreakingThumbItem = ({ post }: { post: HomepagePost }) => {
           {imageUrl ? (
             <Image
               src={imageUrl}
-              alt=""
+              alt={post.title}
               width={64}
               height={64}
               className="object-cover w-16 h-16 group-hover:scale-105 transition-transform duration-300"
@@ -89,7 +89,7 @@ const HomepageHeroSection = ({ hotNow, breaking, trending }: HomepageHeroSection
               {imageUrl ? (
                 <Image
                   src={imageUrl}
-                  alt=""
+                  alt={hotNow.title}
                   fill
                   className="object-cover"
                   sizes="(max-width: 1024px) 100vw, 66vw"

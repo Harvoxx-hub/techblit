@@ -66,7 +66,7 @@ const VideoSessionSection = ({ newsReview, hotVideos }: VideoSessionSectionProps
             {hasReview && featured?.thumbnail ? (
               <Image
                 src={featured.thumbnail}
-                alt=""
+                alt={featured.title}
                 fill
                 className="object-cover"
                 sizes="(max-width: 1024px) 100vw, 66vw"

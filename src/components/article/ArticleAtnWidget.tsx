@@ -28,7 +28,7 @@ const ArticleAtnWidget = ({ video }: ArticleAtnWidgetProps) => {
             {video.thumbnail ? (
               <Image
                 src={video.thumbnail}
-                alt=""
+                alt={video.title}
                 fill
                 className="object-cover group-hover:scale-105 transition-transform duration-300"
                 sizes="320px"

@@ -369,7 +369,7 @@ function FoundersDirectoryContent() {
                           <div className="absolute right-4 top-4 flex h-11 w-11 items-center justify-center overflow-hidden rounded-lg border border-stone-100 bg-white shadow-sm">
                             <Image
                               src={f.startup_logo_url}
-                              alt=""
+                              alt={`${f.startup_name} logo`}
                               width={44}
                               height={44}
                               className="object-contain"
@@ -381,7 +381,7 @@ function FoundersDirectoryContent() {
                             {f.profile_photo_url ? (
                               <Image
                                 src={f.profile_photo_url}
-                                alt=""
+                                alt={f.full_name}
                                 width={64}
                                 height={64}
                                 className="h-full w-full object-cover"

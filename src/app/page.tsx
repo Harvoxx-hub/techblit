@@ -62,6 +62,9 @@ export default async function Home() {
       <Navigation />
 
       <main>
+        <h1 className="sr-only">
+          TechBlit — African tech news: startups, funding, policy, and innovation
+        </h1>
         <BreakingTicker posts={data.breaking} />
 
         {!hasStories && <HomepageEmptyState />}
