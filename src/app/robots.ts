@@ -4,6 +4,13 @@ const SITE_URL = 'https://www.techblit.com'
 
 const PRIVATE_PATHS = ['/admin/', '/api/', '/newsletter/', '/preview/']
 
+// Tracking-parameter duplicates of the homepage — external services (push
+// notifications, newsletter link tracking) append ?t=/?y= to shared links.
+// These already self-canonicalize to the clean homepage, so indexing isn't
+// the issue; blocking the crawl stops it from burning budget re-fetching
+// thousands of near-identical homepage URLs instead of new articles.
+const TRACKING_DUPLICATE_PATHS = ['/?t=', '/?y=']
+
 // AI *retrieval* crawlers — the ones that fetch a page to answer a live
 // user question and cite it. We want these: they drive visibility in
 // ChatGPT Search, Perplexity, Claude, Siri, and Alexa answers.
@@ -46,12 +53,12 @@ export default function robots(): MetadataRoute.Robots {
       {
         userAgent: '*',
         allow: '/',
-        disallow: PRIVATE_PATHS,
+        disallow: [...PRIVATE_PATHS, ...TRACKING_DUPLICATE_PATHS],
       },
       {
         userAgent: AI_RETRIEVAL_BOTS,
         allow: '/',
-        disallow: PRIVATE_PATHS,
+        disallow: [...PRIVATE_PATHS, ...TRACKING_DUPLICATE_PATHS],
       },
       {
         userAgent: AI_TRAINING_BOTS,
