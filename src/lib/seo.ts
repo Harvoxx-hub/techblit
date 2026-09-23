@@ -38,6 +38,20 @@ function getISODateString(date: unknown): string | undefined {
 
 const SITE_URL = 'https://www.techblit.com'
 
+// A handful of legacy posts have a `canonical` override left over from the
+// pre-migration import, pointing at the bare (non-www) domain — which itself
+// redirects to SITE_URL, so it can never be a valid canonical target. Editors
+// can still point canonical at a genuinely external domain (for syndicated
+// content); only same-site overrides missing "www" get corrected.
+function resolveCanonical(override: string | undefined, fallback: string): string {
+  if (!override) return fallback
+  try {
+    return new URL(override).hostname === 'techblit.com' ? fallback : override
+  } catch {
+    return fallback
+  }
+}
+
 export const defaultSEO = {
   title: "TechBlit - Igniting Africa's Tech Conversation",
   description: 'Discover the latest tech news, startup insights, funding rounds, and innovation stories from across Africa. Your destination for African tech ecosystem coverage.',
@@ -235,7 +249,7 @@ export function generatePostSEO(post: BlogPostSEO): Metadata {
     },
     metadataBase: new URL(siteUrl),
     alternates: {
-      canonical: post.canonical || postUrl,
+      canonical: resolveCanonical(post.canonical, postUrl),
     },
     openGraph: {
       type: 'article',
