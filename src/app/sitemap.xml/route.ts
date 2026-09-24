@@ -1,11 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { generateSitemapXML, generateSitemap, SitemapUrl } from '@/lib/sitemap';
+import { getApiBaseUrl } from '@/lib/apiConfig';
 
 // Force Node.js runtime for heavy operations (not Edge)
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-const SITEMAP_GENERATOR_URL = 'https://generatesitemap-4alcog3g7q-uc.a.run.app/';
+// Derived from the same backend config as everything else, rather than a
+// separately hardcoded URL — the previous hardcoded Cloud Run URL silently
+// went dead after the backend moved to Railway, and every request fell
+// through to a local fallback capped at 100 posts, missing hundreds of
+// published articles from the sitemap Google actually sees.
+const SITEMAP_GENERATOR_URL = `${getApiBaseUrl()}/api/v1/sitemap`;
 const FETCH_TIMEOUT = 10000; // 10 seconds timeout
 
 // Helper function to add timeout to fetch
